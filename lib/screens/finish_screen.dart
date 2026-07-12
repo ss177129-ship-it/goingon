@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -38,6 +39,7 @@ class FinishScreen extends StatefulWidget {
 class _FinishScreenState extends State<FinishScreen> {
   final _cardKey = GlobalKey();
   Map<String, dynamic>? _partnerResult;
+  StreamSubscription? _sub;
 
   @override
   void initState() {
@@ -53,7 +55,7 @@ class _FinishScreenState extends State<FinishScreen> {
       });
       return;
     }
-    RunService().sessionStream(widget.sessionId).listen((doc) {
+    _sub = RunService().sessionStream(widget.sessionId).listen((doc) {
       final results =
           Map<String, dynamic>.from(doc.data()?['results'] ?? {});
       final uid = AuthService().uid;
@@ -65,6 +67,12 @@ class _FinishScreenState extends State<FinishScreen> {
         setState(() => _partnerResult = partner);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
   }
 
   bool get _waiting => _partnerResult == null;
