@@ -121,12 +121,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _sendGo(String friendUid, String friendName) async {
-    final sessionId = await _runs.createSession(_auth.uid, friendUid);
-    if (!mounted) return;
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) =>
-          LobbyScreen(sessionId: sessionId, partnerName: friendName),
-    ));
+    try {
+      final sessionId = await _runs.createSession(_auth.uid, friendUid);
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(
+        builder: (_) =>
+            LobbyScreen(sessionId: sessionId, partnerName: friendName),
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('요청을 보내지 못했어요. 다시 시도해 주세요.')),
+      );
+    }
   }
 
   @override

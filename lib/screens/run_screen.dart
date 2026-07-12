@@ -30,6 +30,7 @@ class _RunScreenState extends State<RunScreen>
   int _seconds = 0;
   double _km = 0;
   bool _gpsOk = true;
+  bool _finishing = false;
   late final AnimationController _breath;
 
   @override
@@ -57,19 +58,42 @@ class _RunScreenState extends State<RunScreen>
       setState(() => _gpsOk = false);
       return;
     }
-    _location.start((km) => setState(() => _km = km));
+    _location.start(
+      (km) => setState(() => _km = km),
+      onError: _handleGpsError,
+    );
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() => _seconds++);
     });
   }
 
+  /// 러닝 도중 위치 서비스가 꺼지거나 권한이 취소되는 등
+  /// GPS를 더 이상 쓸 수 없게 됐을 때 — 크래시 대신 안내 화면으로 전환
+  void _handleGpsError() {
+    if (!mounted) return;
+    _timer?.cancel();
+    _location.stop();
+    setState(() => _gpsOk = false);
+  }
+
   Future<void> _finish() async {
+    if (_finishing) return;
+    setState(() => _finishing = true);
     _timer?.cancel();
     _location.stop();
     final kcal = LocationService.estimateKcal(_seconds);
     if (!widget.demo) {
-      await RunService().submitResult(widget.sessionId, AuthService().uid,
-          seconds: _seconds, km: _km, kcal: kcal);
+      try {
+        await RunService().submitResult(widget.sessionId, AuthService().uid,
+            seconds: _seconds, km: _km, kcal: kcal);
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _finishing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('결과 저장에 실패했어요. 다시 시도해 주세요.')),
+        );
+        return;
+      }
     }
     if (!mounted) return;
     Navigator.pushReplacement(context, MaterialPageRoute(
@@ -218,7 +242,7 @@ class _RunScreenState extends State<RunScreen>
           const SizedBox(height: 10),
           // ── 멈춤 ──
           GestureDetector(
-            onLongPress: _finish,
+            onLongPress: _finishing ? null : _finish,
             child: Container(
               width: 52, height: 52,
               decoration: BoxDecoration(

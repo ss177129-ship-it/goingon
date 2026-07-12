@@ -33,18 +33,27 @@ class _InviteScreenState extends State<InviteScreen> {
     final code = _codeController.text;
     if (code.trim().isEmpty) return;
     setState(() => _busy = true);
-    final name = await FriendService().addFriendByCode(AuthService().uid, code);
-    if (!mounted) return;
-    setState(() => _busy = false);
-    if (name != null) {
+    try {
+      final name =
+          await FriendService().addFriendByCode(AuthService().uid, code);
+      if (!mounted) return;
+      if (name != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$name님과 연결됐어요! 이제 함께 달릴 수 있어요')),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('코드를 찾을 수 없어요. 다시 확인해 주세요.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$name님과 연결됐어요! 이제 함께 달릴 수 있어요')),
+        const SnackBar(content: Text('연결에 실패했어요. 인터넷을 확인해 주세요.')),
       );
-      Navigator.pop(context);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('코드를 찾을 수 없어요. 다시 확인해 주세요.')),
-      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 

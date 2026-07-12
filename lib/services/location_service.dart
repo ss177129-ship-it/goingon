@@ -8,8 +8,9 @@ class LocationService {
   Position? _last;
   double totalKm = 0;
 
-  /// 위치 권한 요청. 거부되면 false
+  /// 위치 권한 요청. 위치 서비스가 꺼져 있거나 거부되면 false
   Future<bool> requestPermission() async {
+    if (!await Geolocator.isLocationServiceEnabled()) return false;
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -18,27 +19,31 @@ class LocationService {
         permission == LocationPermission.always;
   }
 
-  /// 트래킹 시작. onUpdate(누적 km)를 매 갱신마다 호출
-  void start(void Function(double km) onUpdate) {
+  /// 트래킹 시작. onUpdate(누적 km)를 매 갱신마다 호출.
+  /// onError는 위치 서비스가 꺼지거나 권한이 중간에 취소되는 등
+  /// 트래킹이 더 이상 불가능해졌을 때 호출됨
+  void start(void Function(double km) onUpdate, {void Function()? onError}) {
     totalKm = 0;
     _last = null;
     const settings = LocationSettings(
-      accuracy: LocationAccuracy.bestForNavigation,
+      accuracy: LocationAccuracy.high,
       distanceFilter: 5, // 5m 이동마다 갱신 (배터리 절약)
     );
-    _sub = Geolocator.getPositionStream(locationSettings: settings)
-        .listen((pos) {
-      // GPS 튐 방지: 정확도 30m 이상이면 무시
-      if (pos.accuracy > 30) return;
-      if (_last != null) {
-        final meters = Geolocator.distanceBetween(
-            _last!.latitude, _last!.longitude, pos.latitude, pos.longitude);
-        // 순간이동(1초에 50m 이상) 무시 — 터널/신호 튐 대응
-        if (meters < 50) totalKm += meters / 1000;
-      }
-      _last = pos;
-      onUpdate(totalKm);
-    });
+    _sub = Geolocator.getPositionStream(locationSettings: settings).listen(
+      (pos) {
+        // GPS 튐 방지: 정확도 30m 이상이면 무시
+        if (pos.accuracy > 30) return;
+        if (_last != null) {
+          final meters = Geolocator.distanceBetween(
+              _last!.latitude, _last!.longitude, pos.latitude, pos.longitude);
+          // 순간이동(1초에 50m 이상) 무시 — 터널/신호 튐 대응
+          if (meters < 50) totalKm += meters / 1000;
+        }
+        _last = pos;
+        onUpdate(totalKm);
+      },
+      onError: (_) => onError?.call(),
+    );
   }
 
   void stop() {
