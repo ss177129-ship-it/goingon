@@ -1,0 +1,48 @@
+name: goingon
+description: "멀리 있어도, 함께 달려요 — GoingOn"
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase (백엔드 — 서버 직접 안 만들어도 돼요)
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.0
+  cloud_firestore: ^5.4.0
+  firebase_messaging: ^15.1.0
+
+  # GPS 트래킹
+  geolocator: ^13.0.1
+
+  # 공유 카드 (이미지 생성 + 공유 시트)
+  share_plus: ^10.0.0
+  path_provider: ^2.1.4
+
+  # 폰트/서체
+  google_fonts: ^6.2.1
+
+  # 상태 유지
+  shared_preferences: ^2.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_native_splash: ^2.4.1
+
+flutter:
+  uses-material-design: true
+
+flutter_native_splash:
+  color: "#F0EAE0"
+  color_dark: "#F0EAE0"
+  image: assets/splash/brand_mark.png
+  ios: true
+  android: false
+  web: false
+  fullscreen: true

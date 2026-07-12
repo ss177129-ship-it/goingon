@@ -1,0 +1,127 @@
+import 'package:flutter/material.dart';
+
+import '../services/auth_service.dart';
+import '../theme.dart';
+
+/// 온보딩: 닉네임 하나만 받고 바로 시작 (마찰 0 전략)
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _controller = TextEditingController();
+  bool _loading = false;
+
+  Future<void> _start() async {
+    final name = _controller.text.trim();
+    if (name.isEmpty) return;
+    setState(() => _loading = true);
+    try {
+      await AuthService().signInAnonymously(name);
+      // authStateChanges가 자동으로 홈으로 보내줘요
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('연결에 실패했어요. 인터넷을 확인해 주세요.')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Column(
+            children: [
+              const Spacer(),
+              // 브랜드 마크 — 두 원이 나란히 (나 lime, 너 coral)
+              SizedBox(
+                width: 74, height: 46,
+                child: Stack(children: [
+                  Positioned(
+                    left: 3, top: 4,
+                    child: Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: GoColors.lime.withOpacity(.4),
+                        border: Border.all(color: GoColors.limeDark, width: 2),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 3, top: 4,
+                    child: Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: GoColors.coral.withOpacity(.35),
+                        border: Border.all(color: GoColors.coralDark, width: 2),
+                      ),
+                    ),
+                  ),
+                ]),
+              ),
+              const SizedBox(height: 12),
+              Text('goingon', style: GoTheme.serif(20, color: GoColors.dim)),
+              const SizedBox(height: 18),
+              Text('멀리 있어도,\n함께 달려요',
+                  textAlign: TextAlign.center, style: GoTheme.serif(30)),
+              const SizedBox(height: 8),
+              const Text('소중한 사람과 발을 맞추는 곳',
+                  style: TextStyle(fontSize: 13, color: GoColors.mid)),
+              const SizedBox(height: 36),
+              TextField(
+                controller: _controller,
+                textAlign: TextAlign.center,
+                maxLength: 10,
+                decoration: InputDecoration(
+                  hintText: '뭐라고 부르면 될까요?',
+                  counterText: '',
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: GoColors.line),
+                  ),
+                ),
+                onSubmitted: (_) => _start(),
+              ),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: GoColors.ink,
+                    padding: const EdgeInsets.symmetric(vertical: 17),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: _loading ? null : _start,
+                  child: _loading
+                      ? const SizedBox(
+                          width: 20, height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : Text('시작하기',
+                          style: GoTheme.serif(19, color: GoColors.paper)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text('계속하면 이용약관과 개인정보처리방침에 동의하는 것으로 간주돼요.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 10, color: GoColors.dim)),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

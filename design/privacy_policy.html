@@ -1,0 +1,180 @@
+<title>GoingOn 개인정보처리방침</title>
+<style>
+:root{
+  --paper:#F0EAE0; --canvas:#EBE4D6; --ink:#1A1A16;
+  --lime:#C5E040; --limeDark:#6A9810; --coral:#F05840; --coralDark:#B03020;
+  --mid:#78746E; --dim:#B0ACA6; --line:rgba(26,26,22,.09);
+  --bg:var(--paper); --fg:var(--ink); --sub:var(--mid); --lbl:var(--dim);
+  --hair:var(--line); --accent:var(--limeDark); --warn:var(--coralDark);
+  --card-bg:var(--ink); --card-fg:var(--paper); --card-sub:rgba(240,234,224,.55);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#17170F; --fg:#F0EAE0; --sub:rgba(240,234,224,.62); --lbl:rgba(240,234,224,.4);
+    --hair:rgba(240,234,224,.12); --accent:#C5E040; --warn:#F05840;
+    --card-bg:#0F0F0A; --card-fg:#F0EAE0; --card-sub:rgba(240,234,224,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#17170F; --fg:#F0EAE0; --sub:rgba(240,234,224,.62); --lbl:rgba(240,234,224,.4);
+  --hair:rgba(240,234,224,.12); --accent:#C5E040; --warn:#F05840;
+  --card-bg:#0F0F0A; --card-fg:#F0EAE0; --card-sub:rgba(240,234,224,.5);
+}
+:root[data-theme="light"]{
+  --bg:var(--paper); --fg:var(--ink); --sub:var(--mid); --lbl:var(--dim);
+  --hair:var(--line); --accent:var(--limeDark); --warn:var(--coralDark);
+  --card-bg:var(--ink); --card-fg:var(--paper); --card-sub:rgba(240,234,224,.55);
+}
+*,*::before,*::after{box-sizing:border-box;}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:680px; margin:0 auto; padding:64px 28px 96px;}
+.word{
+  font-family:Georgia,"Noto Serif KR",serif; font-style:italic; font-size:15px;
+  color:var(--lbl); letter-spacing:.02em; margin-bottom:28px;
+}
+.eyebrow{
+  font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--lbl); margin-bottom:10px;
+}
+h1{
+  font-size:clamp(30px,5vw,38px); line-height:1.2; margin:0 0 12px; font-weight:800;
+  text-wrap:balance; letter-spacing:-.01em;
+}
+.meta{font-size:13px; color:var(--sub); margin-bottom:40px;}
+.meta b{color:var(--fg); font-weight:600;}
+.lede{
+  font-size:15.5px; line-height:1.75; color:var(--sub); margin-bottom:48px;
+  padding-bottom:40px; border-bottom:1px solid var(--hair);
+}
+section{padding:30px 0; border-top:1px solid var(--hair);}
+section:first-of-type{border-top:none; padding-top:0;}
+.sec-eyebrow{
+  font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--lbl); margin-bottom:8px;
+}
+h2{font-size:19px; line-height:1.4; margin:0 0 14px; font-weight:700; text-wrap:balance;}
+p{font-size:15px; line-height:1.8; color:var(--sub); margin:0 0 12px;}
+p:last-child{margin-bottom:0;}
+ul{margin:0 0 12px; padding-left:20px;}
+li{font-size:15px; line-height:1.8; color:var(--sub); margin-bottom:8px;}
+li:last-child{margin-bottom:0;}
+li b, p b{color:var(--fg); font-weight:600;}
+.pill{
+  display:inline-block; font-size:12px; font-weight:600; color:var(--accent);
+  background:color-mix(in srgb, var(--accent) 14%, transparent);
+  border-radius:20px; padding:3px 10px; margin:2px 6px 2px 0;
+}
+.warn-pill{color:var(--warn); background:color-mix(in srgb, var(--warn) 12%, transparent);}
+.card{
+  margin-top:36px; background:var(--card-bg); color:var(--card-fg);
+  border-radius:22px; padding:28px 26px;
+}
+.card .sec-eyebrow{color:var(--card-sub);}
+.card h2{color:var(--card-fg);}
+.card p{color:var(--card-sub);}
+.card a{color:var(--lime); font-weight:600; text-decoration:none; border-bottom:1px solid rgba(197,224,64,.4);}
+.card a:hover{border-bottom-color:var(--lime);}
+.foot{margin-top:56px; font-size:12px; color:var(--lbl); text-align:center;}
+@media (max-width:480px){ .wrap{padding:48px 20px 72px;} }
+</style>
+
+<div class="wrap">
+  <div class="word">goingon</div>
+  <div class="eyebrow">Privacy Policy</div>
+  <h1>개인정보처리방침</h1>
+  <div class="meta">시행일자 <b>2026년 7월 12일</b> · GoingOn(고잉온)</div>
+
+  <p class="lede">
+    GoingOn(이하 "우리")은 멀리 있는 친구·연인이 같은 시간에 함께 달릴 수 있도록 돕는 앱이에요.
+    이 페이지는 GoingOn을 사용하면서 어떤 정보가 수집되고, 어떻게 쓰이고, 어떻게 지워지는지를
+    최대한 있는 그대로 설명해요. 어려운 법률 용어 대신, 실제 코드가 하는 일을 그대로 옮겼어요.
+  </p>
+
+  <section>
+    <div class="sec-eyebrow">01 — 수집하는 정보</div>
+    <h2>무엇을 모으고, 어떻게 모으나요</h2>
+    <ul>
+      <li><b>닉네임</b> — 처음 앱을 켰을 때 직접 입력한 이름</li>
+      <li><b>계정 식별자</b> — Firebase 익명 인증으로 발급되는 고유 ID. 전화번호·이메일·소셜 계정 정보는 아예 수집하지 않아요</li>
+      <li><b>초대 코드·친구 연결 정보</b> — 서로 연결된 상대방의 계정 식별자</li>
+      <li><b>러닝 세션 기록</b> — 함께 달리기를 시작·종료한 시각, 참여자, 달린 거리(km)·소요 시간·소모 칼로리 추정치</li>
+      <li><b>위치정보</b> — 달리기 중에만 기기 GPS를 사용해요. 이동 거리 계산은 <b>기기 안에서만</b> 이루어지고,
+        위치 좌표(위도·경도) 자체는 서버로 전송되거나 저장되지 않아요. 함께 달리는 상대방에게도 실시간 위치는 공유되지 않아요</li>
+      <li><b>알림 설정</b> — 켬/끔 여부가 기기에만 저장돼요 (서버로 전송 안 됨)</li>
+    </ul>
+    <span class="pill">서버에 위치 좌표 저장 안 함</span>
+    <span class="pill">실시간 위치 공유 없음</span>
+    <span class="pill">전화번호·이메일 수집 안 함</span>
+  </section>
+
+  <section>
+    <div class="sec-eyebrow">02 — 이용 목적</div>
+    <h2>이 정보로 무엇을 하나요</h2>
+    <ul>
+      <li>친구와 함께 달리기 세션을 진행하고, 두 사람의 결과(거리·시간)를 합산해서 보여줘요</li>
+      <li>'우리' 탭에서 함께 쌓은 기록(총 거리, 주간 스트릭, 마일스톤)을 계산해서 보여줘요</li>
+      <li>서비스 부정 이용을 막고, 문의에 답해요</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="sec-eyebrow">03 — 보관과 삭제</div>
+    <h2>얼마나 보관하고, 어떻게 지워지나요</h2>
+    <p>
+      <b>설정 → 회원탈퇴</b>를 누르면 계정 정보, 친구 연결 정보, 초대 코드가 즉시 삭제돼요.
+      함께 달렸던 상대방 화면에 남아있는 합산 기록까지 지우고 싶다면 아래 문의처로 연락해 주세요.
+    </p>
+  </section>
+
+  <section>
+    <div class="sec-eyebrow">04 — 제3자 제공</div>
+    <h2>다른 곳에 넘기나요</h2>
+    <p>
+      이용자의 개인정보를 판매하거나 광고 목적으로 외부에 제공하지 않아요.
+      서비스 인프라로 Google Firebase(Firestore, Authentication)를 쓰고 있고,
+      Firebase를 통해 처리되는 정보에는 Google의
+      <a href="https://policies.google.com/privacy" style="color:var(--accent)">개인정보처리방침</a>이 함께 적용돼요.
+    </p>
+  </section>
+
+  <section>
+    <div class="sec-eyebrow">05 — 광고와 추적</div>
+    <h2>광고를 보여주거나 추적하지 않아요</h2>
+    <p>앱 안에 광고를 게재하지 않고, 이용자를 추적하는 SDK도 쓰지 않아요.</p>
+  </section>
+
+  <section>
+    <div class="sec-eyebrow">06 — 만 14세 미만</div>
+    <h2>아동 대상 서비스가 아니에요</h2>
+    <p>GoingOn은 만 14세 미만 아동을 대상으로 하지 않아요.</p>
+  </section>
+
+  <section>
+    <div class="sec-eyebrow">07 — 이용자의 권리</div>
+    <h2>언제든 직접 바꾸거나 지울 수 있어요</h2>
+    <ul>
+      <li>설정에서 닉네임 변경, 알림 설정 변경이 언제든 가능해요</li>
+      <li>설정 → 회원탈퇴로 계정을 <span class="warn-pill">완전히 삭제</span>할 수 있어요</li>
+      <li>그 밖에 열람·정정·삭제를 원하면 아래 문의처로 연락해 주세요</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="sec-eyebrow">08 — 정책 변경</div>
+    <h2>바뀌면 알려드려요</h2>
+    <p>이 정책이 바뀌면 앱 내 공지 또는 이 페이지 갱신을 통해 알려드려요.</p>
+  </section>
+
+  <div class="card">
+    <div class="sec-eyebrow">문의처</div>
+    <h2>더 궁금한 게 있다면</h2>
+    <p>개인정보 관련 문의나 삭제 요청은 아래 이메일로 연락해 주세요.</p>
+    <p><a href="mailto:ss177129@gmail.com">ss177129@gmail.com</a></p>
+  </div>
+
+  <div class="foot">GoingOn (고잉온) · 멀리 있어도, 함께</div>
+</div>
