@@ -19,13 +19,15 @@ class AuthService {
       await _auth.signInAnonymously();
     }
     final code = _generateInviteCode();
-    await _db.collection('users').doc(uid).set({
+    final batch = _db.batch();
+    batch.set(_db.collection('users').doc(uid), {
       'name': nickname,
       'inviteCode': code,
       'friends': <String>[],
       'createdAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
-    await _db.collection('inviteCodes').doc(code).set({'uid': uid});
+    batch.set(_db.collection('inviteCodes').doc(code), {'uid': uid});
+    await batch.commit();
   }
 
   Future<Map<String, dynamic>?> myProfile() async {
