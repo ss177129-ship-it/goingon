@@ -117,7 +117,9 @@ class _SplashGateState extends State<SplashGate>
                 AnimatedBuilder(
                   animation: _pulse,
                   builder: (_, __) {
-                    final s = 1 + _pulse.value * .09;
+                    // 네이티브 런치스크린(brand_mark.png)과 같은 단색 스타일 —
+                    // 앱이 켜지는 순간 그림이 안 바뀌어야 하나의 화면처럼 보여요
+                    final s = 1 + _pulse.value * .16;
                     return SizedBox(
                       width: 88, height: 54,
                       child: Stack(children: [
@@ -129,13 +131,7 @@ class _SplashGateState extends State<SplashGate>
                               width: 50, height: 50,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: RadialGradient(
-                                  center: const Alignment(.24, 0),
-                                  colors: [
-                                    GoColors.lime.withOpacity(.6),
-                                    GoColors.lime.withOpacity(.12),
-                                  ],
-                                ),
+                                color: GoColors.lime.withOpacity(.4),
                                 border: Border.all(
                                     color: GoColors.limeDark, width: 2),
                               ),
@@ -145,18 +141,12 @@ class _SplashGateState extends State<SplashGate>
                         Positioned(
                           right: 4, top: 2,
                           child: Transform.scale(
-                            scale: 1 + (1 - _pulse.value) * .09,
+                            scale: 1 + (1 - _pulse.value) * .16,
                             child: Container(
                               width: 50, height: 50,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: RadialGradient(
-                                  center: const Alignment(-.24, 0),
-                                  colors: [
-                                    GoColors.coral.withOpacity(.5),
-                                    GoColors.coral.withOpacity(.1),
-                                  ],
-                                ),
+                                color: GoColors.coral.withOpacity(.35),
                                 border: Border.all(
                                     color: GoColors.coralDark, width: 2),
                               ),

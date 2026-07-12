@@ -41,7 +41,6 @@ flutter:
 flutter_native_splash:
   color: "#F0EAE0"
   color_dark: "#F0EAE0"
-  image: assets/splash/brand_mark.png
   ios: true
   android: false
   web: false
