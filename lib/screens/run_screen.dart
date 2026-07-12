@@ -220,7 +220,7 @@ class _RunScreenState extends State<RunScreen>
           GestureDetector(
             onLongPress: _finish,
             child: Container(
-              width: 56, height: 56,
+              width: 52, height: 52,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: GoColors.ink.withOpacity(.07),

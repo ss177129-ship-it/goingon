@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ]),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               Text('goingon', style: GoTheme.serif(20, color: GoColors.dim)),
               const SizedBox(height: 18),
               Text('멀리 있어도,\n함께 달려요',

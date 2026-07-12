@@ -154,11 +154,13 @@ class _LobbyScreenState extends State<LobbyScreen> {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             const Text('함께 달리기 시작',
                 style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                    letterSpacing: 2, color: GoColors.dim)),
+                    letterSpacing: 1.4, color: GoColors.dim)),
+            const SizedBox(height: 10),
             Text('$_countdown', style: GoTheme.serif(128)),
+            const SizedBox(height: 10),
             Text('나 & ${widget.partnerName}',
                 style: const TextStyle(fontSize: 13, color: GoColors.mid)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Row(mainAxisSize: MainAxisSize.min, children: [
               _cdDot(GoColors.lime, GoColors.limeDark),
               const Padding(
@@ -323,7 +325,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
             ),
           ),
           // ── 늦음 링크 ──
-          if (!_meReady)
+          if (!_meReady) ...[
+            const SizedBox(height: 10),
             Center(
               child: TextButton(
                 onPressed: () => setState(() => _isLate = !_isLate),
@@ -334,10 +337,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
                         color: _isLate ? GoColors.amber : GoColors.dim)),
               ),
             ),
+          ],
           const Spacer(),
           // ── 액션 버튼 ──
           Padding(
-            padding: const EdgeInsets.fromLTRB(28, 0, 28, 14),
+            padding: const EdgeInsets.fromLTRB(28, 14, 28, 14),
             child: SizedBox(
               width: double.infinity,
               child: _actionButton(),
@@ -405,7 +409,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       Text(name,
           style: TextStyle(
               fontSize: 12, fontWeight: FontWeight.w600, color: line)),
-      const SizedBox(height: 4),
+      const SizedBox(height: 7),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         decoration: BoxDecoration(

@@ -239,7 +239,7 @@ class _FinishScreenState extends State<FinishScreen> {
   Widget _togetherStat(String v, String label) {
     return Expanded(
       child: Column(children: [
-        Text(v, style: GoTheme.serif(24, color: GoColors.ink)),
+        Text(v, style: GoTheme.serif(26, color: GoColors.ink)),
         const SizedBox(height: 2),
         Text(label,
             style: TextStyle(fontSize: 8, letterSpacing: .8,
