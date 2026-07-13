@@ -20,9 +20,9 @@
 
 ## 아키텍처
 
-- Flutter + Firebase (익명 인증, Firestore). 백엔드 서버 없음
-- `lib/screens/`: main.dart(스플래시 게이트) → login(닉네임만) → home → invite(초대코드) → lobby(준비단계) → run(GPS) → finish(합산+공유카드)
-- `lib/services/`: auth(익명+초대코드 발급), friend(코드로 양방향 연결), run(세션 생명주기), location(GPS+보정)
+- Flutter + Firebase (Apple 로그인, Firestore). 백엔드 서버 없음
+- `lib/screens/`: main.dart(스플래시 게이트) → login(Apple 로그인) → nickname(닉네임 설정, 로그인 성공 후 항상 거침) → home → invite(초대코드) → lobby(준비단계) → run(GPS) → finish(합산+공유카드)
+- `lib/services/`: auth(Apple 로그인+초대코드 발급), friend(코드로 양방향 연결), run(세션 생명주기), location(GPS+보정)
 - Firestore: `users/{uid}` {name, inviteCode, friends[]}, `inviteCodes/{code}` {uid}, `sessions/{id}` {hostId, guestId, participants, status: waiting|ready|running|finished|cancelled, ready{}, results{uid:{seconds,km,kcal}}}
 - 보안 규칙: `firestore.rules` (콘솔에 게시된 버전과 동기화 유지할 것. 세션은 hostId/guestId 직접 비교 — in participants 쓰면 쿼리 권한 거부남)
 
@@ -30,7 +30,7 @@
 
 - **러닝 중 실시간 동기화 없음** — 함께 시작하고, 끝나면 합산. 라이브 합산은 v1.1 (개발 난이도의 절반이 여기 있어서 의도적으로 잘랐음)
 - **백그라운드 위치 추적 없음** — 심사 난이도 급상승 때문에 v1.1로. Info.plist는 WhenInUse만
-- **익명 로그인 + 닉네임(기본) + Apple 로그인 연결(추가됨)** — 신규 온보딩은 여전히 닉네임만으로 마찰 0. 설정에서 기존 익명 계정에 Apple 계정을 연결(link)할 수 있어 로그아웃/재설치 후 복구가 가능함(`AuthService.signInWithApple`). 카카오/구글 등 Apple 이외의 소셜로그인은 도입 시 'Sign in with Apple' 의무가 새로 생기므로 계속 v1.1로 미룸 — Apple 하나만 추가하는 건 그 규정과 무관
+- **Apple 로그인 필수 — 익명 로그인 없음** — 모든 가입은 Apple 인증(`AuthService.signInWithApple`)을 거쳐야 하고, 성공 후에는 이름을 받았든 안 받았든 항상 `NicknameScreen`을 거쳐 홈으로 이동. 계정이 실제 신원에 묶여 있어 로그아웃/재설치 후에도 항상 복구됨. Google 로그인은 로그인 화면에 자리만 준비해뒀고(`// TODO: Google 버튼 자리`) 아직 미구현 — Apple이 이미 있으므로 추가해도 'Sign in with Apple' 의무와 무관. 카카오 등 다른 소셜로그인은 계속 v1.1로 미룸
 - **데모 모드** (`demo: true` 플래그, lobby/run/finish 관통) — 가상 파트너 '지수'와 전체 플로우 체험. 혼자 테스트용 + **Apple 심사관용이므로 절대 제거 금지**
 - **완료 화면 공유 카드** — RepaintBoundary 캡처 → share_plus. 셋로그식 성장 엔진이라 완성도 유지가 전략적으로 중요
 

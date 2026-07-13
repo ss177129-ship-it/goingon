@@ -3,9 +3,11 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../services/auth_service.dart';
 import '../theme.dart';
+import 'nickname_screen.dart';
 import 'root_screen.dart';
 
-/// 온보딩: Apple로 계속하거나, 닉네임 하나만 받고 바로 시작 (마찰 0 전략)
+/// 온보딩: 로그인 방법을 고르는 화면. 인증에 성공하면 항상 닉네임 설정
+/// 화면(NicknameScreen)을 거쳐 홈으로 이동 — 익명 로그인은 없음.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -14,29 +16,20 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _controller = TextEditingController();
   bool _loading = false;
 
-  void _goHome() {
-    Navigator.pushAndRemoveUntil(context,
-        MaterialPageRoute(builder: (_) => const RootScreen()), (_) => false);
-  }
-
-  Future<void> _start() async {
-    final name = _controller.text.trim();
-    if (name.isEmpty) return;
-    setState(() => _loading = true);
-    try {
-      await AuthService().signInAnonymously(name);
-      if (!mounted) return;
-      _goHome();
-    } catch (e) {
-      if (mounted) {
-        setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('연결에 실패했어요. 인터넷을 확인해 주세요.')),
-        );
-      }
+  /// 인증 성공 후 공통 분기 — 예전에 가입한 적 있으면(재로그인) 바로 홈,
+  /// 신규면 닉네임 설정 화면으로 (제공자가 준 이름이 있으면 미리 채워줌)
+  Future<void> _afterAuth(String? name) async {
+    final profile = await AuthService().myProfile();
+    if (!mounted) return;
+    if (profile != null) {
+      Navigator.pushAndRemoveUntil(context,
+          MaterialPageRoute(builder: (_) => const RootScreen()), (_) => false);
+    } else {
+      Navigator.pushReplacement(context, MaterialPageRoute(
+        builder: (_) => NicknameScreen(prefill: name),
+      ));
     }
   }
 
@@ -45,24 +38,27 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final name = await AuthService().signInWithApple();
       if (!mounted) return;
-      if (name != null) {
-        _goHome();
-        return;
-      }
-      // 이름을 못 받았어요 — 예전에 가입한 적 있는 재로그인인지 확인
-      final profile = await AuthService().myProfile();
-      if (!mounted) return;
-      if (profile != null) {
-        _goHome();
-      } else {
-        // 진짜 신규인데 이름이 안 왔어요 — 닉네임 입력으로 자연스럽게 이어짐
-        setState(() => _loading = false);
-      }
+      await _afterAuth(name);
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Apple 로그인에 실패했어요. 다시 시도해 주세요.')),
+      );
+    }
+  }
+
+  Future<void> _continueWithGoogle() async {
+    setState(() => _loading = true);
+    try {
+      final name = await AuthService().signInWithGoogle();
+      if (!mounted) return;
+      await _afterAuth(name);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Google 로그인에 실패했어요. 다시 시도해 주세요.')),
       );
     }
   }
@@ -112,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 8),
               const Text('소중한 사람과 발을 맞추는 곳',
                   style: TextStyle(fontSize: 13, color: GoColors.mid)),
-              const SizedBox(height: 36),
+              const Spacer(),
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -123,50 +119,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   text: 'Apple로 계속하기',
                 ),
               ),
-              const SizedBox(height: 18),
-              Row(children: [
-                Expanded(child: Divider(color: GoColors.line)),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Text('또는',
-                      style: TextStyle(fontSize: 11, color: GoColors.dim)),
-                ),
-                Expanded(child: Divider(color: GoColors.line)),
-              ]),
-              const SizedBox(height: 18),
-              TextField(
-                controller: _controller,
-                textAlign: TextAlign.center,
-                maxLength: 10,
-                decoration: InputDecoration(
-                  hintText: '뭐라고 부르면 될까요?',
-                  counterText: '',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: GoColors.line),
-                  ),
-                ),
-                onSubmitted: (_) => _start(),
-              ),
-              const Spacer(),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: GoColors.ink,
-                    padding: const EdgeInsets.symmetric(vertical: 17),
+                height: 52,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    side: BorderSide(color: GoColors.ink.withOpacity(.15)),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
                   ),
-                  onPressed: _loading ? null : _start,
-                  child: _loading
-                      ? const SizedBox(
-                          width: 20, height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : Text('시작하기',
-                          style: GoTheme.serif(19, color: GoColors.paper)),
+                  onPressed: _loading ? null : _continueWithGoogle,
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    const Text('G',
+                        style: TextStyle(fontWeight: FontWeight.w700,
+                            fontSize: 16, color: Color(0xFF4285F4))),
+                    const SizedBox(width: 9),
+                    Text('Google로 계속하기',
+                        style: TextStyle(fontSize: 15,
+                            fontWeight: FontWeight.w600, color: GoColors.ink)),
+                  ]),
                 ),
               ),
               const SizedBox(height: 12),

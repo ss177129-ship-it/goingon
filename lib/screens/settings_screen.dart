@@ -96,27 +96,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// 익명 계정에 Apple 자격증명을 연결 — 데이터는 그대로 두고 복구 가능하게 만듦
-  Future<void> _linkApple() async {
-    setState(() => _busy = true);
-    try {
-      await _auth.signInWithApple();
-      if (!mounted) return;
-      setState(() => _busy = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Apple 계정을 연결했어요. 이제 로그아웃해도 안전해요.')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _busy = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('연결에 실패했어요. 다시 시도해 주세요.')),
-      );
-    }
-  }
-
-  /// Apple 계정으로 연결된 뒤에만 노출됨 — 연결 전에는 로그아웃하면
-  /// 계정을 복구할 수 없어서 이 항목 자체를 숨김(1-6 참고)
+  /// 모든 계정이 Apple 로그인에 묶여 있으므로 로그아웃해도 항상 복구 가능
   Future<void> _logout() async {
     final confirmed = await _confirm(
       title: '로그아웃할까요?',
@@ -216,19 +196,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onChanged: _toggleNotif,
         ),
       ),
-      if (_auth.user?.isAnonymous ?? true)
-        _row(
-          icon: Icons.link,
-          title: 'Apple 계정 연결하기',
-          subtitle: '재설치해도 로그인이 유지돼요',
-          onTap: _busy ? null : _linkApple,
-        )
-      else
-        _row(
-          icon: Icons.logout,
-          title: '로그아웃',
-          onTap: _busy ? null : _logout,
-        ),
+      _row(
+        icon: Icons.logout,
+        title: '로그아웃',
+        onTap: _busy ? null : _logout,
+      ),
       _row(
         icon: Icons.person_remove_outlined,
         title: '회원탈퇴',

@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'screens/login_screen.dart';
+import 'screens/nickname_screen.dart';
 import 'screens/root_screen.dart';
 import 'services/auth_service.dart';
 import 'theme.dart';
@@ -19,6 +21,7 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await GoogleSignIn.instance.initialize();
   runApp(const GoingOnApp());
 }
 
@@ -77,8 +80,8 @@ class _SplashGateState extends State<SplashGate>
     final user = await Future.any([gated, skipped]);
 
     // 로그인은 됐지만(Apple 인증 완료) 프로필(닉네임/초대코드)이 아직
-    // 없는 경우가 있음 — 예: 이름 입력 전에 앱이 죽었다가 재실행된 경우.
-    // 그대로 홈으로 보내면 빈 프로필로 갇히므로, 프로필까지 있어야 홈으로 보냄
+    // 없는 경우가 있음 — 예: 닉네임 입력 전에 앱이 죽었다가 재실행된 경우.
+    // 그대로 홈으로 보내면 빈 프로필로 갇히므로, 그 경우엔 닉네임 화면으로 보냄
     var hasProfile = false;
     if (user != null) {
       hasProfile = await AuthService().myProfile() != null;
@@ -89,8 +92,13 @@ class _SplashGateState extends State<SplashGate>
     }
     if (!mounted) return;
     setState(() {
-      _destination =
-          (user != null && hasProfile) ? const RootScreen() : const LoginScreen();
+      if (user == null) {
+        _destination = const LoginScreen();
+      } else if (!hasProfile) {
+        _destination = const NicknameScreen();
+      } else {
+        _destination = const RootScreen();
+      }
     });
   }
 

@@ -4,13 +4,14 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
-/// MVP 인증 전략: 익명 로그인 + 닉네임을 기본으로 하되, Apple 로그인을
-/// 기존 익명 계정에 "연결"할 수 있게 함 — 마찰 0 온보딩은 유지하면서
-/// 로그아웃/재설치 후에도 복구 가능하게 하는 게 목적. 카카오/구글 등
-/// 다른 소셜로그인은 도입 시 'Sign in with Apple' 의무가 생기므로 v1.1로 미룸
-/// (Apple 하나만 추가하는 건 그 규정과 무관해서 지금 넣어도 안전함).
+/// 인증 전략: Apple 또는 Google 로그인 필수 — 익명 로그인 없음.
+/// 어떤 방법으로 로그인하든 성공 후에는 항상 닉네임 설정 화면(NicknameScreen)을
+/// 거쳐 홈으로 이동 — 제공자가 이름을 줬든 안 줬든 흐름이 하나로 통일됨.
+/// 카카오 등 Apple 이외의 다른 소셜로그인은 도입 시 'Sign in with Apple' 의무가
+/// 생기므로 계속 미룸 — Apple이 이미 있으므로 Google 추가는 그 규정과 무관.
 class AuthService {
   final _auth = FirebaseAuth.instance;
   final _db = FirebaseFirestore.instance;
@@ -18,23 +19,13 @@ class AuthService {
   User? get user => _auth.currentUser;
   String get uid => _auth.currentUser!.uid;
 
-  /// 앱 첫 실행: 익명 계정 생성 + 프로필/초대 코드 발급
-  Future<void> signInAnonymously(String nickname) async {
-    if (_auth.currentUser == null) {
-      await _auth.signInAnonymously();
-    }
-    await _ensureProfile(nickname);
-  }
-
-  /// Apple로 로그인. 이미 익명 세션이 있으면(설정에서 "계정 연결") 같은 uid에
-  /// 자격증명만 덧붙여 친구·기록을 그대로 보존하고, 세션이 없으면(로그인 화면
-  /// 최초 진입) 새로 로그인 — 예전에 같은 Apple 계정으로 가입했다면 Firebase가
+  /// Apple로 로그인/재로그인. 예전에 같은 Apple 계정으로 가입했다면 Firebase가
   /// 같은 uid를 그대로 돌려줘서 재설치 후 복구가 됨.
   ///
-  /// Apple은 이름을 최초 인가 시 단 한 번만 내려주므로, 받았으면 그 자리에서
-  /// 프로필까지 만들고 이름을 반환함. 못 받았으면 null을 반환 — 이미 프로필이
-  /// 있는 재로그인인지, 이름을 새로 물어봐야 하는 신규인지는 호출부에서
-  /// myProfile()로 판단.
+  /// 프로필은 여기서 만들지 않음 — Apple이 이름을 줬는지 여부와 관계없이
+  /// 항상 NicknameScreen을 거쳐 ensureProfile()을 호출하는 것으로 통일.
+  /// 반환값은 Apple이 최초 인가 시에만 주는 이름(있으면 닉네임 화면의
+  /// 초기값으로 사용, 없으면 null).
   Future<String?> signInWithApple() async {
     final rawNonce = _generateNonce();
     final nonce = _sha256(rawNonce);
@@ -50,26 +41,30 @@ class AuthService {
       rawNonce: rawNonce,
       accessToken: appleCredential.authorizationCode,
     );
-
-    if (_auth.currentUser != null && _auth.currentUser!.isAnonymous) {
-      await _auth.currentUser!.linkWithCredential(oauthCredential);
-    } else {
-      await _auth.signInWithCredential(oauthCredential);
-    }
+    await _auth.signInWithCredential(oauthCredential);
 
     final name = [appleCredential.givenName, appleCredential.familyName]
         .whereType<String>()
         .join(' ')
         .trim();
-    if (name.isEmpty) return null;
-    await _ensureProfile(name);
-    return name;
+    return name.isEmpty ? null : name;
+  }
+
+  /// Google로 로그인/재로그인. Apple과 동일하게 프로필은 여기서 만들지 않고
+  /// 이름만 반환 — 항상 NicknameScreen을 거쳐 홈으로 가는 흐름으로 통일.
+  /// Google은 매번 이름을 주므로 대부분 닉네임 화면에 바로 채워질 것.
+  Future<String?> signInWithGoogle() async {
+    final googleUser = await GoogleSignIn.instance.authenticate();
+    final idToken = googleUser.authentication.idToken;
+    final credential = GoogleAuthProvider.credential(idToken: idToken);
+    await _auth.signInWithCredential(credential);
+    return googleUser.displayName;
   }
 
   /// 초대 코드 발급을 포함한 프로필 생성 — 이미 프로필 문서가 있으면
-  /// (계정 연결 케이스) 아무것도 하지 않음. 그렇지 않으면 친구 목록/
+  /// (재로그인 케이스) 아무것도 하지 않음. 그렇지 않으면 친구 목록/
   /// 초대코드가 새로 덮어써져 기존 데이터를 잃게 됨
-  Future<void> _ensureProfile(String nickname) async {
+  Future<void> ensureProfile(String nickname) async {
     final ref = _db.collection('users').doc(uid);
     final existing = await ref.get();
     if (existing.exists) return;
