@@ -116,6 +116,30 @@ class _RunScreenState extends State<RunScreen>
     super.dispose();
   }
 
+  /// 실수 종료 방지 — 마치기 전 한 번 확인
+  Future<void> _confirmFinish() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: GoColors.paper,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text('오늘 러닝을 마칠까요?', style: GoTheme.serif(20)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('계속 달리기', style: TextStyle(color: GoColors.mid)),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: GoColors.ink),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('마치기', style: GoTheme.serif(15, color: GoColors.paper)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) _finish();
+  }
+
   String get _timeText {
     final m = _seconds ~/ 60, s = _seconds % 60;
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
@@ -242,7 +266,7 @@ class _RunScreenState extends State<RunScreen>
           const SizedBox(height: 10),
           // ── 멈춤 ──
           GestureDetector(
-            onLongPress: _finishing ? null : _finish,
+            onLongPress: _finishing ? null : _confirmFinish,
             child: Container(
               width: 52, height: 52,
               decoration: BoxDecoration(
