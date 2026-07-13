@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'screens/login_screen.dart';
 import 'screens/root_screen.dart';
+import 'services/auth_service.dart';
 import 'theme.dart';
 
 import 'firebase_options.dart';
@@ -75,12 +76,21 @@ class _SplashGateState extends State<SplashGate>
 
     final user = await Future.any([gated, skipped]);
 
+    // 로그인은 됐지만(Apple 인증 완료) 프로필(닉네임/초대코드)이 아직
+    // 없는 경우가 있음 — 예: 이름 입력 전에 앱이 죽었다가 재실행된 경우.
+    // 그대로 홈으로 보내면 빈 프로필로 갇히므로, 프로필까지 있어야 홈으로 보냄
+    var hasProfile = false;
+    if (user != null) {
+      hasProfile = await AuthService().myProfile() != null;
+    }
+
     if (isFirstLaunch) {
       await prefs.setBool(_kHasLaunchedBeforeKey, true);
     }
     if (!mounted) return;
     setState(() {
-      _destination = user != null ? const RootScreen() : const LoginScreen();
+      _destination =
+          (user != null && hasProfile) ? const RootScreen() : const LoginScreen();
     });
   }
 

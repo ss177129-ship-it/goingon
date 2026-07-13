@@ -48,6 +48,7 @@ class AuthService {
     final oauthCredential = OAuthProvider('apple.com').credential(
       idToken: appleCredential.identityToken,
       rawNonce: rawNonce,
+      accessToken: appleCredential.authorizationCode,
     );
 
     if (_auth.currentUser != null && _auth.currentUser!.isAnonymous) {
