@@ -44,6 +44,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
   int _step = 0;
   bool _isLate = false;
   bool _partnerReady = false;
+  bool _partnerLate = false;
   int? _countdown;
 
   bool get _meReady => _step == _steps.length - 1;
@@ -52,9 +53,16 @@ class _LobbyScreenState extends State<LobbyScreen> {
   void initState() {
     super.initState();
     if (widget.demo) {
-      Future.delayed(const Duration(milliseconds: 2500), () {
+      Future.delayed(const Duration(milliseconds: 1200), () {
         if (!mounted) return;
-        setState(() => _partnerReady = true);
+        setState(() => _partnerLate = true);
+      });
+      Future.delayed(const Duration(milliseconds: 4000), () {
+        if (!mounted) return;
+        setState(() {
+          _partnerLate = false;
+          _partnerReady = true;
+        });
         _maybeCountdown();
       });
       return;
@@ -69,7 +77,13 @@ class _LobbyScreenState extends State<LobbyScreen> {
       final ready = Map<String, dynamic>.from(data['ready'] ?? {});
       final partnerReady =
           ready.entries.any((e) => e.key != _uid && e.value == true);
-      setState(() => _partnerReady = partnerReady);
+      final late = Map<String, dynamic>.from(data['late'] ?? {});
+      final partnerLate =
+          late.entries.any((e) => e.key != _uid && e.value == true);
+      setState(() {
+        _partnerReady = partnerReady;
+        _partnerLate = partnerLate;
+      });
       _maybeCountdown();
       if (data['status'] == 'running' && _countdown == null) _goRun();
     });
@@ -212,8 +226,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
               Container(width: 1, height: 48, color: GoColors.line),
               Expanded(
                   child: _runner(widget.partnerName, _partnerReady,
+                      isLate: _partnerLate,
                       fill: GoColors.coral, line: GoColors.coralDark,
-                      waitingText: '📍 도착했어요')),
+                      waitingText: '도착했어요')),
             ]),
           ),
           // ── 스텝 도트 ──
@@ -329,7 +344,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
             const SizedBox(height: 10),
             Center(
               child: TextButton(
-                onPressed: () => setState(() => _isLate = !_isLate),
+                onPressed: () {
+                  final next = !_isLate;
+                  setState(() => _isLate = next);
+                  if (!widget.demo) _runs.setLate(widget.sessionId, _uid, next);
+                },
                 child: Text(_isLate ? '늦음 취소' : '조금 늦을 것 같아요',
                     style: TextStyle(fontSize: 11,
                         fontWeight:

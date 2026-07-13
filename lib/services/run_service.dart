@@ -41,6 +41,13 @@ class RunService {
     });
   }
 
+  /// "조금 늦을 것 같아요" — 상대 로비 화면에 실시간으로 반영됨
+  Future<void> setLate(String sessionId, String uid, bool isLate) async {
+    await _db.collection('sessions').doc(sessionId).update({
+      'late.$uid': isLate,
+    });
+  }
+
   /// 둘 다 준비되면 호출 — 동시에 출발
   Future<void> startRun(String sessionId) async {
     await _db.collection('sessions').doc(sessionId).update({
