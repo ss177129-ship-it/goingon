@@ -66,8 +66,55 @@ class _UsScreenState extends State<UsScreen> {
     return ts is Timestamp ? ts.toDate() : null;
   }
 
+  String? _moodField(Map<String, dynamic> session, String uid) {
+    final results = session['results'];
+    if (results is! Map) return null;
+    final r = results[uid];
+    if (r is! Map) return null;
+    final v = r['mood'];
+    return v is String ? v : null;
+  }
+
   DateTime _mondayOf(DateTime d) =>
       DateTime(d.year, d.month, d.day).subtract(Duration(days: d.weekday - 1));
+
+  /// 새 데이터 없이 기존 startedAt·km에서 계산하는 파생 스토리 라벨 —
+  /// 행마다 최대 하나만 붙음 (첫 함께 달리기 > 가장 멀리 간 날 > 첫 새벽/밤 순 우선)
+  Map<String, String> _storyLabels(
+      List<Map<String, dynamic>> ascending, String me, String partnerUid) {
+    final labels = <String, String>{};
+    if (ascending.isEmpty) return labels;
+
+    labels[ascending.first['id'] as String] = '첫 함께 달리기';
+
+    var maxKm = -1.0;
+    String? maxId;
+    for (final s in ascending) {
+      final km = _combinedKm(s, me, partnerUid);
+      if (km > maxKm) {
+        maxKm = km;
+        maxId = s['id'] as String;
+      }
+    }
+    if (maxId != null) labels.putIfAbsent(maxId, () => '가장 멀리 간 날');
+
+    var dawnFound = false;
+    var nightFound = false;
+    for (final s in ascending) {
+      final started = _startedAt(s);
+      if (started == null) continue;
+      final id = s['id'] as String;
+      if (!dawnFound && started.hour >= 5 && started.hour < 7) {
+        labels.putIfAbsent(id, () => '첫 새벽 러닝');
+        dawnFound = true;
+      }
+      if (!nightFound && started.hour >= 22) {
+        labels.putIfAbsent(id, () => '첫 밤 러닝');
+        nightFound = true;
+      }
+    }
+    return labels;
+  }
 
   // ── 화면 ──
 
@@ -197,6 +244,7 @@ class _UsScreenState extends State<UsScreen> {
     final count = sessions.length;
 
     final ascending = sessions.reversed.toList();
+    final storyLabels = _storyLabels(ascending, me, partnerUid);
     final firstStarted = _startedAt(ascending.first);
     final daysTogether =
         firstStarted == null ? 0 : DateTime.now().difference(firstStarted).inDays;
@@ -452,7 +500,10 @@ class _UsScreenState extends State<UsScreen> {
       ),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(children: sessions.map((s) => _momentRow(s, me, partnerUid)).toList()),
+        child: Column(children: sessions
+            .map((s) => _momentRow(s, me, partnerUid, partnerName,
+                storyLabel: storyLabels[s['id']]))
+            .toList()),
       ),
       Padding(
         padding: const EdgeInsets.fromLTRB(0, 14, 0, 4),
@@ -538,7 +589,9 @@ class _UsScreenState extends State<UsScreen> {
     );
   }
 
-  Widget _momentRow(Map<String, dynamic> s, String me, String partnerUid) {
+  Widget _momentRow(
+      Map<String, dynamic> s, String me, String partnerUid, String partnerName,
+      {String? storyLabel}) {
     final started = _startedAt(s);
     final km = _combinedKm(s, me, partnerUid);
     final minutes = (_field(s, me, 'seconds').toInt() / 60).round();
@@ -547,6 +600,12 @@ class _UsScreenState extends State<UsScreen> {
     final timeOfDay = started == null
         ? ''
         : '${started.hour < 12 ? '오전' : '오후'} ${((started.hour + 11) % 12) + 1}시';
+    final myMood = _moodField(s, me);
+    final partnerMood = _moodField(s, partnerUid);
+    final moodLine = [
+      if (myMood != null) "나 '$myMood'",
+      if (partnerMood != null) "$partnerName '$partnerMood'",
+    ].join(' · ');
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 13),
@@ -566,12 +625,30 @@ class _UsScreenState extends State<UsScreen> {
         const SizedBox(width: 14),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (storyLabel != null) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: GoColors.lime.withOpacity(.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(storyLabel,
+                    style: const TextStyle(fontSize: 9,
+                        fontWeight: FontWeight.w600, color: GoColors.limeDark)),
+              ),
+            ],
             Text('함께 $minutes분 달렸어요',
                 style: const TextStyle(
                     fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 3),
             Text('${km.toStringAsFixed(1)}km · $timeOfDay',
                 style: const TextStyle(fontSize: 11, color: GoColors.mid)),
+            if (moodLine.isNotEmpty) ...[
+              const SizedBox(height: 3),
+              Text(moodLine,
+                  style: const TextStyle(fontSize: 10, color: GoColors.coralDark)),
+            ],
           ]),
         ),
       ]),
