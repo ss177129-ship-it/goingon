@@ -96,19 +96,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _logout() async {
-    final confirmed = await _confirm(
-      title: '로그아웃할까요?',
-      body: '언제든 같은 기기에서 다시 로그인할 수 있어요.',
-      confirmLabel: '로그아웃',
-    );
-    if (confirmed != true) return;
-    await AuthService().signOut();
-    if (!mounted) return;
-    Navigator.pushAndRemoveUntil(context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);
-  }
-
   Future<void> _deleteAccount() async {
     final confirmed = await _confirm(
       title: '정말 탈퇴할까요?',
@@ -194,11 +181,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           activeThumbColor: GoColors.limeDark,
           onChanged: _toggleNotif,
         ),
-      ),
-      _row(
-        icon: Icons.logout,
-        title: '로그아웃',
-        onTap: _busy ? null : _logout,
       ),
       _row(
         icon: Icons.person_remove_outlined,
