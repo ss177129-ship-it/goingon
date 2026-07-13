@@ -28,6 +28,8 @@ dependencies:
 
   # 상태 유지
   shared_preferences: ^2.3.2
+  sign_in_with_apple: ^8.1.0
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:
