@@ -40,10 +40,15 @@ class _FinishScreenState extends State<FinishScreen> {
   final _cardKey = GlobalKey();
   Map<String, dynamic>? _partnerResult;
   StreamSubscription? _sub;
+  bool _longWait = false;
+  Timer? _waitTimer;
 
   @override
   void initState() {
     super.initState();
+    _waitTimer = Timer(const Duration(minutes: 5), () {
+      if (mounted && _waiting) setState(() => _longWait = true);
+    });
     if (widget.demo) {
       Future.delayed(const Duration(seconds: 2), () {
         if (!mounted) return;
@@ -72,6 +77,7 @@ class _FinishScreenState extends State<FinishScreen> {
   @override
   void dispose() {
     _sub?.cancel();
+    _waitTimer?.cancel();
     super.dispose();
   }
 
@@ -208,7 +214,10 @@ class _FinishScreenState extends State<FinishScreen> {
             ]),
             if (_waiting) ...[
               const SizedBox(height: 10),
-              Text('${widget.partnerName}는 아직 달리는 중이에요',
+              Text(
+                  _longWait
+                      ? "${widget.partnerName}의 기록이 도착하면 '우리' 탭에 합산될 거예요. 먼저 쉬고 있어요."
+                      : '${widget.partnerName}는 아직 달리는 중이에요',
                   style: TextStyle(
                       fontSize: 11, color: GoColors.ink.withOpacity(.4))),
             ],

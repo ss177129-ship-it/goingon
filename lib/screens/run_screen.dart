@@ -179,9 +179,9 @@ class _RunScreenState extends State<RunScreen>
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1,
                               color: GoColors.coralDark.withOpacity(.6))),
-                      Text('달리는 중',
+                      Text('나란히',
                           style: GoTheme.serif(22, color: GoColors.coralDark)),
-                      const Text('● On Air',
+                      const Text('함께 시작했어요',
                           style: TextStyle(
                               fontSize: 9, color: GoColors.coralDark)),
                     ]),
