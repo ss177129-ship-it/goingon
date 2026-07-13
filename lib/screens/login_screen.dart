@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../theme.dart';
+import 'root_screen.dart';
 
 /// 온보딩: 닉네임 하나만 받고 바로 시작 (마찰 0 전략)
 class LoginScreen extends StatefulWidget {
@@ -21,7 +22,9 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
     try {
       await AuthService().signInAnonymously(name);
-      // authStateChanges가 자동으로 홈으로 보내줘요
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(context,
+          MaterialPageRoute(builder: (_) => const RootScreen()), (_) => false);
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
