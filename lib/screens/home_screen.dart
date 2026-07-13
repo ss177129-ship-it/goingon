@@ -109,13 +109,57 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           TextButton(
             onPressed: () {
-              _runs.cancelSession(sessionId);
               Navigator.pop(ctx);
+              _showDeclineOptions(sessionId);
             },
             child: const Text('나중에',
                 style: TextStyle(color: GoColors.mid, fontSize: 13)),
           ),
         ]),
+      ),
+    );
+  }
+
+  /// "나중에" 선택 시 침묵 대신 한 줄 답장을 고르게 함
+  void _showDeclineOptions(String sessionId) {
+    const options = ['지금은 어려워요', '30분 뒤 어때요?', '오늘은 쉬고 싶어요'];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: GoColors.paper,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(28, 24, 28, 40),
+        child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('어떻게 전할까요?', style: GoTheme.serif(20)),
+              const SizedBox(height: 16),
+              ...options.map((o) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: GoColors.line, width: 1.5),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                        ),
+                        onPressed: () {
+                          _runs.declineSession(sessionId, o);
+                          Navigator.pop(ctx);
+                        },
+                        child: Text(o,
+                            style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: GoColors.ink)),
+                      ),
+                    ),
+                  )),
+            ]),
       ),
     );
   }

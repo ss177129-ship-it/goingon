@@ -71,7 +71,14 @@ class _LobbyScreenState extends State<LobbyScreen> {
       final data = doc.data();
       if (data == null) return;
       if (data['status'] == 'cancelled') {
-        if (mounted) Navigator.pop(context);
+        final declineMessage = data['declineMessage'] as String?;
+        if (!mounted) return;
+        if (declineMessage != null && declineMessage.isNotEmpty) {
+          _sub?.cancel();
+          _showDeclineReply(declineMessage);
+        } else {
+          Navigator.pop(context);
+        }
         return;
       }
       final ready = Map<String, dynamic>.from(data['ready'] ?? {});
@@ -140,6 +147,32 @@ class _LobbyScreenState extends State<LobbyScreen> {
         setState(() => _countdown = _countdown! - 1);
       }
     });
+  }
+
+  /// 상대가 "나중에"에 답장을 남기고 거절했을 때 — 침묵 대신 대화로
+  void _showDeclineReply(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: GoColors.paper,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text('${widget.partnerName}님의 답장', style: GoTheme.serif(20)),
+        content: Text(message,
+            style: const TextStyle(
+                fontSize: 15, color: GoColors.ink, height: 1.5)),
+        actions: [
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: GoColors.ink),
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pop(context);
+            },
+            child: Text('알겠어요', style: GoTheme.serif(15, color: GoColors.paper)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _goRun() {

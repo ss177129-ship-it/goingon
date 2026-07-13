@@ -76,6 +76,14 @@ class RunService {
     });
   }
 
+  /// GO? 요청을 거절하며 한 줄 답장을 남김 (침묵 대신 대화)
+  Future<void> declineSession(String sessionId, String message) async {
+    await _db.collection('sessions').doc(sessionId).update({
+      'status': 'cancelled',
+      'declineMessage': message,
+    });
+  }
+
   /// 특정 상대와 함께 끝낸 세션들 — '우리' 탭 집계용
   /// (hostId/guestId 직접 비교 — participants arrayContains는 규칙상 거부됨)
   Future<List<Map<String, dynamic>>> finishedSessionsWith(
