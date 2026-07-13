@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../services/auth_service.dart';
 import '../services/run_service.dart';
@@ -45,7 +46,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
   bool _isLate = false;
   bool _partnerReady = false;
   bool _partnerLate = false;
+  bool _showTimeoutHelp = false;
   int? _countdown;
+  Timer? _timeoutTimer;
 
   bool get _meReady => _step == _steps.length - 1;
 
@@ -67,6 +70,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
       });
       return;
     }
+    _timeoutTimer = Timer(const Duration(minutes: 3), () {
+      if (mounted && !_partnerReady) setState(() => _showTimeoutHelp = true);
+    });
     _sub = _runs.sessionStream(widget.sessionId).listen((doc) {
       final data = doc.data();
       if (data == null) return;
@@ -188,7 +194,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
   @override
   void dispose() {
     _sub?.cancel();
+    _timeoutTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _notifyPartner() async {
+    await Share.share('지금 고잉온 열어줘! 같이 뛰자');
   }
 
   @override
@@ -394,10 +405,13 @@ class _LobbyScreenState extends State<LobbyScreen> {
           // ── 액션 버튼 ──
           Padding(
             padding: const EdgeInsets.fromLTRB(28, 14, 28, 14),
-            child: SizedBox(
-              width: double.infinity,
-              child: _actionButton(),
-            ),
+            child: Column(children: [
+              SizedBox(width: double.infinity, child: _actionButton()),
+              if (_showTimeoutHelp && !_partnerReady) ...[
+                const SizedBox(height: 12),
+                _timeoutHelp(),
+              ],
+            ]),
           ),
         ]),
       ),
@@ -433,6 +447,59 @@ class _LobbyScreenState extends State<LobbyScreen> {
         const SizedBox(width: 10),
         Text('${widget.partnerName} 기다리는 중',
             style: GoTheme.serif(20, color: GoColors.mid)),
+      ]),
+    );
+  }
+
+  /// 3분 무응답 시 나오는 안내 — 무한 대기 대신 탈출구를 줌
+  Widget _timeoutHelp() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: GoColors.amber.withOpacity(.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: GoColors.amber.withOpacity(.25)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('아직 응답이 없어요. 앱을 안 보고 있을 수 있어요.',
+            style: TextStyle(
+                fontSize: 12, color: GoColors.ink.withOpacity(.7), height: 1.5)),
+        const SizedBox(height: 10),
+        Row(children: [
+          Expanded(
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: GoColors.line, width: 1.5),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape:
+                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: _notifyPartner,
+              child: const Text('카카오톡으로 알리기',
+                  style: TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w600, color: GoColors.ink)),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: GoColors.line, width: 1.5),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape:
+                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () {
+                if (!widget.demo) _runs.cancelSession(widget.sessionId);
+                Navigator.pop(context);
+              },
+              child: const Text('다음에 다시',
+                  style: TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w600, color: GoColors.mid)),
+            ),
+          ),
+        ]),
       ]),
     );
   }
