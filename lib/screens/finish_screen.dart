@@ -20,6 +20,7 @@ class FinishScreen extends StatefulWidget {
   final int mySeconds;
   final double myKm;
   final int myKcal;
+  final String? myMood;
   final bool demo;
 
   const FinishScreen({
@@ -29,6 +30,7 @@ class FinishScreen extends StatefulWidget {
     required this.mySeconds,
     required this.myKm,
     required this.myKcal,
+    this.myMood,
     this.demo = false,
   });
 
@@ -56,6 +58,7 @@ class _FinishScreenState extends State<FinishScreen> {
               'seconds': widget.mySeconds + 40,
               'km': (widget.myKm * 0.9 + 0.1),
               'kcal': (widget.myKcal * 0.9).round(),
+              'mood': '네 생각 났어요',
             });
       });
       return;
@@ -207,10 +210,12 @@ class _FinishScreenState extends State<FinishScreen> {
             ),
             const SizedBox(height: 8),
             Row(children: [
-              _personalCard('나', widget.myKm, GoColors.limeDark),
+              _personalCard('나', widget.myKm, GoColors.limeDark,
+                  mood: widget.myMood),
               const SizedBox(width: 10),
               _personalCard(widget.partnerName,
-                  _waiting ? null : _partnerKm, GoColors.coralDark),
+                  _waiting ? null : _partnerKm, GoColors.coralDark,
+                  mood: _waiting ? null : _partnerResult?['mood'] as String?),
             ]),
             if (_waiting) ...[
               const SizedBox(height: 10),
@@ -268,7 +273,7 @@ class _FinishScreenState extends State<FinishScreen> {
   Widget _tDivider() =>
       Container(width: 1, height: 32, color: GoColors.ink.withOpacity(.12));
 
-  Widget _personalCard(String who, double? km, Color color) {
+  Widget _personalCard(String who, double? km, Color color, {String? mood}) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -286,6 +291,12 @@ class _FinishScreenState extends State<FinishScreen> {
           Text('개인 총 거리',
               style: TextStyle(
                   fontSize: 9, color: GoColors.ink.withOpacity(.4))),
+          if (mood != null) ...[
+            const SizedBox(height: 4),
+            Text("'$mood'",
+                style: TextStyle(
+                    fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+          ],
         ]),
       ),
     );

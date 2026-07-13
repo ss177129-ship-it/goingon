@@ -58,10 +58,18 @@ class RunService {
 
   /// 내 결과 업로드. 상대 결과가 이미 있으면 세션 종료 처리
   Future<void> submitResult(String sessionId, String uid,
-      {required int seconds, required double km, required int kcal}) async {
+      {required int seconds,
+      required double km,
+      required int kcal,
+      String? mood}) async {
     final ref = _db.collection('sessions').doc(sessionId);
     await ref.update({
-      'results.$uid': {'seconds': seconds, 'km': km, 'kcal': kcal},
+      'results.$uid': {
+        'seconds': seconds,
+        'km': km,
+        'kcal': kcal,
+        if (mood != null) 'mood': mood,
+      },
     });
     final doc = await ref.get();
     final results = (doc.data()?['results'] ?? {}) as Map;

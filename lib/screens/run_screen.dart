@@ -76,7 +76,7 @@ class _RunScreenState extends State<RunScreen>
     setState(() => _gpsOk = false);
   }
 
-  Future<void> _finish() async {
+  Future<void> _finish(String? mood) async {
     if (_finishing) return;
     setState(() => _finishing = true);
     _timer?.cancel();
@@ -85,7 +85,7 @@ class _RunScreenState extends State<RunScreen>
     if (!widget.demo) {
       try {
         await RunService().submitResult(widget.sessionId, AuthService().uid,
-            seconds: _seconds, km: _km, kcal: kcal);
+            seconds: _seconds, km: _km, kcal: kcal, mood: mood);
       } catch (e) {
         if (!mounted) return;
         setState(() => _finishing = false);
@@ -103,6 +103,7 @@ class _RunScreenState extends State<RunScreen>
         mySeconds: _seconds,
         myKm: _km,
         myKcal: kcal,
+        myMood: mood,
         demo: widget.demo,
       ),
     ));
@@ -137,7 +138,61 @@ class _RunScreenState extends State<RunScreen>
         ],
       ),
     );
-    if (confirmed == true) _finish();
+    if (confirmed != true) return;
+    if (!mounted) return;
+    final mood = await _pickMood();
+    if (!mounted) return;
+    _finish(mood);
+  }
+
+  /// 결과 제출 직전 — 오늘 러닝이 어땠는지 한 탭으로 남김 (건너뛰기 가능)
+  Future<String?> _pickMood() async {
+    const moods = ['상쾌했어요', '죽을 뻔했어요', '네 생각 났어요', '또 하고 싶어요'];
+    return showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: GoColors.paper,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(28, 24, 28, 40),
+        child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('오늘 러닝, 어땠어요?', style: GoTheme.serif(20)),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: moods
+                    .map((m) => OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: GoColors.line, width: 1.5),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20)),
+                          ),
+                          onPressed: () => Navigator.pop(ctx, m),
+                          child: Text(m,
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: GoColors.ink)),
+                        ))
+                    .toList(),
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx, null),
+                  child: const Text('건너뛰기',
+                      style: TextStyle(color: GoColors.dim, fontSize: 13)),
+                ),
+              ),
+            ]),
+      ),
+    );
   }
 
   String get _timeText {
