@@ -44,6 +44,15 @@ class _FinishScreenState extends State<FinishScreen> {
   StreamSubscription? _sub;
   bool _longWait = false;
   Timer? _waitTimer;
+  int? _totalRuns;
+  int? _weekStreak;
+
+  /// 상황을 아는 타이틀 — 첫 러닝인지, 스트릭이 이어지고 있는지에 따라 변주
+  String get _title {
+    if (_totalRuns == 1) return '처음으로 함께 달렸어요';
+    if ((_weekStreak ?? 0) >= 2) return '$_weekStreak주째, 발이 맞아요';
+    return '오늘도 함께 달렸어요';
+  }
 
   @override
   void initState() {
@@ -52,6 +61,9 @@ class _FinishScreenState extends State<FinishScreen> {
       if (mounted && _waiting) setState(() => _longWait = true);
     });
     if (widget.demo) {
+      // 데모는 Firestore 없이 진행 — 처음 함께 달린 느낌으로 고정
+      _totalRuns = 1;
+      _weekStreak = 1;
       Future.delayed(const Duration(seconds: 2), () {
         if (!mounted) return;
         setState(() => _partnerResult = {
@@ -63,6 +75,13 @@ class _FinishScreenState extends State<FinishScreen> {
       });
       return;
     }
+    AuthService().myProfile().then((profile) {
+      if (!mounted || profile == null) return;
+      setState(() {
+        _totalRuns = ((profile['totalRuns'] ?? 0) as num).toInt();
+        _weekStreak = ((profile['weekStreak'] ?? 0) as num).toInt();
+      });
+    });
     _sub = RunService().sessionStream(widget.sessionId).listen((doc) {
       final results =
           Map<String, dynamic>.from(doc.data()?['results'] ?? {});
@@ -156,7 +175,7 @@ class _FinishScreenState extends State<FinishScreen> {
                     ]),
                   ),
                   const SizedBox(height: 12),
-                  Text('나 & ${widget.partnerName}\n오늘도 함께 달렸어요',
+                  Text('나 & ${widget.partnerName}\n$_title',
                       textAlign: TextAlign.center,
                       style: GoTheme.serif(28, color: GoColors.ink)),
                   const SizedBox(height: 20),
