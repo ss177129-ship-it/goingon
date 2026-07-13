@@ -228,6 +228,12 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 내 프로필 카드 — 프로토타입의 흰 카드 + 3분할 스탯
   Widget _profileCard(int friendCount) {
     final myName = _me?['name'] ?? '';
+    final now = DateTime.now();
+    final monthKey = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+    final monthKm = (_me?['monthKey'] == monthKey)
+        ? ((_me?['monthKm'] ?? 0) as num).toDouble()
+        : 0.0;
+    final totalRuns = (_me?['totalRuns'] ?? 0) as num;
     return Container(
       margin: const EdgeInsets.fromLTRB(22, 6, 22, 0),
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
@@ -260,9 +266,9 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 12),
         IntrinsicHeight(
           child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            _stat('0', 'km', '이번 달'),
+            _stat(monthKm.toStringAsFixed(1), 'km', '이번 달'),
             _statDivider(),
-            _stat('0', '', '함께 달림'),
+            _stat('$totalRuns', '', '함께 달림'),
             _statDivider(),
             _stat('$friendCount', '명', '함께하는 사람'),
           ]),

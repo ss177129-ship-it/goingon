@@ -68,6 +68,27 @@ class RunService {
     if (results.length >= 2) {
       await ref.update({'status': 'finished'});
     }
+    await _bumpMonthlyStats(uid, km);
+  }
+
+  /// 홈 프로필 카드의 '이번 달 km / 함께 달림' — 전체 재조회 대신
+  /// users/{uid}에 집계 필드로 유지 (읽기 비용을 늘리지 않기 위함)
+  Future<void> _bumpMonthlyStats(String uid, double km) async {
+    final now = DateTime.now();
+    final monthKey = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+    final userRef = _db.collection('users').doc(uid);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(userRef);
+      final data = snap.data() ?? {};
+      final sameMonth = data['monthKey'] == monthKey;
+      final prevMonthKm =
+          sameMonth ? ((data['monthKm'] ?? 0) as num).toDouble() : 0.0;
+      tx.update(userRef, {
+        'monthKey': monthKey,
+        'monthKm': prevMonthKm + km,
+        'totalRuns': FieldValue.increment(1),
+      });
+    });
   }
 
   Future<void> cancelSession(String sessionId) async {
