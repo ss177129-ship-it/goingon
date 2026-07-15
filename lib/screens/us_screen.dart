@@ -25,23 +25,47 @@ class _UsScreenState extends State<UsScreen> {
   final _friends = FriendService();
   final _runs = RunService();
 
+  String? _cachedPartnerUid;
+  Future<List<Map<String, dynamic>>>? _sessionsFuture;
+  List<Map<String, dynamic>>? _lastSessions;
+
+  void _reloadSessions(String partnerUid) {
+    setState(() {
+      _sessionsFuture = _runs.finishedSessionsWith(_auth.uid, partnerUid);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: _friends.friendsStream(_auth.uid),
       builder: (context, friendSnap) {
-        if (friendSnap.hasError) return _errorState();
+        if (friendSnap.hasError) return _errorState(() => setState(() {}));
         final friends = friendSnap.data;
         if (friends == null) return const SizedBox.shrink();
         if (friends.isEmpty) return _noFriendYet();
 
         final partner = friends.first;
+        final partnerUid = partner['uid'] as String;
+        // 스트림이 재발화될 때마다 future를 새로 만들면 매번 재조회+깜빡임이
+        // 생기므로, 상대가 바뀔 때만(또는 최초 1회) 새로 불러오도록 캐싱
+        if (_cachedPartnerUid != partnerUid) {
+          _cachedPartnerUid = partnerUid;
+          _sessionsFuture = _runs.finishedSessionsWith(_auth.uid, partnerUid);
+          _lastSessions = null;
+        }
+
         return FutureBuilder<List<Map<String, dynamic>>>(
-          future: _runs.finishedSessionsWith(_auth.uid, partner['uid']),
+          future: _sessionsFuture,
           builder: (context, sessionSnap) {
-            if (sessionSnap.hasError) return _errorState();
-            if (!sessionSnap.hasData) return const SizedBox.shrink();
-            final sessions = sessionSnap.data!;
+            if (sessionSnap.hasError) {
+              return _errorState(() => _reloadSessions(partnerUid));
+            }
+            if (sessionSnap.hasData) _lastSessions = sessionSnap.data;
+            // 재조회 중에도 이전 데이터를 유지해 깜빡이지 않게 함 —
+            // 빈 화면은 최초 로딩일 때만 보여줌
+            final sessions = _lastSessions;
+            if (sessions == null) return const SizedBox.shrink();
             if (sessions.isEmpty) return _notRunTogetherYet(partner);
             return _journey(partner, sessions);
           },
@@ -122,7 +146,7 @@ class _UsScreenState extends State<UsScreen> {
   // ── 화면 ──
 
   /// 데이터를 불러오지 못했을 때 — 조용히 빈 화면 대신 다시 시도할 수 있게
-  Widget _errorState() {
+  Widget _errorState(VoidCallback onRetry) {
     return Column(children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 14, 24, 6),
@@ -166,7 +190,7 @@ class _UsScreenState extends State<UsScreen> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
                   ),
-                  onPressed: () => setState(() {}),
+                  onPressed: onRetry,
                   child: Text('다시 시도',
                       style: GoTheme.serif(18, color: GoColors.ink)),
                 ),
