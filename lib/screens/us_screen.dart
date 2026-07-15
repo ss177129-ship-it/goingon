@@ -1,9 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../services/friend_service.dart';
 import '../services/run_service.dart';
+import '../services/story_labels.dart';
 import '../theme.dart';
 import '../widgets/initial_avatar.dart';
 import 'invite_screen.dart';
@@ -74,24 +74,7 @@ class _UsScreenState extends State<UsScreen> {
     );
   }
 
-  // ── 데이터 계산 ──
-
-  num _field(Map<String, dynamic> session, String uid, String key) {
-    final results = session['results'];
-    if (results is! Map) return 0;
-    final r = results[uid];
-    if (r is! Map) return 0;
-    final v = r[key];
-    return v is num ? v : 0;
-  }
-
-  double _combinedKm(Map<String, dynamic> s, String me, String partner) =>
-      _field(s, me, 'km').toDouble() + _field(s, partner, 'km').toDouble();
-
-  DateTime? _startedAt(Map<String, dynamic> s) {
-    final ts = s['startedAt'];
-    return ts is Timestamp ? ts.toDate() : null;
-  }
+  // ── 데이터 계산 ── (session/story 순수 계산은 services/story_labels.dart로 분리)
 
   String? _moodField(Map<String, dynamic> session, String uid) {
     final results = session['results'];
@@ -104,44 +87,6 @@ class _UsScreenState extends State<UsScreen> {
 
   DateTime _mondayOf(DateTime d) =>
       DateTime(d.year, d.month, d.day).subtract(Duration(days: d.weekday - 1));
-
-  /// 새 데이터 없이 기존 startedAt·km에서 계산하는 파생 스토리 라벨 —
-  /// 행마다 최대 하나만 붙음 (첫 함께 달리기 > 가장 멀리 간 날 > 첫 새벽/밤 순 우선)
-  Map<String, String> _storyLabels(
-      List<Map<String, dynamic>> ascending, String me, String partnerUid) {
-    final labels = <String, String>{};
-    if (ascending.isEmpty) return labels;
-
-    labels[ascending.first['id'] as String] = '첫 함께 달리기';
-
-    var maxKm = -1.0;
-    String? maxId;
-    for (final s in ascending) {
-      final km = _combinedKm(s, me, partnerUid);
-      if (km > maxKm) {
-        maxKm = km;
-        maxId = s['id'] as String;
-      }
-    }
-    if (maxId != null) labels.putIfAbsent(maxId, () => '가장 멀리 간 날');
-
-    var dawnFound = false;
-    var nightFound = false;
-    for (final s in ascending) {
-      final started = _startedAt(s);
-      if (started == null) continue;
-      final id = s['id'] as String;
-      if (!dawnFound && started.hour >= 5 && started.hour < 7) {
-        labels.putIfAbsent(id, () => '첫 새벽 러닝');
-        dawnFound = true;
-      }
-      if (!nightFound && started.hour >= 22) {
-        labels.putIfAbsent(id, () => '첫 밤 러닝');
-        nightFound = true;
-      }
-    }
-    return labels;
-  }
 
   // ── 화면 ──
 
@@ -324,18 +269,18 @@ class _UsScreenState extends State<UsScreen> {
     final partnerName = partner['name'] as String;
 
     final totalKm = sessions.fold<double>(
-        0, (sum, s) => sum + _combinedKm(s, me, partnerUid));
+        0, (sum, s) => sum + combinedKm(s, me, partnerUid));
     final count = sessions.length;
 
     final ascending = sessions.reversed.toList();
-    final storyLabels = _storyLabels(ascending, me, partnerUid);
-    final firstStarted = _startedAt(ascending.first);
+    final storyLabels = storyLabelsFor(ascending, me, partnerUid);
+    final firstStarted = sessionStartedAt(ascending.first);
     final daysTogether =
         firstStarted == null ? 0 : DateTime.now().difference(firstStarted).inDays;
 
     // 주간 스트릭
     final weeks = sessions
-        .map(_startedAt)
+        .map(sessionStartedAt)
         .whereType<DateTime>()
         .map(_mondayOf)
         .toSet();
@@ -351,7 +296,7 @@ class _UsScreenState extends State<UsScreen> {
 
     // 이번 주 요일별 완료 여부
     final daysDone = sessions
-        .map(_startedAt)
+        .map(sessionStartedAt)
         .whereType<DateTime>()
         .map((d) => DateTime(d.year, d.month, d.day))
         .toSet();
@@ -368,9 +313,9 @@ class _UsScreenState extends State<UsScreen> {
       final threshold = achieved.last;
       double running = 0;
       for (final s in ascending) {
-        running += _combinedKm(s, me, partnerUid);
+        running += combinedKm(s, me, partnerUid);
         if (running >= threshold) {
-          final at = _startedAt(s);
+          final at = sessionStartedAt(s);
           if (at != null) {
             achievedDaysAgo = DateTime.now().difference(at).inDays;
           }
@@ -675,9 +620,9 @@ class _UsScreenState extends State<UsScreen> {
   Widget _momentRow(
       Map<String, dynamic> s, String me, String partnerUid, String partnerName,
       {String? storyLabel}) {
-    final started = _startedAt(s);
-    final km = _combinedKm(s, me, partnerUid);
-    final minutes = (_field(s, me, 'seconds').toInt() / 60).round();
+    final started = sessionStartedAt(s);
+    final km = combinedKm(s, me, partnerUid);
+    final minutes = (sessionField(s, me, 'seconds').toInt() / 60).round();
     final day = started == null ? '-' : started.day.toString().padLeft(2, '0');
     final month = started == null ? '' : '${started.month}월';
     final timeOfDay = started == null

@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'week_key.dart';
+
 /// 함께 달리기 세션 (MVP 전략: 실시간 위치 동기화 없음 —
 /// 함께 '시작'하고, 끝나면 결과를 '합산'. 라이브 합산은 v1.1)
 ///
@@ -101,7 +103,7 @@ class RunService {
   Future<void> _bumpMonthlyStats(String uid, double km) async {
     final now = DateTime.now();
     final monthKey = '${now.year}-${now.month.toString().padLeft(2, '0')}';
-    final weekKey = _weekKey(now);
+    final weekKey = weekKeyOf(now);
     final userRef = _db.collection('users').doc(uid);
     await _db.runTransaction((tx) async {
       final snap = await tx.get(userRef);
@@ -114,7 +116,7 @@ class RunService {
       int weekStreak;
       if (lastRunWeek == weekKey) {
         weekStreak = ((data['weekStreak'] ?? 1) as num).toInt();
-      } else if (lastRunWeek != null && _isPrevWeek(lastRunWeek, weekKey)) {
+      } else if (lastRunWeek != null && isPrevWeek(lastRunWeek, weekKey)) {
         weekStreak = ((data['weekStreak'] ?? 0) as num).toInt() + 1;
       } else {
         weekStreak = 1;
@@ -128,20 +130,6 @@ class RunService {
         'weekStreak': weekStreak,
       });
     });
-  }
-
-  /// 그 주 월요일 날짜(YYYY-MM-DD)를 키로 사용
-  String _weekKey(DateTime d) {
-    final monday =
-        DateTime(d.year, d.month, d.day).subtract(Duration(days: d.weekday - 1));
-    return '${monday.year}-${monday.month.toString().padLeft(2, '0')}-'
-        '${monday.day.toString().padLeft(2, '0')}';
-  }
-
-  bool _isPrevWeek(String lastWeekKey, String currentWeekKey) {
-    final last = DateTime.parse(lastWeekKey);
-    final current = DateTime.parse(currentWeekKey);
-    return current.difference(last).inDays == 7;
   }
 
   Future<void> cancelSession(String sessionId) async {
