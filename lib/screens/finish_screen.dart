@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 import '../services/auth_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
+import '../widgets/brand_mark.dart';
 import 'root_screen.dart';
 
 /// 완료 화면 — 프로토타입 s-finish 충실 구현 (라임 배경)
@@ -144,36 +145,7 @@ class _FinishScreenState extends State<FinishScreen> {
                 color: GoColors.lime,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Column(children: [
-                  // 브랜드 마크 — 두 원
-                  SizedBox(
-                    width: 66, height: 42,
-                    child: Stack(children: [
-                      Positioned(
-                        left: 2, top: 2,
-                        child: Container(
-                          width: 38, height: 38,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: GoColors.limeDark.withOpacity(.15),
-                            border: Border.all(
-                                color: GoColors.limeDark, width: 2),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        right: 2, top: 2,
-                        child: Container(
-                          width: 38, height: 38,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: GoColors.coral.withOpacity(.25),
-                            border: Border.all(
-                                color: GoColors.coralDark, width: 2),
-                          ),
-                        ),
-                      ),
-                    ]),
-                  ),
+                  BrandMark.compact(),
                   const SizedBox(height: 12),
                   Text('나 & ${widget.partnerName}\n$_title',
                       textAlign: TextAlign.center,

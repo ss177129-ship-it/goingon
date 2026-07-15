@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../theme.dart';
+import '../widgets/brand_mark.dart';
 import 'root_screen.dart';
 
 /// 로그인(Apple 등) 성공 직후 항상 거치는 닉네임 설정 화면.
@@ -45,34 +46,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
           child: Column(
             children: [
               const Spacer(),
-              // 브랜드 마크 — 두 원이 나란히 (나 lime, 너 coral)
-              SizedBox(
-                width: 74, height: 46,
-                child: Stack(children: [
-                  Positioned(
-                    left: 3, top: 4,
-                    child: Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: GoColors.lime.withOpacity(.4),
-                        border: Border.all(color: GoColors.limeDark, width: 2),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 3, top: 4,
-                    child: Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: GoColors.coral.withOpacity(.35),
-                        border: Border.all(color: GoColors.coralDark, width: 2),
-                      ),
-                    ),
-                  ),
-                ]),
-              ),
+              BrandMark.standard(),
               const SizedBox(height: 16),
               Text('goingon', style: GoTheme.serif(20, color: GoColors.dim)),
               const SizedBox(height: 18),

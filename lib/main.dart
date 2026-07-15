@@ -11,6 +11,7 @@ import 'screens/nickname_screen.dart';
 import 'screens/root_screen.dart';
 import 'services/auth_service.dart';
 import 'theme.dart';
+import 'widgets/brand_mark.dart';
 
 import 'firebase_options.dart';
 
@@ -132,48 +133,14 @@ class _SplashGateState extends State<SplashGate>
             child: Center(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 // 브랜드 마크 — 숨쉬는 두 원
+                // 네이티브 런치스크린(brand_mark.png)과 같은 단색 스타일 —
+                // 앱이 켜지는 순간 그림이 안 바뀌어야 하나의 화면처럼 보여요
                 AnimatedBuilder(
                   animation: _pulse,
-                  builder: (_, __) {
-                    // 네이티브 런치스크린(brand_mark.png)과 같은 단색 스타일 —
-                    // 앱이 켜지는 순간 그림이 안 바뀌어야 하나의 화면처럼 보여요
-                    final s = 1 + _pulse.value * .16;
-                    return SizedBox(
-                      width: 88, height: 54,
-                      child: Stack(children: [
-                        Positioned(
-                          left: 4, top: 2,
-                          child: Transform.scale(
-                            scale: s,
-                            child: Container(
-                              width: 50, height: 50,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: GoColors.lime.withOpacity(.4),
-                                border: Border.all(
-                                    color: GoColors.limeDark, width: 2),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          right: 4, top: 2,
-                          child: Transform.scale(
-                            scale: 1 + (1 - _pulse.value) * .16,
-                            child: Container(
-                              width: 50, height: 50,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: GoColors.coral.withOpacity(.35),
-                                border: Border.all(
-                                    color: GoColors.coralDark, width: 2),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ]),
-                    );
-                  },
+                  builder: (_, __) => BrandMark.pulsing(
+                    leftScale: 1 + _pulse.value * .16,
+                    rightScale: 1 + (1 - _pulse.value) * .16,
+                  ),
                 ),
                 const SizedBox(height: 30),
                 Text('goingon', style: GoTheme.serif(42)),

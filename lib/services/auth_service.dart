@@ -101,7 +101,11 @@ class AuthService {
     await _db.collection('users').doc(uid).update({'name': name});
   }
 
-  Future<void> signOut() => _auth.signOut();
+  Future<void> signOut() async {
+    // Apple로만 로그인한 경우 구글 세션이 없어 실패할 수 있음 — 무시
+    await GoogleSignIn.instance.signOut().catchError((_) {});
+    await _auth.signOut();
+  }
 
   /// 회원탈퇴 — 친구들의 목록에서 나를 지우고 내 계정/초대코드를 삭제
   Future<void> deleteAccount() async {
@@ -123,6 +127,7 @@ class AuthService {
     }
     await batch.commit();
     await _auth.currentUser?.delete();
+    await GoogleSignIn.instance.disconnect().catchError((_) {});
   }
 
   /// GO-XXXX 형식 초대 코드 (혼동 문자 I/O/0/1 제외)

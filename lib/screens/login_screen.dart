@@ -3,6 +3,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../services/auth_service.dart';
 import '../theme.dart';
+import '../widgets/brand_mark.dart';
 import 'nickname_screen.dart';
 import 'root_screen.dart';
 
@@ -71,44 +72,23 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 28),
           child: Column(
             children: [
-              const Spacer(),
-              // 브랜드 마크 — 두 원이 나란히 (나 lime, 너 coral)
-              SizedBox(
-                width: 74, height: 46,
-                child: Stack(children: [
-                  Positioned(
-                    left: 3, top: 4,
-                    child: Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: GoColors.lime.withOpacity(.4),
-                        border: Border.all(color: GoColors.limeDark, width: 2),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 3, top: 4,
-                    child: Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: GoColors.coral.withOpacity(.35),
-                        border: Border.all(color: GoColors.coralDark, width: 2),
-                      ),
-                    ),
-                  ),
-                ]),
+              // 브랜드 영역 — 프로토타입의 .login-top(flex:1, 가운데 정렬)과
+              // 동일하게 남은 공간을 하나의 블록으로 채움
+              Expanded(
+                child: Center(
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    BrandMark.standard(),
+                    const SizedBox(height: 16),
+                    Text('goingon', style: GoTheme.serif(20, color: GoColors.dim)),
+                    const SizedBox(height: 18),
+                    Text('멀리 있어도,\n함께 달려요',
+                        textAlign: TextAlign.center, style: GoTheme.serif(30)),
+                    const SizedBox(height: 8),
+                    const Text('소중한 사람과 발을 맞추는 곳',
+                        style: TextStyle(fontSize: 13, color: GoColors.mid)),
+                  ]),
+                ),
               ),
-              const SizedBox(height: 16),
-              Text('goingon', style: GoTheme.serif(20, color: GoColors.dim)),
-              const SizedBox(height: 18),
-              Text('멀리 있어도,\n함께 달려요',
-                  textAlign: TextAlign.center, style: GoTheme.serif(30)),
-              const SizedBox(height: 8),
-              const Text('소중한 사람과 발을 맞추는 곳',
-                  style: TextStyle(fontSize: 13, color: GoColors.mid)),
-              const Spacer(),
               SizedBox(
                 width: double.infinity,
                 height: 52,
