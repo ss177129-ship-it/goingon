@@ -22,7 +22,8 @@ class _LoginScreenState extends State<LoginScreen> {
   /// 인증 성공 후 공통 분기 — 예전에 가입한 적 있으면(재로그인) 바로 홈,
   /// 신규면 닉네임 설정 화면으로 (제공자가 준 이름이 있으면 미리 채워줌)
   Future<void> _afterAuth(String? name) async {
-    final profile = await AuthService().myProfile();
+    final profile =
+        await AuthService().myProfile().timeout(const Duration(seconds: 10));
     if (!mounted) return;
     if (profile != null) {
       Navigator.pushAndRemoveUntil(context,
