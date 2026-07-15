@@ -74,6 +74,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
     _timeoutTimer = Timer(const Duration(minutes: 3), () {
       if (mounted && !_partnerReady) setState(() => _showTimeoutHelp = true);
     });
+    _subscribeToSession();
+  }
+
+  void _subscribeToSession() {
     _sub = _runs.sessionStream(widget.sessionId).listen((doc) {
       final data = doc.data();
       if (data == null) return;
@@ -100,6 +104,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
       });
       _maybeCountdown();
       if (data['status'] == 'running' && _countdown == null) _goRun();
+    }, onError: (_) {
+      // 세션 감지가 끊기면 조용히 멈추는 대신 잠시 뒤 재구독 — 그래도 안 되면
+      // 3분 무응답 타임아웃 안내(_showTimeoutHelp)가 탈출구가 되어줌
+      Future.delayed(const Duration(seconds: 5), () {
+        if (mounted) _subscribeToSession();
+      });
     });
   }
 
@@ -133,12 +143,22 @@ class _LobbyScreenState extends State<LobbyScreen> {
     _becomeReady();
   }
 
-  void _becomeReady() {
+  Future<void> _becomeReady() async {
     if (widget.demo) {
       _maybeCountdown();
-    } else {
-      _runs.setReady(widget.sessionId, _uid);
+      return;
+    }
+    try {
+      await _runs.setReady(widget.sessionId, _uid);
       _maybeCountdown();
+    } catch (e) {
+      // 전달에 실패하면 상대가 내 준비 상태를 영영 못 봄 — 조용히 두지 않고
+      // 준비 전 단계로 되돌려 다시 시도할 수 있게 함
+      if (!mounted) return;
+      setState(() => _step = _steps.length - 2);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('준비 상태를 전달하지 못했어요. 다시 시도해 주세요.')),
+      );
     }
   }
 
@@ -185,7 +205,14 @@ class _LobbyScreenState extends State<LobbyScreen> {
   }
 
   Future<void> _notifyPartner() async {
-    await Share.share('지금 고잉온 열어줘! 같이 뛰자');
+    try {
+      await Share.share('지금 고잉온 열어줘! 같이 뛰자');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('알리지 못했어요. 다시 시도해 주세요.')),
+      );
+    }
   }
 
   @override
@@ -374,10 +401,19 @@ class _LobbyScreenState extends State<LobbyScreen> {
             const SizedBox(height: 10),
             Center(
               child: TextButton(
-                onPressed: () {
+                onPressed: () async {
                   final next = !_isLate;
                   setState(() => _isLate = next);
-                  if (!widget.demo) _runs.setLate(widget.sessionId, _uid, next);
+                  if (widget.demo) return;
+                  try {
+                    await _runs.setLate(widget.sessionId, _uid, next);
+                  } catch (e) {
+                    if (!mounted) return;
+                    setState(() => _isLate = !next);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('상태를 전달하지 못했어요. 다시 시도해 주세요.')),
+                    );
+                  }
                 },
                 child: Text(_isLate ? '늦음 취소' : '조금 늦을 것 같아요',
                     style: TextStyle(fontSize: 11,

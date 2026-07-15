@@ -126,7 +126,16 @@ class AuthService {
       batch.delete(_db.collection('inviteCodes').doc(code));
     }
     await batch.commit();
-    await _auth.currentUser?.delete();
+
+    // Auth 계정 삭제는 세션이 오래됐으면 requires-recent-login으로 실패할 수
+    // 있음. 그 시점엔 Firestore 데이터가 이미 지워진 뒤라 '탈퇴 실패'로 보이면
+    // 안 되므로, 실패해도 최소한 로그아웃까지는 시켜 데이터/로그인 상태가
+    // 어긋나지 않게 함
+    try {
+      await _auth.currentUser?.delete();
+    } catch (e) {
+      await _auth.signOut();
+    }
     await GoogleSignIn.instance.disconnect().catchError((_) {});
   }
 

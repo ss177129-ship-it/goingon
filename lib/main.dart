@@ -57,6 +57,7 @@ class _SplashGateState extends State<SplashGate>
   late final AnimationController _pulse;
   final _skip = Completer<void>();
   Widget? _destination;
+  bool _connectionError = false;
 
   @override
   void initState() {
@@ -68,24 +69,38 @@ class _SplashGateState extends State<SplashGate>
   }
 
   Future<void> _resolve() async {
+    if (_connectionError && mounted) setState(() => _connectionError = false);
     final prefs = await SharedPreferences.getInstance();
     final isFirstLaunch = !(prefs.getBool(_kHasLaunchedBeforeKey) ?? false);
     final minShow =
         Duration(milliseconds: isFirstLaunch ? 2000 : 300);
 
-    final authFuture = FirebaseAuth.instance.authStateChanges().first;
-    final gated = Future.wait([authFuture, Future.delayed(minShow)])
-        .then((results) => results[0] as User?);
-    final skipped = _skip.future.then((_) => authFuture);
-
-    final user = await Future.any([gated, skipped]);
-
-    // 로그인은 됐지만(Apple 인증 완료) 프로필(닉네임/초대코드)이 아직
-    // 없는 경우가 있음 — 예: 닉네임 입력 전에 앱이 죽었다가 재실행된 경우.
-    // 그대로 홈으로 보내면 빈 프로필로 갇히므로, 그 경우엔 닉네임 화면으로 보냄
+    User? user;
     var hasProfile = false;
-    if (user != null) {
-      hasProfile = await AuthService().myProfile() != null;
+    try {
+      final authFuture = FirebaseAuth.instance
+          .authStateChanges()
+          .first
+          .timeout(const Duration(seconds: 10));
+      final gated = Future.wait([authFuture, Future.delayed(minShow)])
+          .then((results) => results[0] as User?);
+      final skipped = _skip.future.then((_) => authFuture);
+
+      user = await Future.any([gated, skipped]);
+
+      // 로그인은 됐지만(Apple 인증 완료) 프로필(닉네임/초대코드)이 아직
+      // 없는 경우가 있음 — 예: 닉네임 입력 전에 앱이 죽었다가 재실행된 경우.
+      // 그대로 홈으로 보내면 빈 프로필로 갇히므로, 그 경우엔 닉네임 화면으로 보냄
+      if (user != null) {
+        hasProfile =
+            await AuthService().myProfile().timeout(const Duration(seconds: 10)) !=
+                null;
+      }
+    } catch (e) {
+      // 콜드스타트 중 네트워크/Firestore 문제 — 무한 대기 대신 재시도 화면으로
+      if (!mounted) return;
+      setState(() => _connectionError = true);
+      return;
     }
 
     if (isFirstLaunch) {
@@ -111,6 +126,7 @@ class _SplashGateState extends State<SplashGate>
 
   @override
   Widget build(BuildContext context) {
+    if (_connectionError) return _connectionErrorScreen();
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 150),
       child: _destination != null
@@ -122,6 +138,40 @@ class _SplashGateState extends State<SplashGate>
               },
               child: _splash(),
             ),
+    );
+  }
+
+  Widget _connectionErrorScreen() {
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text('연결이 원활하지 않아요', style: GoTheme.serif(24)),
+              const SizedBox(height: 10),
+              const Text('네트워크 상태를 확인하고 다시 시도해 주세요.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: GoColors.mid)),
+              const SizedBox(height: 22),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: GoColors.ink,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: _resolve,
+                  child: Text('다시 시도',
+                      style: GoTheme.serif(18, color: GoColors.paper)),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ),
     );
   }
 

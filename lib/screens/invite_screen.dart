@@ -21,12 +21,19 @@ class _InviteScreenState extends State<InviteScreen> {
 
   Future<void> _share() async {
     // TODO 출시 전: 앱스토어 등록 후 실제 링크로 교체
-    await Share.share(
-      '${widget.myName}님이 함께 달리고 싶어 해요 🏃\n'
-      '멀리 있어도 같이 달릴 수 있어요.\n\n'
-      '1. GoingOn 설치: https://apps.apple.com/app/goingon\n'
-      '2. 초대 코드 입력: ${widget.myCode}',
-    );
+    try {
+      await Share.share(
+        '${widget.myName}님이 함께 달리고 싶어 해요 🏃\n'
+        '멀리 있어도 같이 달릴 수 있어요.\n\n'
+        '1. GoingOn 설치: https://apps.apple.com/app/goingon\n'
+        '2. 초대 코드 입력: ${widget.myCode}',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('공유하지 못했어요. 다시 시도해 주세요.')),
+      );
+    }
   }
 
   Future<void> _enterCode() async {

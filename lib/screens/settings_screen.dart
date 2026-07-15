@@ -32,13 +32,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _load() async {
-    final profile = await _auth.myProfile();
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      _me = profile;
-      _notifOn = prefs.getBool(_kNotifPrefKey) ?? true;
-    });
+    try {
+      final profile = await _auth.myProfile();
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
+      setState(() {
+        _me = profile;
+        _notifOn = prefs.getBool(_kNotifPrefKey) ?? true;
+      });
+    } catch (e) {
+      if (mounted) {
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) _load();
+        });
+      }
+    }
   }
 
   Future<void> _toggleNotif(bool v) async {
@@ -106,7 +114,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       confirmLabel: '로그아웃',
     );
     if (confirmed != true) return;
-    await _auth.signOut();
+    try {
+      await _auth.signOut();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('로그아웃에 실패했어요. 다시 시도해 주세요.')),
+      );
+      return;
+    }
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(context,
         MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);

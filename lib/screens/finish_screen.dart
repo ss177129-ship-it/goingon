@@ -83,6 +83,10 @@ class _FinishScreenState extends State<FinishScreen> {
         _weekStreak = ((profile['weekStreak'] ?? 0) as num).toInt();
       });
     });
+    _subscribeToResults();
+  }
+
+  void _subscribeToResults() {
     _sub = RunService().sessionStream(widget.sessionId).listen((doc) {
       final results =
           Map<String, dynamic>.from(doc.data()?['results'] ?? {});
@@ -94,6 +98,11 @@ class _FinishScreenState extends State<FinishScreen> {
       if (partner != null && mounted) {
         setState(() => _partnerResult = partner);
       }
+    }, onError: (_) {
+      // 결과 감지가 끊기면 조용히 멈추는 대신 잠시 뒤 재구독
+      Future.delayed(const Duration(seconds: 5), () {
+        if (mounted) _subscribeToResults();
+      });
     });
   }
 
@@ -115,19 +124,26 @@ class _FinishScreenState extends State<FinishScreen> {
       "${sec ~/ 60}'${(sec % 60).toString().padLeft(2, '0')}\"";
 
   Future<void> _shareCard() async {
-    final boundary = _cardKey.currentContext?.findRenderObject()
-        as RenderRepaintBoundary?;
-    if (boundary == null) return;
-    final image = await boundary.toImage(pixelRatio: 3.0);
-    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-    if (bytes == null) return;
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/goingon_card.png');
-    await file.writeAsBytes(bytes.buffer.asUint8List());
-    await Share.shareXFiles(
-      [XFile(file.path)],
-      text: '멀리 있어도, 함께 달렸어요 🏃 #goingon',
-    );
+    try {
+      final boundary = _cardKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (boundary == null) return;
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (bytes == null) return;
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/goingon_card.png');
+      await file.writeAsBytes(bytes.buffer.asUint8List());
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: '멀리 있어도, 함께 달렸어요 🏃 #goingon',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('공유 카드를 만들지 못했어요. 다시 시도해 주세요.')),
+      );
+    }
   }
 
   @override

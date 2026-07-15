@@ -34,8 +34,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _load() async {
-    final p = await _auth.myProfile();
-    if (mounted) setState(() => _me = p);
+    try {
+      final p = await _auth.myProfile();
+      if (mounted) setState(() => _me = p);
+    } catch (e) {
+      if (mounted) {
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) _load();
+        });
+      }
+    }
   }
 
   /// 친구가 GO?를 보내면 여기서 감지 → 수락 시트
@@ -51,6 +59,11 @@ class _HomeScreenState extends State<HomeScreen> {
         if (!mounted) return;
         _showGoRequest(doc.id, hostName);
       }
+    }, onError: (_) {
+      // 권한/네트워크 문제로 감지가 끊기면 조용히 멈추는 대신 잠시 뒤 재구독
+      Future.delayed(const Duration(seconds: 5), () {
+        if (mounted) _listenIncoming();
+      });
     });
   }
 

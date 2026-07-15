@@ -30,6 +30,7 @@ class _UsScreenState extends State<UsScreen> {
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: _friends.friendsStream(_auth.uid),
       builder: (context, friendSnap) {
+        if (friendSnap.hasError) return _errorState();
         final friends = friendSnap.data;
         if (friends == null) return const SizedBox.shrink();
         if (friends.isEmpty) return _noFriendYet();
@@ -38,6 +39,7 @@ class _UsScreenState extends State<UsScreen> {
         return FutureBuilder<List<Map<String, dynamic>>>(
           future: _runs.finishedSessionsWith(_auth.uid, partner['uid']),
           builder: (context, sessionSnap) {
+            if (sessionSnap.hasError) return _errorState();
             if (!sessionSnap.hasData) return const SizedBox.shrink();
             final sessions = sessionSnap.data!;
             if (sessions.isEmpty) return _notRunTogetherYet(partner);
@@ -118,6 +120,63 @@ class _UsScreenState extends State<UsScreen> {
   }
 
   // ── 화면 ──
+
+  /// 데이터를 불러오지 못했을 때 — 조용히 빈 화면 대신 다시 시도할 수 있게
+  Widget _errorState() {
+    return Column(children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(24, 14, 24, 6),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text('우리의 여정',
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
+                  letterSpacing: 1.4, color: GoColors.dim)),
+        ),
+      ),
+      Expanded(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Container(
+                width: 64, height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: Border.all(
+                      color: GoColors.mid.withOpacity(.4), width: 2),
+                ),
+                child: const Icon(Icons.wifi_off_rounded,
+                    size: 28, color: GoColors.mid),
+              ),
+              const SizedBox(height: 18),
+              Text('불러오지 못했어요',
+                  textAlign: TextAlign.center, style: GoTheme.serif(22)),
+              const SizedBox(height: 8),
+              const Text('네트워크 상태를 확인하고 다시 시도해 주세요.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: GoColors.mid)),
+              const SizedBox(height: 22),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: GoColors.line, width: 1.5),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: () => setState(() {}),
+                  child: Text('다시 시도',
+                      style: GoTheme.serif(18, color: GoColors.ink)),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    ]);
+  }
 
   /// 친구가 아예 없을 때
   Widget _noFriendYet() {
