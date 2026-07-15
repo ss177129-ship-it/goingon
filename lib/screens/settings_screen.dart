@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/auth_service.dart';
 import '../theme.dart';
 import '../widgets/go_dialog.dart';
 import 'login_screen.dart';
 
-const _kNotifPrefKey = 'notifications_enabled';
 const _kAppVersion = '0.1.0';
 
 /// '설정' 탭 — 프로토타입 s-settings. MVP 범위: 프로필(이름 변경),
-/// 초대 코드, 알림 토글(로컬 저장), 로그아웃, 회원탈퇴, 버전.
+/// 초대 코드, 알림(준비 중 — FCM 미구현), 로그아웃, 회원탈퇴, 버전.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -22,7 +20,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _auth = AuthService();
   Map<String, dynamic>? _me;
-  bool _notifOn = true;
   bool _busy = false;
 
   @override
@@ -34,12 +31,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _load() async {
     try {
       final profile = await _auth.myProfile();
-      final prefs = await SharedPreferences.getInstance();
       if (!mounted) return;
-      setState(() {
-        _me = profile;
-        _notifOn = prefs.getBool(_kNotifPrefKey) ?? true;
-      });
+      setState(() => _me = profile);
     } catch (e) {
       if (mounted) {
         Future.delayed(const Duration(seconds: 3), () {
@@ -47,12 +40,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         });
       }
     }
-  }
-
-  Future<void> _toggleNotif(bool v) async {
-    setState(() => _notifOn = v);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_kNotifPrefKey, v);
   }
 
   Future<void> _editName() async {
@@ -176,12 +163,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _row(
         icon: Icons.notifications_outlined,
         title: '알림',
-        subtitle: '약속·합류 알림',
-        trailing: Switch(
-          value: _notifOn,
-          activeThumbColor: GoColors.limeDark,
-          onChanged: _toggleNotif,
-        ),
+        subtitle: '준비 중이에요',
       ),
       _row(
         icon: Icons.logout,
