@@ -17,13 +17,24 @@ import 'firebase_options.dart';
 
 const _kHasLaunchedBeforeKey = 'has_launched_before';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  await GoogleSignIn.instance.initialize();
-  runApp(const GoingOnApp());
+/// runZonedGuarded + FlutterError.onError로 처리 안 된 에러를 조용히
+/// 묻히게 두지 않고 콘솔에 남김. Crashlytics는 아직 안 붙였지만(이번
+/// 버전 밖), print 수준이라도 있는 것과 없는 것 차이가 큼
+void main() {
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    FlutterError.onError = (details) {
+      FlutterError.presentError(details);
+      debugPrint('FlutterError: ${details.exceptionAsString()}');
+    };
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    await GoogleSignIn.instance.initialize();
+    runApp(const GoingOnApp());
+  }, (error, stack) {
+    debugPrint('Uncaught zone error: $error\n$stack');
+  });
 }
 
 class GoingOnApp extends StatelessWidget {
