@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../services/friend_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
+import '../widgets/initial_avatar.dart';
 import 'invite_screen.dart';
 
 const _kDistanceMilestones = [50, 100, 300, 500, 1000, 2000, 3000, 5000];
@@ -527,13 +528,12 @@ class _UsScreenState extends State<UsScreen> {
   Widget _pairAvatar(String letter, Color borderColor, {bool overlap = false}) {
     return Container(
       margin: EdgeInsets.only(left: overlap ? -12 : 0),
-      width: 30, height: 30,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white,
-        border: Border.all(color: borderColor, width: 2),
+      child: InitialAvatar(
+        letter: letter,
+        size: 30,
+        fontSize: 13,
+        borderColor: borderColor,
       ),
-      child: Center(child: Text(letter, style: GoTheme.serif(13))),
     );
   }
 

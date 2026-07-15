@@ -83,7 +83,7 @@ class AuthService {
 
   String _generateNonce([int length = 32]) {
     const charset =
-        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._';
     final r = Random.secure();
     return List.generate(length, (_) => charset[r.nextInt(charset.length)])
         .join();

@@ -6,6 +6,7 @@ import '../services/auth_service.dart';
 import '../services/location_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
+import '../widgets/go_dialog.dart';
 import 'finish_screen.dart';
 
 /// 러닝 화면 — 각자 GPS로 기록, 끝나면 합산 (MVP: 라이브 동기화 없음)
@@ -119,24 +120,11 @@ class _RunScreenState extends State<RunScreen>
 
   /// 실수 종료 방지 — 마치기 전 한 번 확인
   Future<void> _confirmFinish() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: GoColors.paper,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text('오늘 러닝을 마칠까요?', style: GoTheme.serif(20)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('계속 달리기', style: TextStyle(color: GoColors.mid)),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: GoColors.ink),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('마치기', style: GoTheme.serif(15, color: GoColors.paper)),
-          ),
-        ],
-      ),
+    final confirmed = await GoDialog.confirm(
+      context,
+      title: '오늘 러닝을 마칠까요?',
+      confirmLabel: '마치기',
+      cancelLabel: '계속 달리기',
     );
     if (confirmed != true) return;
     if (!mounted) return;

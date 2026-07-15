@@ -7,6 +7,7 @@ import '../services/auth_service.dart';
 import '../services/friend_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
+import '../widgets/initial_avatar.dart';
 import 'invite_screen.dart';
 import 'lobby_screen.dart';
 
@@ -74,14 +75,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: GoColors.coralDark, letterSpacing: 1.2)),
           ),
           const SizedBox(height: 18),
-          Container(
-            width: 88, height: 88,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: GoColors.coral.withOpacity(.12),
-              border: Border.all(color: GoColors.coralDark, width: 2),
-            ),
-            child: Center(child: Text(hostName[0], style: GoTheme.serif(36))),
+          InitialAvatar(
+            letter: hostName[0],
+            size: 88,
+            fontSize: 36,
+            fill: GoColors.coral.withOpacity(.12),
+            borderColor: GoColors.coralDark,
           ),
           const SizedBox(height: 16),
           Text('$hostName님이\n같이 달리자고 해요',
@@ -243,18 +242,13 @@ class _HomeScreenState extends State<HomeScreen> {
         border: Border.all(color: GoColors.line),
       ),
       child: Column(children: [
-        Container(
-          width: 60, height: 60,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: GoColors.lime.withOpacity(.18),
-            border: Border.all(color: GoColors.limeDark, width: 2),
-          ),
-          child: Center(
-              child: myName.isEmpty
-                  ? const Icon(Icons.person_outline,
-                      size: 26, color: GoColors.limeDark)
-                  : Text(myName[0], style: GoTheme.serif(26))),
+        InitialAvatar(
+          letter: myName.isEmpty ? '' : myName[0],
+          size: 60,
+          fontSize: 26,
+          fill: GoColors.lime.withOpacity(.18),
+          borderColor: GoColors.limeDark,
+          emptyIcon: Icons.person_outline,
         ),
         const SizedBox(height: 8),
         Text(myName, style: GoTheme.serif(22)),
@@ -307,14 +301,12 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
       child: Row(children: [
-        Container(
-          width: 44, height: 44,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
-            border: Border.all(color: GoColors.line, width: 1.5),
-          ),
-          child: Center(child: Text(f['name'][0], style: GoTheme.serif(18))),
+        InitialAvatar(
+          letter: f['name'][0],
+          size: 44,
+          fontSize: 18,
+          borderColor: GoColors.line,
+          borderWidth: 1.5,
         ),
         const SizedBox(width: 12),
         Expanded(

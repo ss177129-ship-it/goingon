@@ -14,7 +14,7 @@ class GoColors {
   static const resonance = Color(0xFFD4A84B);
   static const mid = Color(0xFF78746E);
   static const dim = Color(0xFFB0ACA6);
-  static Color line = const Color(0xFF1A1A16).withOpacity(.09);
+  static const line = Color(0x171A1A16); // ink 9% opacity
 }
 
 class GoTheme {

@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../services/auth_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
+import '../widgets/go_dialog.dart';
 import 'run_screen.dart';
 
 /// 로비 — 프로토타입 s-lobby 충실 구현
@@ -156,29 +157,14 @@ class _LobbyScreenState extends State<LobbyScreen> {
   }
 
   /// 상대가 "나중에"에 답장을 남기고 거절했을 때 — 침묵 대신 대화로
-  void _showDeclineReply(String message) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: GoColors.paper,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text('${widget.partnerName}님의 답장', style: GoTheme.serif(20)),
-        content: Text(message,
-            style: const TextStyle(
-                fontSize: 15, color: GoColors.ink, height: 1.5)),
-        actions: [
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: GoColors.ink),
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-            },
-            child: Text('알겠어요', style: GoTheme.serif(15, color: GoColors.paper)),
-          ),
-        ],
-      ),
+  Future<void> _showDeclineReply(String message) async {
+    await GoDialog.notice(
+      context,
+      title: '${widget.partnerName}님의 답장',
+      body: message,
     );
+    if (!mounted) return;
+    Navigator.pop(context);
   }
 
   void _goRun() {

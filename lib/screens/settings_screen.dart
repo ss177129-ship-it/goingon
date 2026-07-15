@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/auth_service.dart';
 import '../theme.dart';
+import '../widgets/go_dialog.dart';
 import 'login_screen.dart';
 
 const _kNotifPrefKey = 'notifications_enabled';
@@ -98,7 +99,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// 모든 계정이 Apple 로그인에 묶여 있으므로 로그아웃해도 항상 복구 가능
   Future<void> _logout() async {
-    final confirmed = await _confirm(
+    final confirmed = await GoDialog.confirm(
+      context,
       title: '로그아웃할까요?',
       body: 'Apple 계정으로 연결되어 있어서, 다시 로그인하면 지금 기록 그대로 돌아와요.',
       confirmLabel: '로그아웃',
@@ -111,7 +113,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _deleteAccount() async {
-    final confirmed = await _confirm(
+    final confirmed = await GoDialog.confirm(
+      context,
       title: '정말 탈퇴할까요?',
       body: '내 기록과 친구 연결이 모두 사라져요.\n이 작업은 되돌릴 수 없어요.',
       confirmLabel: '탈퇴하기',
@@ -133,38 +136,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<bool?> _confirm({
-    required String title,
-    required String body,
-    required String confirmLabel,
-    bool destructive = false,
-  }) {
-    return showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: GoColors.paper,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18)),
-        title: Text(title, style: GoTheme.serif(20)),
-        content: Text(body,
-            style: const TextStyle(fontSize: 13, color: GoColors.mid, height: 1.5)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('취소', style: TextStyle(color: GoColors.mid)),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-                backgroundColor:
-                    destructive ? GoColors.coralDark : GoColors.ink),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(confirmLabel,
-                style: GoTheme.serif(15, color: GoColors.paper)),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
