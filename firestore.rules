@@ -3,31 +3,54 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     match /users/{userId} {
-      allow read: if request.auth != null;
+      allow get: if request.auth != null;
       allow create, delete: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && (
-        request.auth.uid == userId ||
-        (
-          // friends 필드만 바뀌는 경우, 오직 "내 uid"만 추가/제거할 수 있음
-          // (다른 사람의 친구 관계를 대신 조작하는 것은 막음)
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends']) &&
-          request.resource.data.friends.hasOnly(resource.data.friends.concat([request.auth.uid])) &&
-          resource.data.friends.hasOnly(request.resource.data.friends.concat([request.auth.uid]))
-        )
-      );
+
+      // 이름 변경
+      allow update: if request.auth != null && request.auth.uid == userId &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']);
+
+      // 러닝 종료 시 통계 자동 갱신 (run_service._bumpMonthlyStats) —
+      // inviteCode/createdAt은 여기 포함되지 않으므로 생성 이후 절대 못 바뀜
+      allow update: if request.auth != null && request.auth.uid == userId &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['totalRuns', 'monthKm', 'monthKey', 'weekStreak', 'lastRunWeek']);
+
+      // 내 문서: 초대 코드로 친구 1명 추가
+      allow update: if request.auth != null && request.auth.uid == userId &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends']) &&
+        request.resource.data.friends.size() == resource.data.friends.size() + 1 &&
+        resource.data.friends.hasOnly(request.resource.data.friends);
+
+      // 내 문서: 친구 1명 제거 (회원탈퇴 등)
+      allow update: if request.auth != null && request.auth.uid == userId &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends']) &&
+        request.resource.data.friends.size() == resource.data.friends.size() - 1 &&
+        request.resource.data.friends.hasOnly(resource.data.friends);
+
+      // 상대 문서: friends 필드만 바뀌는 경우, 오직 "내 uid"만 추가/제거할 수
+      // 있음 (다른 사람의 친구 관계를 대신 조작하는 것은 막되, 서로 상대방
+      // 목록에 나를 추가하는 상호 연결/탈퇴 반영은 허용)
+      allow update: if request.auth != null && userId != request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends']) &&
+        request.resource.data.friends.hasOnly(resource.data.friends.concat([request.auth.uid])) &&
+        resource.data.friends.hasOnly(request.resource.data.friends.concat([request.auth.uid]));
     }
 
     match /inviteCodes/{code} {
-      allow read: if request.auth != null;
+      allow get: if request.auth != null;
       allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
       allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
     }
 
     match /sessions/{sessionId} {
-      allow create: if request.auth != null && (
-        request.auth.uid == request.resource.data.hostId ||
-        request.auth.uid == request.resource.data.guestId
-      );
+      // GO? 요청은 호스트-게스트가 이미 서로 친구인 경우에만 생성 가능
+      // (친구 목록에 없는 uid로 세션을 만들어 임의 사용자에게 요청을 보내는 것 차단)
+      allow create: if request.auth != null &&
+        (request.auth.uid == request.resource.data.hostId ||
+         request.auth.uid == request.resource.data.guestId) &&
+        request.resource.data.guestId in
+          get(/databases/$(database)/documents/users/$(request.resource.data.hostId)).data.friends;
       allow read, update: if request.auth != null && (
         request.auth.uid == resource.data.hostId ||
         request.auth.uid == resource.data.guestId
