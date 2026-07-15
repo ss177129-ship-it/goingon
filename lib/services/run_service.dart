@@ -34,10 +34,16 @@ class RunService {
   Stream<DocumentSnapshot<Map<String, dynamic>>> sessionStream(String id) =>
       _db.collection('sessions').doc(id).snapshots();
 
+  /// 취소된 세션이 뒤늦게 부활하지 않도록 트랜잭션으로 상태를 먼저 확인
   Future<void> setReady(String sessionId, String uid) async {
-    await _db.collection('sessions').doc(sessionId).update({
-      'ready.$uid': true,
-      'status': 'ready',
+    final ref = _db.collection('sessions').doc(sessionId);
+    await _db.runTransaction((tx) async {
+      final doc = await tx.get(ref);
+      if (doc.data()?['status'] == 'cancelled') return;
+      tx.update(ref, {
+        'ready.$uid': true,
+        'status': 'ready',
+      });
     });
   }
 
@@ -48,11 +54,17 @@ class RunService {
     });
   }
 
-  /// 둘 다 준비되면 호출 — 동시에 출발
+  /// 둘 다 준비되면 호출 — 동시에 출발.
+  /// 취소된 세션이 뒤늦게 부활하지 않도록 트랜잭션으로 상태를 먼저 확인
   Future<void> startRun(String sessionId) async {
-    await _db.collection('sessions').doc(sessionId).update({
-      'status': 'running',
-      'startedAt': FieldValue.serverTimestamp(),
+    final ref = _db.collection('sessions').doc(sessionId);
+    await _db.runTransaction((tx) async {
+      final doc = await tx.get(ref);
+      if (doc.data()?['status'] == 'cancelled') return;
+      tx.update(ref, {
+        'status': 'running',
+        'startedAt': FieldValue.serverTimestamp(),
+      });
     });
   }
 
