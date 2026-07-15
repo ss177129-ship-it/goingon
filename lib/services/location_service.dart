@@ -42,8 +42,15 @@ class LocationService {
         if (_last != null) {
           final meters = Geolocator.distanceBetween(
               _last!.latitude, _last!.longitude, pos.latitude, pos.longitude);
-          // 순간이동(1초에 50m 이상) 무시 — 터널/신호 튐 대응
-          if (meters < 50) totalKm += meters / 1000;
+          final dtSeconds =
+              pos.timestamp.difference(_last!.timestamp).inMilliseconds / 1000;
+          // 순간이동 무시 — 터널/신호 튐 대응. 두 지점 사이 속도가
+          // 10m/s(약 36km/h, 일반적인 러닝 최고 속도를 넉넉히 웃도는 값)를
+          // 넘으면 무시. 업데이트가 뭉쳐 들어와 dt를 못 믿을 상황(dt<=0)이면
+          // 예전처럼 절대 거리 50m 기준으로 대체
+          final isOutlier =
+              dtSeconds > 0 ? (meters / dtSeconds) > 10 : meters >= 50;
+          if (!isOutlier) totalKm += meters / 1000;
         }
         _last = pos;
         onUpdate(totalKm);
