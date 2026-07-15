@@ -29,8 +29,8 @@
 ## 의도된 설계 결정 (바꾸지 말 것)
 
 - **러닝 중 실시간 동기화 없음** — 함께 시작하고, 끝나면 합산. 라이브 합산은 v1.1 (개발 난이도의 절반이 여기 있어서 의도적으로 잘랐음)
-- **백그라운드 위치 추적 없음** — 심사 난이도 급상승 때문에 v1.1로. Info.plist는 WhenInUse만
-- **Apple 로그인 필수 — 익명 로그인 없음** — 모든 가입은 Apple 인증(`AuthService.signInWithApple`)을 거쳐야 하고, 성공 후에는 이름을 받았든 안 받았든 항상 `NicknameScreen`을 거쳐 홈으로 이동. 계정이 실제 신원에 묶여 있어 로그아웃/재설치 후에도 항상 복구됨. Google 로그인은 로그인 화면에 자리만 준비해뒀고(`// TODO: Google 버튼 자리`) 아직 미구현 — Apple이 이미 있으므로 추가해도 'Sign in with Apple' 의무와 무관. 카카오 등 다른 소셜로그인은 계속 v1.1로 미룸
+- **백그라운드 위치 추적 있음** (2026-07-15 결정 변경 — 원래는 심사 난이도 때문에 없음이었으나, 폰을 잠그면 GPS·타이머가 멈춰 기록이 끊기는 문제가 실사용에 치명적이라 판단해 도입함). `location_service.dart`는 `AppleSettings(allowBackgroundLocationUpdates: true, showBackgroundLocationIndicator: true, pauseLocationUpdatesAutomatically: false)` 사용, Info.plist `UIBackgroundModes`에 `location` 포함, `wakelock_plus`로 화면 꺼짐 방지. 심사 시 위치 권한 설명 문구(NSLocationAlwaysAndWhenInUseUsageDescription 등)를 더 꼼꼼히 써야 하고 리젝 가능성이 있음을 인지하고 진행 중
+- **Apple 로그인 필수 — 익명 로그인 없음** — 모든 가입은 Apple 인증(`AuthService.signInWithApple`)을 거쳐야 하고, 성공 후에는 이름을 받았든 안 받았든 항상 `NicknameScreen`을 거쳐 홈으로 이동. 계정이 실제 신원에 묶여 있어 로그아웃/재설치 후에도 항상 복구됨. Google 로그인(`AuthService.signInWithGoogle`)도 구현·연동 완료 — Apple이 이미 있으므로 추가해도 'Sign in with Apple' 의무와 무관. 카카오 등 다른 소셜로그인은 계속 v1.1로 미룸
 - **데모 모드** (`demo: true` 플래그, lobby/run/finish 관통) — 가상 파트너 '지수'와 전체 플로우 체험. 혼자 테스트용 + **Apple 심사관용이므로 절대 제거 금지**
 - **완료 화면 공유 카드** — RepaintBoundary 캡처 → share_plus. 셋로그식 성장 엔진이라 완성도 유지가 전략적으로 중요
 

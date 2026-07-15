@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../services/auth_service.dart';
 import '../services/location_service.dart';
@@ -28,6 +29,7 @@ class _RunScreenState extends State<RunScreen>
     with SingleTickerProviderStateMixin {
   final _location = LocationService();
   Timer? _timer;
+  DateTime? _startedAt;
   int _seconds = 0;
   double _km = 0;
   bool _gpsOk = true;
@@ -40,16 +42,21 @@ class _RunScreenState extends State<RunScreen>
     _breath = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 900))
       ..repeat(reverse: true);
+    WakelockPlus.enable();
     _start();
   }
 
   Future<void> _start() async {
+    // 경과 시간은 틱 카운트가 아니라 시작 시각과의 차이로 계산 —
+    // 폰이 잠겨 있는 동안 Timer 틱이 밀려도(백그라운드에서는 흔함)
+    // 화면에 다시 나타났을 때 표시되는 시간이 실제와 어긋나지 않음
+    _startedAt = DateTime.now();
     if (widget.demo) {
       // 미리보기: GPS 없이 가상 거리 증가 (시뮬레이터는 실제 GPS가 없어요)
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
         setState(() {
-          _seconds++;
-          _km += 0.003; // 약 5'30"/km 페이스
+          _seconds = DateTime.now().difference(_startedAt!).inSeconds;
+          _km = _seconds * 0.003; // 약 5'30"/km 페이스
         });
       });
       return;
@@ -64,7 +71,8 @@ class _RunScreenState extends State<RunScreen>
       onError: _handleGpsError,
     );
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() => _seconds++);
+      setState(
+          () => _seconds = DateTime.now().difference(_startedAt!).inSeconds);
     });
   }
 
@@ -82,6 +90,7 @@ class _RunScreenState extends State<RunScreen>
     setState(() => _finishing = true);
     _timer?.cancel();
     _location.stop();
+    WakelockPlus.disable();
     final kcal = LocationService.estimateKcal(_seconds);
     if (!widget.demo) {
       try {
@@ -115,6 +124,7 @@ class _RunScreenState extends State<RunScreen>
     _breath.dispose();
     _timer?.cancel();
     _location.stop();
+    WakelockPlus.disable();
     super.dispose();
   }
 

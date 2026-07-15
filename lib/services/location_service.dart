@@ -25,9 +25,15 @@ class LocationService {
   void start(void Function(double km) onUpdate, {void Function()? onError}) {
     totalKm = 0;
     _last = null;
-    const settings = LocationSettings(
+    // iOS 전용 앱 — 폰이 잠겨도 이미 시작된 추적은 계속 이어지도록 배경 위치
+    // 업데이트를 허용함. 포그라운드에서 시작한 추적을 이어가는 것뿐이라
+    // "When In Use" 권한만으로도 동작함 (Always 권한 불필요)
+    final settings = AppleSettings(
       accuracy: LocationAccuracy.high,
       distanceFilter: 5, // 5m 이동마다 갱신 (배터리 절약)
+      allowBackgroundLocationUpdates: true,
+      showBackgroundLocationIndicator: true,
+      pauseLocationUpdatesAutomatically: false,
     );
     _sub = Geolocator.getPositionStream(locationSettings: settings).listen(
       (pos) {
