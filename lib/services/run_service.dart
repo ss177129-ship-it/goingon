@@ -57,25 +57,29 @@ class RunService {
   }
 
   /// 내 결과 업로드. 상대 결과가 이미 있으면 세션 종료 처리
+  /// (트랜잭션으로 묶어야, 양쪽이 거의 동시에 제출할 때 "읽은 시점엔
+  /// 상대 결과가 없었음" 하는 경합으로 status가 영영 finished로
+  /// 안 바뀌는 걸 막을 수 있음)
   Future<void> submitResult(String sessionId, String uid,
       {required int seconds,
       required double km,
       required int kcal,
       String? mood}) async {
     final ref = _db.collection('sessions').doc(sessionId);
-    await ref.update({
-      'results.$uid': {
+    await _db.runTransaction((tx) async {
+      final doc = await tx.get(ref);
+      final results = Map<String, dynamic>.from(doc.data()?['results'] ?? {});
+      results[uid] = {
         'seconds': seconds,
         'km': km,
         'kcal': kcal,
         if (mood != null) 'mood': mood,
-      },
+      };
+      tx.update(ref, {
+        'results.$uid': results[uid],
+        if (results.length >= 2) 'status': 'finished',
+      });
     });
-    final doc = await ref.get();
-    final results = (doc.data()?['results'] ?? {}) as Map;
-    if (results.length >= 2) {
-      await ref.update({'status': 'finished'});
-    }
     await _bumpMonthlyStats(uid, km);
   }
 
@@ -144,6 +148,8 @@ class RunService {
 
   /// 특정 상대와 함께 끝낸 세션들 — '우리' 탭 집계용
   /// (hostId/guestId 직접 비교 — participants arrayContains는 규칙상 거부됨)
+  /// finished뿐 아니라, 내 결과는 올렸는데 상대가 영영 마치지 않아 24시간
+  /// 넘게 running으로 멈춰 있는 세션도 사실상 끝난 것으로 보고 포함시킴
   Future<List<Map<String, dynamic>>> finishedSessionsWith(
       String myUid, String partnerUid) async {
     final col = _db.collection('sessions');
@@ -158,8 +164,29 @@ class RunService {
           .where('guestId', isEqualTo: myUid)
           .where('status', isEqualTo: 'finished')
           .get(),
+      col
+          .where('hostId', isEqualTo: myUid)
+          .where('guestId', isEqualTo: partnerUid)
+          .where('status', isEqualTo: 'running')
+          .get(),
+      col
+          .where('hostId', isEqualTo: partnerUid)
+          .where('guestId', isEqualTo: myUid)
+          .where('status', isEqualTo: 'running')
+          .get(),
     ]);
-    final list = [...snaps[0].docs, ...snaps[1].docs]
+    final finished = [...snaps[0].docs, ...snaps[1].docs];
+    final stuckRunning = [...snaps[2].docs, ...snaps[3].docs].where((d) {
+      final data = d.data();
+      final startedAt = data['startedAt'] as Timestamp?;
+      if (startedAt == null) return false;
+      final results = data['results'];
+      final hasMyResult = results is Map && results.containsKey(myUid);
+      return hasMyResult &&
+          DateTime.now().difference(startedAt.toDate()) >
+              const Duration(hours: 24);
+    });
+    final list = [...finished, ...stuckRunning]
         .map((d) => {'id': d.id, ...d.data()})
         .toList();
     list.sort((a, b) {
