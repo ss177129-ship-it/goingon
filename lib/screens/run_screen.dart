@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../services/active_run_guard.dart';
 import '../services/auth_service.dart';
 import '../services/location_service.dart';
 import '../services/run_service.dart';
@@ -39,6 +40,7 @@ class _RunScreenState extends State<RunScreen>
   @override
   void initState() {
     super.initState();
+    ActiveRunGuard.active = true;
     _breath = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 900))
       ..repeat(reverse: true);
@@ -125,6 +127,7 @@ class _RunScreenState extends State<RunScreen>
     _timer?.cancel();
     _location.stop();
     WakelockPlus.disable();
+    ActiveRunGuard.active = false;
     super.dispose();
   }
 

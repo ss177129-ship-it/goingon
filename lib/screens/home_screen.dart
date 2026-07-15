@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../services/active_run_guard.dart';
 import '../services/auth_service.dart';
 import '../services/friend_service.dart';
 import '../services/run_service.dart';
@@ -23,7 +24,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final _friends = FriendService();
   final _runs = RunService();
   StreamSubscription? _incomingSub;
-  String? _handledSession;
+  final Set<String> _handledSessions = {};
+  int _openSheets = 0;
+  bool get _sheetShowing => _openSheets > 0;
   Map<String, dynamic>? _me;
 
   @override
@@ -50,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _listenIncoming() {
     _incomingSub = _runs.incomingSessions(_auth.uid).listen((snap) async {
       for (final doc in snap.docs) {
-        if (doc.id == _handledSession) continue;
+        if (_handledSessions.contains(doc.id)) continue;
         // 30분 넘게 응답 없는 요청은 뒤늦게 수락 시트로 띄우는 대신 정리함
         // (createdAt이 아직 null이면 serverTimestamp 반영 전이므로 무시하지 않음)
         final createdAt = doc.data()['createdAt'] as Timestamp?;
@@ -60,7 +63,11 @@ class _HomeScreenState extends State<HomeScreen> {
           _runs.cancelSession(doc.id);
           continue;
         }
-        _handledSession = doc.id;
+        // 이미 다른 요청 시트가 떠 있거나 로비/러닝이 진행 중이면 겹쳐
+        // 띄우지 않고 넘어감 — handledSessions에 넣지 않으므로 나중에
+        // 자유로워지면 다음 스냅샷에서 다시 시도됨
+        if (_sheetShowing || ActiveRunGuard.active) continue;
+        _handledSessions.add(doc.id);
         final hostId = doc.data()['hostId'] as String;
         final host = await FirebaseFirestore.instance
             .collection('users').doc(hostId).get();
@@ -77,6 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showGoRequest(String sessionId, String hostName) {
+    _openSheets++;
     showModalBottomSheet(
       context: context,
       isDismissible: false,
@@ -138,11 +146,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ]),
       ),
-    );
+    ).whenComplete(() {
+      if (mounted) setState(() => _openSheets--);
+    });
   }
 
   /// "나중에" 선택 시 침묵 대신 한 줄 답장을 고르게 함
   void _showDeclineOptions(String sessionId) {
+    _openSheets++;
     const options = ['지금은 어려워요', '30분 뒤 어때요?', '오늘은 쉬고 싶어요'];
     showModalBottomSheet(
       context: context,
@@ -182,7 +193,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   )),
             ]),
       ),
-    );
+    ).whenComplete(() {
+      if (mounted) setState(() => _openSheets--);
+    });
   }
 
   Future<void> _sendGo(String friendUid, String friendName) async {

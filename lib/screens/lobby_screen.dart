@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../services/active_run_guard.dart';
 import '../services/auth_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
@@ -56,6 +57,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
   @override
   void initState() {
     super.initState();
+    // 로비/러닝이 떠 있는 동안엔 새 GO? 요청 시트가 홈 화면에 겹쳐 뜨지 않게 함
+    ActiveRunGuard.active = true;
     if (widget.demo) {
       Future.delayed(const Duration(milliseconds: 1200), () {
         if (!mounted) return;
@@ -88,6 +91,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
           _sub?.cancel();
           _showDeclineReply(declineMessage);
         } else {
+          ActiveRunGuard.active = false;
           Navigator.pop(context);
         }
         return;
@@ -184,6 +188,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       body: message,
     );
     if (!mounted) return;
+    ActiveRunGuard.active = false;
     Navigator.pop(context);
   }
 
@@ -258,6 +263,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   GestureDetector(
                     onTap: () {
                       if (!widget.demo) _runs.cancelSession(widget.sessionId);
+                      ActiveRunGuard.active = false;
                       Navigator.pop(context);
                     },
                     child: const Text('← 홈으로',
@@ -514,6 +520,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
               ),
               onPressed: () {
                 if (!widget.demo) _runs.cancelSession(widget.sessionId);
+                ActiveRunGuard.active = false;
                 Navigator.pop(context);
               },
               child: const Text('다음에 다시',
