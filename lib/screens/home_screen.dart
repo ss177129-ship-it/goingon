@@ -51,6 +51,15 @@ class _HomeScreenState extends State<HomeScreen> {
     _incomingSub = _runs.incomingSessions(_auth.uid).listen((snap) async {
       for (final doc in snap.docs) {
         if (doc.id == _handledSession) continue;
+        // 30분 넘게 응답 없는 요청은 뒤늦게 수락 시트로 띄우는 대신 정리함
+        // (createdAt이 아직 null이면 serverTimestamp 반영 전이므로 무시하지 않음)
+        final createdAt = doc.data()['createdAt'] as Timestamp?;
+        if (createdAt != null &&
+            DateTime.now().difference(createdAt.toDate()) >
+                const Duration(minutes: 30)) {
+          _runs.cancelSession(doc.id);
+          continue;
+        }
         _handledSession = doc.id;
         final hostId = doc.data()['hostId'] as String;
         final host = await FirebaseFirestore.instance
