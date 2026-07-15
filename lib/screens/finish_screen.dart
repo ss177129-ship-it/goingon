@@ -183,7 +183,7 @@ class _FinishScreenState extends State<FinishScreen> {
                               color: GoColors.ink.withOpacity(.4))),
                       const SizedBox(height: 12),
                       Row(children: [
-                        _togetherStat(_fmt(widget.mySeconds), '함께한 시간'),
+                        _togetherStat(_fmt(widget.mySeconds), '내가 달린 시간'),
                         _tDivider(),
                         _togetherStat(
                             _waiting
