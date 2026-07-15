@@ -69,7 +69,13 @@ class AuthService {
     final existing = await ref.get();
     if (existing.exists) return;
 
-    final code = _generateInviteCode();
+    var code = _generateInviteCode();
+    for (var attempt = 0; attempt < 4; attempt++) {
+      final codeDoc = await _db.collection('inviteCodes').doc(code).get();
+      if (!codeDoc.exists) break;
+      code = _generateInviteCode();
+    }
+
     final batch = _db.batch();
     batch.set(ref, {
       'name': nickname,
@@ -139,11 +145,11 @@ class AuthService {
     await GoogleSignIn.instance.disconnect().catchError((_) {});
   }
 
-  /// GO-XXXX 형식 초대 코드 (혼동 문자 I/O/0/1 제외)
+  /// GO-XXXXX 형식 초대 코드 (혼동 문자 I/O/0/1 제외)
   String _generateInviteCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final r = Random.secure();
-    final body = List.generate(4, (_) => chars[r.nextInt(chars.length)]).join();
+    final body = List.generate(5, (_) => chars[r.nextInt(chars.length)]).join();
     return 'GO-$body';
   }
 }

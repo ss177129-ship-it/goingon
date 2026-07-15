@@ -127,7 +127,7 @@ class _InviteScreenState extends State<InviteScreen> {
               textCapitalization: TextCapitalization.characters,
               style: GoTheme.serif(24),
               decoration: InputDecoration(
-                hintText: 'GO-XXXX',
+                hintText: 'GO-XXXXX',
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
