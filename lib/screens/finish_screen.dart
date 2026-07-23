@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
@@ -138,7 +139,8 @@ class _FinishScreenState extends State<FinishScreen> {
         [XFile(file.path)],
         text: '멀리 있어도, 함께 달렸어요 🏃 #goingon',
       );
-    } catch (e) {
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('공유 카드를 만들지 못했어요. 다시 시도해 주세요.')),

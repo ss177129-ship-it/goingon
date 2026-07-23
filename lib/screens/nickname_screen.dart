@@ -1,3 +1,4 @@
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
@@ -28,7 +29,8 @@ class _NicknameScreenState extends State<NicknameScreen> {
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(context,
           MaterialPageRoute(builder: (_) => const RootScreen()), (_) => false);
-    } catch (e) {
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(

@@ -1,3 +1,4 @@
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -33,7 +34,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final profile = await _auth.myProfile();
       if (!mounted) return;
       setState(() => _me = profile);
-    } catch (e) {
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (mounted) {
         Future.delayed(const Duration(seconds: 3), () {
           if (mounted) _load();
@@ -103,7 +105,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (confirmed != true) return;
     try {
       await _auth.signOut();
-    } catch (e) {
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('로그아웃에 실패했어요. 다시 시도해 주세요.')),
@@ -130,7 +133,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(context,
           MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);
-    } catch (e) {
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
       setState(() => _busy = false);
       ScaffoldMessenger.of(context).showSnackBar(

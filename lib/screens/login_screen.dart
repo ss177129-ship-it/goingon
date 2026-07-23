@@ -1,3 +1,4 @@
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -41,7 +42,8 @@ class _LoginScreenState extends State<LoginScreen> {
       final name = await AuthService().signInWithApple();
       if (!mounted) return;
       await _afterAuth(name);
-    } catch (e) {
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -56,7 +58,8 @@ class _LoginScreenState extends State<LoginScreen> {
       final name = await AuthService().signInWithGoogle();
       if (!mounted) return;
       await _afterAuth(name);
-    } catch (e) {
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(

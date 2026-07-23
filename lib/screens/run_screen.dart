@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
@@ -98,7 +99,8 @@ class _RunScreenState extends State<RunScreen>
       try {
         await RunService().submitResult(widget.sessionId, AuthService().uid,
             seconds: _seconds, km: _km, kcal: kcal, mood: mood);
-      } catch (e) {
+      } catch (e, stack) {
+        FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
         if (!mounted) return;
         setState(() => _finishing = false);
         ScaffoldMessenger.of(context).showSnackBar(

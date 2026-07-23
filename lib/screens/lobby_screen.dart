@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -155,7 +156,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
     try {
       await _runs.setReady(widget.sessionId, _uid);
       _maybeCountdown();
-    } catch (e) {
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       // 전달에 실패하면 상대가 내 준비 상태를 영영 못 봄 — 조용히 두지 않고
       // 준비 전 단계로 되돌려 다시 시도할 수 있게 함
       if (!mounted) return;
@@ -212,7 +214,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
   Future<void> _notifyPartner() async {
     try {
       await Share.share('지금 고잉온 열어줘! 같이 뛰자');
-    } catch (e) {
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('알리지 못했어요. 다시 시도해 주세요.')),
@@ -413,7 +416,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   if (widget.demo) return;
                   try {
                     await _runs.setLate(widget.sessionId, _uid, next);
-                  } catch (e) {
+                  } catch (e, stack) {
+                    FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
                     if (!mounted) return;
                     setState(() => _isLate = !next);
                     ScaffoldMessenger.of(context).showSnackBar(

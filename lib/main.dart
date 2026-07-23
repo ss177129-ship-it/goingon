@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,23 +19,29 @@ import 'firebase_options.dart';
 
 const _kHasLaunchedBeforeKey = 'has_launched_before';
 
-/// runZonedGuarded + FlutterError.onError로 처리 안 된 에러를 조용히
-/// 묻히게 두지 않고 콘솔에 남김. Crashlytics는 아직 안 붙였지만(이번
-/// 버전 밖), print 수준이라도 있는 것과 없는 것 차이가 큼
+/// Crashlytics로 크래시/미처리 에러를 전부 보냄 — Flutter 프레임워크 에러는
+/// FlutterError.onError, 그 밖의 비동기 에러는 PlatformDispatcher.onError로
+/// 잡고, 혹시 둘 다 빠져나가는 게 있으면 runZonedGuarded가 마지막으로 잡음
 void main() {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
-    FlutterError.onError = (details) {
-      FlutterError.presentError(details);
-      debugPrint('FlutterError: ${details.exceptionAsString()}');
-    };
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+
+    FlutterError.onError = (details) {
+      FlutterError.presentError(details);
+      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    };
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+
     await GoogleSignIn.instance.initialize();
     runApp(const GoingOnApp());
   }, (error, stack) {
-    debugPrint('Uncaught zone error: $error\n$stack');
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
   });
 }
 
@@ -107,8 +115,9 @@ class _SplashGateState extends State<SplashGate>
             await AuthService().myProfile().timeout(const Duration(seconds: 10)) !=
                 null;
       }
-    } catch (e) {
+    } catch (e, stack) {
       // 콜드스타트 중 네트워크/Firestore 문제 — 무한 대기 대신 재시도 화면으로
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
       setState(() => _connectionError = true);
       return;

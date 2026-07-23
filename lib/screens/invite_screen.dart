@@ -1,3 +1,4 @@
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -28,7 +29,8 @@ class _InviteScreenState extends State<InviteScreen> {
         '1. GoingOn 설치: https://apps.apple.com/app/goingon\n'
         '2. 초대 코드 입력: ${widget.myCode}',
       );
-    } catch (e) {
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('공유하지 못했어요. 다시 시도해 주세요.')),
@@ -54,7 +56,8 @@ class _InviteScreenState extends State<InviteScreen> {
           const SnackBar(content: Text('코드를 찾을 수 없어요. 다시 확인해 주세요.')),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('연결에 실패했어요. 인터넷을 확인해 주세요.')),

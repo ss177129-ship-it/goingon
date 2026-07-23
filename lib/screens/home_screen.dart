@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 
 import '../services/active_run_guard.dart';
@@ -40,7 +41,8 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final p = await _auth.myProfile();
       if (mounted) setState(() => _me = p);
-    } catch (e) {
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (mounted) {
         Future.delayed(const Duration(seconds: 3), () {
           if (mounted) _load();
@@ -206,7 +208,8 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (_) =>
             LobbyScreen(sessionId: sessionId, partnerName: friendName),
       ));
-    } catch (e) {
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('요청을 보내지 못했어요. 다시 시도해 주세요.')),
