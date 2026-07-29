@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../services/active_run_guard.dart';
@@ -28,7 +30,7 @@ class RunScreen extends StatefulWidget {
 }
 
 class _RunScreenState extends State<RunScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final _location = LocationService();
   Timer? _timer;
   DateTime? _startedAt;
@@ -38,6 +40,17 @@ class _RunScreenState extends State<RunScreen>
   bool _finishing = false;
   late final AnimationController _breath;
 
+  // ── 제스처 상호작용(탭/스와이프/롱프레스로 상대에게 신호 보내기) ──
+  late final AnimationController _gesturePop;
+  StreamSubscription? _sessionSub;
+  DateTime? _lastPartnerGestureAt;
+  String? _gestureType;
+  bool _gestureFromPartner = false;
+  int _gestureSeq = 0;
+  Timer? _gestureLabelTimer;
+  Offset? _gestureStart;
+  Timer? _holdTimer;
+
   @override
   void initState() {
     super.initState();
@@ -45,8 +58,26 @@ class _RunScreenState extends State<RunScreen>
     _breath = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 900))
       ..repeat(reverse: true);
+    _gesturePop = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 500));
     WakelockPlus.enable();
+    if (!widget.demo) _listenPartnerGesture();
     _start();
+  }
+
+  /// 상대가 보낸 제스처 신호 감지 — 위치/페이스는 안 보내고 이 필드 하나만 봄
+  void _listenPartnerGesture() {
+    _sessionSub = RunService().sessionStream(widget.sessionId).listen((doc) {
+      final g = doc.data()?['gesture'] as Map<String, dynamic>?;
+      if (g == null || g['uid'] == AuthService().uid) return;
+      final at = (g['at'] as Timestamp?)?.toDate();
+      if (at == null) return;
+      if (_lastPartnerGestureAt != null && !at.isAfter(_lastPartnerGestureAt!)) {
+        return;
+      }
+      _lastPartnerGestureAt = at;
+      _playGesture(g['type'] as String, fromPartner: true);
+    });
   }
 
   Future<void> _start() async {
@@ -97,6 +128,112 @@ class _RunScreenState extends State<RunScreen>
     setState(() => _gpsOk = false);
   }
 
+  // ── 제스처 상호작용 ──
+  // 짧게 탭 = 파이팅, 위로 스와이프 = 같이 빨라지자, 아래로 스와이프 = 천천히,
+  // 길게 누르기(550ms) = 보고싶어. 프로토타입(design/prototype_v2.html)의
+  // run-canvas-wrap 제스처를 그대로 옮김
+
+  void _onGesturePointerDown(PointerDownEvent e) {
+    _gestureStart = e.localPosition;
+    _holdTimer = Timer(const Duration(milliseconds: 550), () {
+      _sendGesture('heart');
+      _gestureStart = null; // 롱프레스로 이미 처리됨 — pointerUp에서 또 판정하지 않음
+    });
+  }
+
+  void _onGesturePointerUp(PointerUpEvent e) {
+    _holdTimer?.cancel();
+    final start = _gestureStart;
+    if (start == null) return;
+    _gestureStart = null;
+    final dy = e.localPosition.dy - start.dy;
+    final dist = (e.localPosition - start).distance;
+    if (dist < 14) {
+      _sendGesture('enc');
+    } else if (dy < -20) {
+      _sendGesture('up');
+    } else if (dy > 20) {
+      _sendGesture('dn');
+    }
+  }
+
+  void _onGesturePointerCancel(PointerCancelEvent e) {
+    _holdTimer?.cancel();
+    _gestureStart = null;
+  }
+
+  Future<void> _sendGesture(String type) async {
+    _playGesture(type, fromPartner: false);
+    if (widget.demo) return;
+    try {
+      await RunService().sendGesture(widget.sessionId, AuthService().uid, type);
+    } catch (e, stack) {
+      // 로컬 애니메이션은 이미 보여줬으니 실패해도 조용히 무시 — 재시도 강요 안 함
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+    }
+  }
+
+  void _playGesture(String type, {required bool fromPartner}) {
+    if (!mounted) return;
+    if (type == 'heart' && !fromPartner) HapticFeedback.mediumImpact();
+    setState(() {
+      _gestureType = type;
+      _gestureFromPartner = fromPartner;
+      _gestureSeq++;
+    });
+    _gesturePop.forward(from: 0);
+    _gestureLabelTimer?.cancel();
+    _gestureLabelTimer = Timer(const Duration(milliseconds: 1800), () {
+      if (mounted) setState(() => _gestureType = null);
+    });
+  }
+
+  (String, Color) _gestureLabel(String type) {
+    switch (type) {
+      case 'up':
+        return ('같이 빨라지자', GoColors.amber);
+      case 'dn':
+        return ('힘들어, 천천히', GoColors.coralDark);
+      case 'heart':
+        return ('보고싶어', GoColors.coralDark);
+      default:
+        return ('파이팅', GoColors.limeDark);
+    }
+  }
+
+  Widget _gestureLabelWidget() {
+    return SizedBox(
+      height: 28,
+      child: Center(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: _gestureType == null
+              ? const SizedBox.shrink(key: ValueKey('empty'))
+              : ScaleTransition(
+                  key: ValueKey(_gestureSeq),
+                  scale: CurvedAnimation(
+                      parent: _gesturePop, curve: Curves.easeOutBack),
+                  child: _gestureChip(_gestureType!),
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _gestureChip(String type) {
+    final (text, color) = _gestureLabel(type);
+    final label = _gestureFromPartner ? '${widget.partnerName} · $text' : text;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(.3)),
+      ),
+      child: Text(label, style: GoTheme.serif(15, color: color)),
+    );
+  }
+
   Future<void> _finish(String? mood) async {
     if (_finishing) return;
     setState(() => _finishing = true);
@@ -135,6 +272,10 @@ class _RunScreenState extends State<RunScreen>
   @override
   void dispose() {
     _breath.dispose();
+    _gesturePop.dispose();
+    _sessionSub?.cancel();
+    _gestureLabelTimer?.cancel();
+    _holdTimer?.cancel();
     _timer?.cancel();
     _location.stop();
     WakelockPlus.disable();
@@ -280,20 +421,33 @@ class _RunScreenState extends State<RunScreen>
             ),
           ),
           const Spacer(),
-          // ── 함께 달리는 감각 — 겹치는 두 원 ──
-          SizedBox(
-            width: 220, height: 140,
-            child: Stack(alignment: Alignment.center, children: [
-              Positioned(
-                left: 30,
-                child: _breathingCircle(GoColors.lime, GoColors.limeDark),
-              ),
-              Positioned(
-                right: 30,
-                child: _breathingCircle(GoColors.coral, GoColors.coralDark),
-              ),
-            ]),
+          // ── 함께 달리는 감각 — 겹치는 두 원. 탭/스와이프/롱프레스로
+          // 상대에게 신호를 보낼 수 있음 (design/prototype_v2.html의
+          // run-canvas-wrap 제스처)
+          _gestureLabelWidget(),
+          const SizedBox(height: 4),
+          Listener(
+            behavior: HitTestBehavior.opaque,
+            onPointerDown: _onGesturePointerDown,
+            onPointerUp: _onGesturePointerUp,
+            onPointerCancel: _onGesturePointerCancel,
+            child: SizedBox(
+              width: 220, height: 140,
+              child: Stack(alignment: Alignment.center, children: [
+                Positioned(
+                  left: 30,
+                  child: _breathingCircle(GoColors.lime, GoColors.limeDark),
+                ),
+                Positioned(
+                  right: 30,
+                  child: _breathingCircle(GoColors.coral, GoColors.coralDark),
+                ),
+              ]),
+            ),
           ),
+          const SizedBox(height: 8),
+          const Text('탭·스와이프·길게 누르면 신호를 보낼 수 있어요',
+              style: TextStyle(fontSize: 9, color: GoColors.dim)),
           const Spacer(),
           // ── 함께 합산 바 (프로토타입 together-bar) ──
           Padding(

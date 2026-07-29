@@ -36,6 +36,19 @@ class RunService {
   Stream<DocumentSnapshot<Map<String, dynamic>>> sessionStream(String id) =>
       _db.collection('sessions').doc(id).snapshots();
 
+  /// 러닝 중 상대에게 보내는 가벼운 제스처 신호(탭/스와이프/롱프레스) —
+  /// 위치·페이스처럼 지속적으로 동기화하는 게 아니라 순간적인 이벤트 하나만
+  /// 덮어쓰는 것이라 "러닝 중 실시간 동기화 없음" 원칙과는 무관함
+  Future<void> sendGesture(String sessionId, String uid, String type) async {
+    await _db.collection('sessions').doc(sessionId).update({
+      'gesture': {
+        'uid': uid,
+        'type': type,
+        'at': FieldValue.serverTimestamp(),
+      },
+    });
+  }
+
   /// 취소된 세션이 뒤늦게 부활하지 않도록 트랜잭션으로 상태를 먼저 확인
   Future<void> setReady(String sessionId, String uid) async {
     final ref = _db.collection('sessions').doc(sessionId);
