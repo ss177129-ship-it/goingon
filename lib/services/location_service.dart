@@ -69,8 +69,11 @@ class LocationService {
       (9.8 * 65 * (seconds / 3600)).round();
 
   /// 분'초" 페이스 문자열
+  /// 너무 이른 거리(20m 미만)에서는 GPS 오차가 상대적으로 커서 계산 안 함 —
+  /// 예전엔 50m 기준이라 걷는 속도에선 30~40초 넘게 빈 값만 보여서
+  /// 마치 안 되는 것처럼 느껴졌음
   static String pace(double km, int seconds) {
-    if (km < 0.05) return "--'--\"";
+    if (km < 0.02) return "--'--\"";
     final secPerKm = seconds / km;
     final m = secPerKm ~/ 60;
     final s = (secPerKm % 60).round();

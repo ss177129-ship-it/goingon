@@ -13,8 +13,8 @@ void main() {
   });
 
   group('LocationService.pace', () {
-    test('50m 미만이면 아직 페이스를 계산할 수 없음', () {
-      expect(LocationService.pace(0.03, 100), "--'--\"");
+    test('20m 미만이면 아직 페이스를 계산할 수 없음', () {
+      expect(LocationService.pace(0.01, 100), "--'--\"");
     });
 
     test('1km를 5분 30초에 뛰면 5\'30"', () {
