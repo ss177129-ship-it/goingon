@@ -64,7 +64,16 @@ class _RunScreenState extends State<RunScreen>
       });
       return;
     }
-    final ok = await _location.requestPermission();
+    final ok = await _location.requestPermission(
+      onBeforeAlwaysUpgrade: () {
+        if (!mounted) return Future.value();
+        return GoDialog.notice(
+          context,
+          title: '위치 접근 허용',
+          body: '화면을 꺼도 러닝 기록이 끊기지 않으려면,\n다음 화면에서 "항상 허용"을 선택해 주세요.',
+        );
+      },
+    );
     if (!ok) {
       setState(() => _gpsOk = false);
       return;

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
 
 /// GPS 트래킹 — 거리 누적 + 페이스 계산
 class LocationService {
@@ -8,15 +9,32 @@ class LocationService {
   Position? _last;
   double totalKm = 0;
 
-  /// 위치 권한 요청. 위치 서비스가 꺼져 있거나 거부되면 false
-  Future<bool> requestPermission() async {
+  /// Always 권한까지 받았는지 — 이때만 배경 위치 추적을 켬.
+  /// When In Use만 있는데 배경 추적을 강제로 켜면 iOS가 앱을 강제 종료시킴
+  bool _canRunInBackground = false;
+
+  /// 위치 권한 요청. When In Use를 먼저 받고, 그것뿐이면 Always로 업그레이드를
+  /// 시도함(화면 꺼도 계속 기록되게). onBeforeAlwaysUpgrade는 시스템 다이얼로그
+  /// 뜨기 직전에 왜 필요한지 안내할 기회 — 거절해도 크래시 없이 When In Use로
+  /// 계속 진행되고, 그 경우 배경 추적만 못 함 (전면 실행 중에는 그대로 동작)
+  Future<bool> requestPermission(
+      {Future<void> Function()? onBeforeAlwaysUpgrade}) async {
     if (!await Geolocator.isLocationServiceEnabled()) return false;
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
-    return permission == LocationPermission.whileInUse ||
+    final hasBasicAccess = permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always;
+    if (!hasBasicAccess) return false;
+
+    if (permission == LocationPermission.whileInUse) {
+      await onBeforeAlwaysUpgrade?.call();
+      await ph.Permission.locationAlways.request();
+      permission = await Geolocator.checkPermission();
+    }
+    _canRunInBackground = permission == LocationPermission.always;
+    return true;
   }
 
   /// 트래킹 시작. onUpdate(누적 km)를 매 갱신마다 호출.
@@ -25,14 +43,14 @@ class LocationService {
   void start(void Function(double km) onUpdate, {void Function()? onError}) {
     totalKm = 0;
     _last = null;
-    // iOS 전용 앱 — 폰이 잠겨도 이미 시작된 추적은 계속 이어지도록 배경 위치
-    // 업데이트를 허용함. 포그라운드에서 시작한 추적을 이어가는 것뿐이라
-    // "When In Use" 권한만으로도 동작함 (Always 권한 불필요)
+    // iOS 전용 앱 — Always 권한이 있을 때만 배경 위치 업데이트를 허용함
+    // (requestPermission에서 미리 확인됨). When In Use만 있으면 폰이 잠기는
+    // 순간 GPS가 멈추지만, 최소한 크래시는 나지 않음
     final settings = AppleSettings(
       accuracy: LocationAccuracy.high,
       distanceFilter: 5, // 5m 이동마다 갱신 (배터리 절약)
-      allowBackgroundLocationUpdates: true,
-      showBackgroundLocationIndicator: true,
+      allowBackgroundLocationUpdates: _canRunInBackground,
+      showBackgroundLocationIndicator: _canRunInBackground,
       pauseLocationUpdatesAutomatically: false,
     );
     _sub = Geolocator.getPositionStream(locationSettings: settings).listen(
