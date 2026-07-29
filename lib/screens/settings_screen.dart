@@ -1,6 +1,5 @@
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../services/auth_service.dart';
 import '../theme.dart';
@@ -10,7 +9,7 @@ import 'login_screen.dart';
 const _kAppVersion = '0.1.0';
 
 /// '설정' 탭 — 프로토타입 s-settings. MVP 범위: 프로필(이름 변경),
-/// 초대 코드, 알림(준비 중 — FCM 미구현), 로그아웃, 회원탈퇴, 버전.
+/// 아이디(검색용 핸들), 알림(준비 중 — FCM 미구현), 로그아웃, 회원탈퇴, 버전.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -161,15 +160,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _copyInviteCode() {
-    final code = _me?['inviteCode'] ?? '';
-    if (code.isEmpty) return;
-    Clipboard.setData(ClipboardData(text: code));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('초대 코드를 복사했어요'), duration: Duration(seconds: 2)),
-    );
-  }
-
   /// 모든 계정이 Apple 로그인에 묶여 있으므로 로그아웃해도 항상 복구 가능
   Future<void> _logout() async {
     final confirmed = await GoDialog.confirm(
@@ -238,13 +228,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: '아이디',
         subtitle: _me?['username'] ?? '설정 안 함 — 친구가 검색으로 찾을 수 있어요',
         onTap: _editUsername,
-      ),
-      _row(
-        icon: Icons.mail_outline,
-        title: '내 초대 코드',
-        subtitle: _me?['inviteCode'] ?? '',
-        trailing: const Icon(Icons.copy_outlined, size: 18, color: GoColors.dim),
-        onTap: _copyInviteCode,
       ),
       _row(
         icon: Icons.notifications_outlined,

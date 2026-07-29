@@ -15,12 +15,12 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['username']);
 
       // 러닝 종료 시 통계 자동 갱신 (run_service._bumpMonthlyStats) —
-      // inviteCode/createdAt은 여기 포함되지 않으므로 생성 이후 절대 못 바뀜
+      // createdAt은 여기 포함되지 않으므로 생성 이후 절대 못 바뀜
       allow update: if request.auth != null && request.auth.uid == userId &&
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['totalRuns', 'monthKm', 'monthKey', 'weekStreak', 'lastRunWeek']);
 
-      // 내 문서: 초대 코드로 친구 1명 추가
+      // 내 문서: 아이디 검색으로 친구 1명 추가
       allow update: if request.auth != null && request.auth.uid == userId &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends']) &&
         request.resource.data.friends.size() == resource.data.friends.size() + 1 &&
@@ -41,14 +41,8 @@ service cloud.firestore {
         resource.data.friends.hasOnly(request.resource.data.friends.concat([request.auth.uid]));
     }
 
-    match /inviteCodes/{code} {
-      allow get: if request.auth != null;
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
-    }
-
-    // 아이디 검색용 예약 문서 — inviteCodes와 동일한 패턴(정확히 일치하는
-    // 문서 하나만 get 가능, 컬렉션 전체 list는 막혀 있어 아이디 스캐닝 불가)
+    // 아이디 검색용 예약 문서 — 정확히 일치하는 문서 하나만 get 가능,
+    // 컬렉션 전체 list는 막혀 있어 아이디 스캐닝 불가
     match /usernames/{username} {
       allow get: if request.auth != null;
       allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;

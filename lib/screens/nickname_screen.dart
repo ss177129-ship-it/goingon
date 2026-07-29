@@ -6,8 +6,9 @@ import '../theme.dart';
 import '../widgets/brand_mark.dart';
 import 'root_screen.dart';
 
-/// 로그인(Apple 등) 성공 직후 항상 거치는 닉네임 설정 화면.
-/// prefill은 Apple이 최초 인가 시 준 이름(없을 수도 있음).
+/// 로그인(Apple 등) 성공 직후 항상 거치는 프로필 설정 화면 — 이름과
+/// 검색용 아이디를 함께 만듦. prefill은 Apple이 최초 인가 시 준 이름
+/// (없을 수도 있음).
 class NicknameScreen extends StatefulWidget {
   final String? prefill;
   const NicknameScreen({super.key, this.prefill});
@@ -17,16 +18,31 @@ class NicknameScreen extends StatefulWidget {
 }
 
 class _NicknameScreenState extends State<NicknameScreen> {
-  late final _controller = TextEditingController(text: widget.prefill ?? '');
+  late final _nameController = TextEditingController(text: widget.prefill ?? '');
+  final _usernameController = TextEditingController();
   bool _loading = false;
 
   Future<void> _confirm() async {
-    final name = _controller.text.trim();
-    if (name.isEmpty) return;
+    final name = _nameController.text.trim();
+    final username = _usernameController.text.trim().toLowerCase();
+    if (name.isEmpty || username.isEmpty) return;
+    if (!RegExp(r'^[a-z0-9_]{3,20}$').hasMatch(username)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('아이디는 영문 소문자·숫자·_ 로 3~20자예요.')),
+      );
+      return;
+    }
     setState(() => _loading = true);
     try {
-      await AuthService().ensureProfile(name);
+      final ok = await AuthService().ensureProfile(name, username);
       if (!mounted) return;
+      if (!ok) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('이미 사용 중인 아이디예요. 다른 아이디를 입력해 주세요.')),
+        );
+        return;
+      }
       Navigator.pushAndRemoveUntil(context,
           MaterialPageRoute(builder: (_) => const RootScreen()), (_) => false);
     } catch (e, stack) {
@@ -40,23 +56,30 @@ class _NicknameScreenState extends State<NicknameScreen> {
   }
 
   @override
+  void dispose() {
+    _nameController.dispose();
+    _usernameController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28),
           child: Column(
             children: [
-              const Spacer(),
+              const SizedBox(height: 40),
               BrandMark.standard(),
               const SizedBox(height: 16),
               Text('goingon', style: GoTheme.serif(20, color: GoColors.dim)),
               const SizedBox(height: 18),
-              Text('마지막으로,\n뭐라고 부르면 될까요?',
+              Text('마지막으로,\n프로필을 만들어요',
                   textAlign: TextAlign.center, style: GoTheme.serif(30)),
               const SizedBox(height: 36),
               TextField(
-                controller: _controller,
+                controller: _nameController,
                 textAlign: TextAlign.center,
                 maxLength: 10,
                 autofocus: widget.prefill == null || widget.prefill!.isEmpty,
@@ -70,9 +93,28 @@ class _NicknameScreenState extends State<NicknameScreen> {
                     borderSide: BorderSide(color: GoColors.line),
                   ),
                 ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _usernameController,
+                textAlign: TextAlign.center,
+                maxLength: 20,
+                decoration: InputDecoration(
+                  hintText: '아이디 (친구가 검색으로 찾아요)',
+                  counterText: '',
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: GoColors.line),
+                  ),
+                ),
                 onSubmitted: (_) => _confirm(),
               ),
-              const Spacer(),
+              const SizedBox(height: 8),
+              const Text('영문 소문자·숫자·_ 로 3~20자',
+                  style: TextStyle(fontSize: 11, color: GoColors.dim)),
+              const SizedBox(height: 36),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(

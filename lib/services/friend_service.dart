@@ -1,17 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// 친구 연결 — 초대 코드 방식 (전화번호 인증 없이 가장 단순하게)
+/// 친구 연결 — 아이디 검색 방식 (전화번호 인증 없이 가장 단순하게).
+/// 이미 앱을 쓰는 사람끼리만 연결 가능 — 초대 코드로 미가입자를 데려오는
+/// 방식은 의도적으로 없앰
 class FriendService {
   final _db = FirebaseFirestore.instance;
-
-  /// 코드로 친구 추가 (양방향)
-  /// 반환: 성공 시 친구 이름, 실패 시 null
-  Future<String?> addFriendByCode(String myUid, String rawCode) async {
-    final code = rawCode.trim().toUpperCase();
-    final codeDoc = await _db.collection('inviteCodes').doc(code).get();
-    if (!codeDoc.exists) return null;
-    return _connectFriend(myUid, codeDoc.data()!['uid'] as String);
-  }
 
   /// 아이디로 친구 추가 (양방향) — 정확히 일치하는 아이디만 찾음
   /// 반환: 성공 시 친구 이름, 실패 시 null

@@ -5,8 +5,8 @@ import '../services/friend_service.dart';
 import '../services/run_service.dart';
 import '../services/story_labels.dart';
 import '../theme.dart';
+import '../widgets/friend_search_sheet.dart';
 import '../widgets/initial_avatar.dart';
-import 'invite_screen.dart';
 
 const _kDistanceMilestones = [50, 100, 300, 500, 1000, 2000, 3000, 5000];
 const _kWeekdayLabels = ['월', '화', '수', '목', '금', '토', '일'];
@@ -179,7 +179,7 @@ class _UsScreenState extends State<UsScreen> {
               Text('아직 함께 뛰는 사람이 없어요',
                   textAlign: TextAlign.center, style: GoTheme.serif(22)),
               const SizedBox(height: 8),
-              const Text('한 명만 초대하면, 둘만의 여정이 시작돼요.',
+              const Text('아이디로 친구를 찾으면, 둘만의 여정이 시작돼요.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 13, color: GoColors.mid)),
               const SizedBox(height: 22),
@@ -192,8 +192,8 @@ class _UsScreenState extends State<UsScreen> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
                   ),
-                  onPressed: _openInvite,
-                  child: Text('초대하기',
+                  onPressed: () => showFriendSearchSheet(context),
+                  child: Text('친구 찾기',
                       style: GoTheme.serif(18, color: GoColors.paper)),
                 ),
               ),
@@ -683,12 +683,4 @@ class _UsScreenState extends State<UsScreen> {
     );
   }
 
-  void _openInvite() async {
-    final me = await _auth.myProfile();
-    if (!mounted) return;
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) => InviteScreen(
-          myCode: me?['inviteCode'] ?? '', myName: me?['name'] ?? ''),
-    ));
-  }
 }

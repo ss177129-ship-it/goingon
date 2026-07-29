@@ -62,30 +62,28 @@ class AuthService {
     return googleUser.displayName;
   }
 
-  /// 초대 코드 발급을 포함한 프로필 생성 — 이미 프로필 문서가 있으면
-  /// (재로그인 케이스) 아무것도 하지 않음. 그렇지 않으면 친구 목록/
-  /// 초대코드가 새로 덮어써져 기존 데이터를 잃게 됨
-  Future<void> ensureProfile(String nickname) async {
+  /// 프로필 생성(이름 + 아이디) — 이미 프로필 문서가 있으면(재로그인
+  /// 케이스) 아무것도 하지 않고 true 반환. 아이디가 이미 다른 사람 것이면
+  /// false 반환(호출부에서 다른 아이디로 다시 시도하게 함)
+  Future<bool> ensureProfile(String nickname, String username) async {
     final ref = _db.collection('users').doc(uid);
     final existing = await ref.get();
-    if (existing.exists) return;
+    if (existing.exists) return true;
 
-    var code = _generateInviteCode();
-    for (var attempt = 0; attempt < 4; attempt++) {
-      final codeDoc = await _db.collection('inviteCodes').doc(code).get();
-      if (!codeDoc.exists) break;
-      code = _generateInviteCode();
-    }
+    final usernameRef = _db.collection('usernames').doc(username);
+    final usernameDoc = await usernameRef.get();
+    if (usernameDoc.exists) return false;
 
     final batch = _db.batch();
     batch.set(ref, {
       'name': nickname,
-      'inviteCode': code,
+      'username': username,
       'friends': <String>[],
       'createdAt': FieldValue.serverTimestamp(),
     });
-    batch.set(_db.collection('inviteCodes').doc(code), {'uid': uid});
+    batch.set(usernameRef, {'uid': uid});
     await batch.commit();
+    return true;
   }
 
   String _generateNonce([int length = 32]) {
@@ -135,12 +133,11 @@ class AuthService {
     await _auth.signOut();
   }
 
-  /// 회원탈퇴 — 친구들의 목록에서 나를 지우고 내 계정/초대코드/아이디를 삭제
+  /// 회원탈퇴 — 친구들의 목록에서 나를 지우고 내 계정/아이디를 삭제
   Future<void> deleteAccount() async {
     final myUid = uid;
     final doc = await _db.collection('users').doc(myUid).get();
     final data = doc.data();
-    final code = data?['inviteCode'] as String?;
     final username = data?['username'] as String?;
     final friends = List<String>.from(data?['friends'] ?? []);
 
@@ -151,9 +148,6 @@ class AuthService {
       });
     }
     batch.delete(_db.collection('users').doc(myUid));
-    if (code != null) {
-      batch.delete(_db.collection('inviteCodes').doc(code));
-    }
     if (username != null) {
       batch.delete(_db.collection('usernames').doc(username));
     }
@@ -170,13 +164,5 @@ class AuthService {
       await _auth.signOut();
     }
     await GoogleSignIn.instance.disconnect().catchError((_) {});
-  }
-
-  /// GO-XXXXX 형식 초대 코드 (혼동 문자 I/O/0/1 제외)
-  String _generateInviteCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    final r = Random.secure();
-    final body = List.generate(5, (_) => chars[r.nextInt(chars.length)]).join();
-    return 'GO-$body';
   }
 }

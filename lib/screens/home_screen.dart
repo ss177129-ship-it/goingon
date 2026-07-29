@@ -9,8 +9,8 @@ import '../services/auth_service.dart';
 import '../services/friend_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
+import '../widgets/friend_search_sheet.dart';
 import '../widgets/initial_avatar.dart';
-import 'invite_screen.dart';
 import 'lobby_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -232,12 +232,20 @@ class _HomeScreenState extends State<HomeScreen> {
         return ListView(
           padding: EdgeInsets.zero,
           children: [
-            // ── 상단 워드마크 ──
+            // ── 상단 워드마크 + 친구 찾기 ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(22, 10, 22, 6),
-              child: Text('goingon',
-                  style:
-                      GoTheme.serif(13, color: GoColors.ink.withOpacity(.3))),
+              padding: const EdgeInsets.fromLTRB(22, 10, 12, 6),
+              child: Row(children: [
+                Text('goingon',
+                    style: GoTheme.serif(13,
+                        color: GoColors.ink.withOpacity(.3))),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => showFriendSearchSheet(context),
+                  icon: const Icon(Icons.search, color: GoColors.dim),
+                  tooltip: '친구 찾기',
+                ),
+              ]),
             ),
             // ── 내 프로필 카드 ──
             _profileCard(friends.length),
@@ -391,8 +399,8 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(fontSize: 12, color: GoColors.dim)),
         const SizedBox(height: 10),
         TextButton(
-          onPressed: _openInvite,
-          child: const Text('초대 코드를 받았나요? 입력하기 →',
+          onPressed: () => showFriendSearchSheet(context),
+          child: const Text('아이디로 친구 찾기 →',
               style: TextStyle(
                   fontSize: 13,
                   color: GoColors.limeDark,
@@ -422,10 +430,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// 초대 히어로 — 프로토타입의 검은 카드
+  /// 친구 찾기 히어로 — 프로토타입의 검은 카드
   Widget _inviteHero() {
     return GestureDetector(
-      onTap: _openInvite,
+      onTap: () => showFriendSearchSheet(context),
       child: Container(
         margin: const EdgeInsets.fromLTRB(22, 16, 22, 6),
         padding: const EdgeInsets.all(22),
@@ -434,14 +442,14 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(22),
         ),
         child: Column(children: [
-          Icon(Icons.mail_outline,
+          Icon(Icons.search,
               size: 34, color: GoColors.paper.withOpacity(.8)),
           const SizedBox(height: 8),
           Text('함께 달리고 싶은\n사람이 있나요?',
               textAlign: TextAlign.center,
               style: GoTheme.serif(21, color: GoColors.paper)),
           const SizedBox(height: 6),
-          Text('한 명만 초대하면 시작돼요.',
+          Text('아이디로 찾아서 바로 연결해요.',
               style: TextStyle(
                   fontSize: 12, color: GoColors.paper.withOpacity(.55))),
           const SizedBox(height: 16),
@@ -454,8 +462,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
-              onPressed: _openInvite,
-              child: const Text('초대하기',
+              onPressed: () => showFriendSearchSheet(context),
+              child: const Text('친구 찾기',
                   style: TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w600,
                       color: GoColors.ink)),
@@ -464,13 +472,5 @@ class _HomeScreenState extends State<HomeScreen> {
         ]),
       ),
     );
-  }
-
-  void _openInvite() {
-    final code = _me?['inviteCode'] ?? '';
-    final name = _me?['name'] ?? '';
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) => InviteScreen(myCode: code, myName: name),
-    )).then((_) => _load());
   }
 }
