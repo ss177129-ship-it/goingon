@@ -108,18 +108,40 @@ class AuthService {
     await _db.collection('users').doc(uid).update({'name': name});
   }
 
+  /// 아이디(검색용 고유 핸들) 설정/변경. 이미 다른 사람이 쓰고 있으면
+  /// false를 반환함 — 흔히 있는 "충돌" 상황이라 예외로 다루지 않음
+  Future<bool> setUsername(String username) async {
+    final newRef = _db.collection('usernames').doc(username);
+    final existing = await newRef.get();
+    if (existing.exists && existing.data()!['uid'] != uid) return false;
+
+    final myRef = _db.collection('users').doc(uid);
+    final myDoc = await myRef.get();
+    final oldUsername = myDoc.data()?['username'] as String?;
+
+    final batch = _db.batch();
+    if (oldUsername != null && oldUsername != username) {
+      batch.delete(_db.collection('usernames').doc(oldUsername));
+    }
+    batch.set(newRef, {'uid': uid});
+    batch.update(myRef, {'username': username});
+    await batch.commit();
+    return true;
+  }
+
   Future<void> signOut() async {
     // Apple로만 로그인한 경우 구글 세션이 없어 실패할 수 있음 — 무시
     await GoogleSignIn.instance.signOut().catchError((_) {});
     await _auth.signOut();
   }
 
-  /// 회원탈퇴 — 친구들의 목록에서 나를 지우고 내 계정/초대코드를 삭제
+  /// 회원탈퇴 — 친구들의 목록에서 나를 지우고 내 계정/초대코드/아이디를 삭제
   Future<void> deleteAccount() async {
     final myUid = uid;
     final doc = await _db.collection('users').doc(myUid).get();
     final data = doc.data();
     final code = data?['inviteCode'] as String?;
+    final username = data?['username'] as String?;
     final friends = List<String>.from(data?['friends'] ?? []);
 
     final batch = _db.batch();
@@ -131,6 +153,9 @@ class AuthService {
     batch.delete(_db.collection('users').doc(myUid));
     if (code != null) {
       batch.delete(_db.collection('inviteCodes').doc(code));
+    }
+    if (username != null) {
+      batch.delete(_db.collection('usernames').doc(username));
     }
     await batch.commit();
 

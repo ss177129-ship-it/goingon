@@ -10,8 +10,19 @@ class FriendService {
     final code = rawCode.trim().toUpperCase();
     final codeDoc = await _db.collection('inviteCodes').doc(code).get();
     if (!codeDoc.exists) return null;
+    return _connectFriend(myUid, codeDoc.data()!['uid'] as String);
+  }
 
-    final friendUid = codeDoc.data()!['uid'] as String;
+  /// 아이디로 친구 추가 (양방향) — 정확히 일치하는 아이디만 찾음
+  /// 반환: 성공 시 친구 이름, 실패 시 null
+  Future<String?> addFriendByUsername(String myUid, String rawUsername) async {
+    final username = rawUsername.trim().toLowerCase();
+    final userDoc = await _db.collection('usernames').doc(username).get();
+    if (!userDoc.exists) return null;
+    return _connectFriend(myUid, userDoc.data()!['uid'] as String);
+  }
+
+  Future<String?> _connectFriend(String myUid, String friendUid) async {
     if (friendUid == myUid) return null; // 자기 자신
 
     final batch = _db.batch();

@@ -18,6 +18,7 @@ class InviteScreen extends StatefulWidget {
 
 class _InviteScreenState extends State<InviteScreen> {
   final _codeController = TextEditingController();
+  final _usernameController = TextEditingController();
   bool _busy = false;
 
   Future<void> _share() async {
@@ -65,6 +66,42 @@ class _InviteScreenState extends State<InviteScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<void> _searchUsername() async {
+    final username = _usernameController.text;
+    if (username.trim().isEmpty) return;
+    setState(() => _busy = true);
+    try {
+      final name = await FriendService()
+          .addFriendByUsername(AuthService().uid, username);
+      if (!mounted) return;
+      if (name != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$name님과 연결됐어요! 이제 함께 달릴 수 있어요')),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('아이디를 찾을 수 없어요. 다시 확인해 주세요.')),
+        );
+      }
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('연결에 실패했어요. 인터넷을 확인해 주세요.')),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    _usernameController.dispose();
+    super.dispose();
   }
 
   @override
@@ -151,6 +188,46 @@ class _InviteScreenState extends State<InviteScreen> {
                 ),
                 onPressed: _busy ? null : _enterCode,
                 child: Text('연결하기', style: GoTheme.serif(18, color: GoColors.ink)),
+              ),
+            ),
+            const SizedBox(height: 36),
+            Row(children: [
+              Expanded(child: Divider(color: GoColors.line)),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10),
+                child: Text('또는 아이디로 찾기',
+                    style: TextStyle(fontSize: 11, color: GoColors.dim)),
+              ),
+              Expanded(child: Divider(color: GoColors.line)),
+            ]),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _usernameController,
+              textAlign: TextAlign.center,
+              style: GoTheme.serif(24),
+              decoration: InputDecoration(
+                hintText: '상대방 아이디',
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: GoColors.line),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: GoColors.line, width: 1.5),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: _busy ? null : _searchUsername,
+                child: Text('찾아서 연결하기',
+                    style: GoTheme.serif(18, color: GoColors.ink)),
               ),
             ),
           ],

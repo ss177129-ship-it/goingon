@@ -85,6 +85,82 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _load();
   }
 
+  /// 아이디(검색용 고유 핸들) 설정/변경 — 다른 사람이 "아이디로 찾기"에서
+  /// 이 값으로 나를 찾아 친구 추가할 수 있음
+  Future<void> _editUsername() async {
+    final controller = TextEditingController(text: _me?['username'] ?? '');
+    final input = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: GoColors.paper,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18)),
+        title: Text('아이디 설정', style: GoTheme.serif(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: controller,
+              maxLength: 20,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'yourname123',
+                counterText: '',
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: GoColors.line),
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text('영문 소문자·숫자·_ 로 3~20자',
+                style: TextStyle(fontSize: 11, color: GoColors.dim)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('취소', style: TextStyle(color: GoColors.mid)),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: GoColors.ink),
+            onPressed: () =>
+                Navigator.pop(ctx, controller.text.trim().toLowerCase()),
+            child: Text('저장', style: GoTheme.serif(15, color: GoColors.lime)),
+          ),
+        ],
+      ),
+    );
+    if (input == null || input.isEmpty) return;
+    if (!RegExp(r'^[a-z0-9_]{3,20}$').hasMatch(input)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('영문 소문자·숫자·_ 로 3~20자로 입력해 주세요.')),
+      );
+      return;
+    }
+    try {
+      final ok = await _auth.setUsername(input);
+      if (!mounted) return;
+      if (!ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('이미 사용 중인 아이디예요.')),
+        );
+        return;
+      }
+      _load();
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('저장에 실패했어요. 다시 시도해 주세요.')),
+      );
+    }
+  }
+
   void _copyInviteCode() {
     final code = _me?['inviteCode'] ?? '';
     if (code.isEmpty) return;
@@ -156,6 +232,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: '프로필',
         subtitle: _me?['name'] ?? '',
         onTap: _editName,
+      ),
+      _row(
+        icon: Icons.alternate_email,
+        title: '아이디',
+        subtitle: _me?['username'] ?? '설정 안 함 — 친구가 검색으로 찾을 수 있어요',
+        onTap: _editUsername,
       ),
       _row(
         icon: Icons.mail_outline,
