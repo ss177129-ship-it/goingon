@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../services/friend_service.dart';
+import '../services/push_service.dart';
 import '../theme.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/initial_avatar.dart';
@@ -25,6 +26,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _auth = AuthService();
   Map<String, dynamic>? _me;
   bool _busy = false;
+
+  bool get _pushRegistered => (_me?['fcmTokens'] as List?)?.isNotEmpty ?? false;
+
+  String get _pushStatus {
+    if (_pushRegistered) return '이 기기로 알림을 받아요';
+    final err = PushService.instance.lastRegistrationError;
+    if (err != null) return '등록 실패 — 눌러서 다시 시도 ($err)';
+    return '아직 등록되지 않았어요 — 눌러서 다시 시도';
+  }
+
+  /// 등록이 실패했을 때 사용자가 직접 다시 시도. iOS 알림 권한 자체를
+  /// 거부했다면 앱에서는 되돌릴 수 없어 시스템 설정으로 안내함
+  Future<void> _retryPush() async {
+    if (_pushRegistered) {
+      if (mounted) GoToast.show(context, '이미 알림을 받고 있어요.');
+      return;
+    }
+    setState(() => _busy = true);
+    await PushService.instance.retry(_auth.uid);
+    await _load();
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (_pushRegistered) {
+      GoToast.show(context, '알림 등록이 끝났어요.');
+    } else {
+      GoToast.error(context,
+          '아직 안 됐어요. iOS 설정 → 알림 → Goingon에서 알림이 켜져 있는지 확인해 주세요.');
+    }
+  }
 
   @override
   void initState() {
@@ -335,10 +365,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
         subtitle: _me?['username'] ?? '설정 안 함 — 친구가 검색으로 찾을 수 있어요',
         onTap: _editUsername,
       ),
+      // 푸시가 안 될 때 폰에서 바로 원인이 보이게 함. 실기기 검증이
+      // TestFlight밖에 없어서(한 사이클 20~40분) 로그를 볼 수 없기 때문에,
+      // 진단을 화면에 띄우는 게 유일하게 빠른 길임
       _row(
-        icon: Icons.notifications_outlined,
+        icon: _pushRegistered
+            ? Icons.notifications_active_outlined
+            : Icons.notifications_off_outlined,
         title: '알림',
-        subtitle: '준비 중이에요',
+        subtitle: _pushStatus,
+        titleColor: _pushRegistered ? null : GoColors.amber,
+        onTap: _retryPush,
       ),
       _row(
         icon: Icons.block,

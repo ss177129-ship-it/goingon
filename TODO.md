@@ -10,13 +10,24 @@
 - TestFlight 업로드 + 내부 테스트 그룹 설정
 
 **남은 것 — 이것만 하면 끝:**
-- [ ] 폰 TestFlight에서 **GoingOn 0.1.1 (5)** 설치 → 앱 실행 → **알림 권한 "허용"**
-- [ ] 토큰 등록 확인: `cd functions && NODE_PATH=./node_modules node ../tools/push-check.js list`
-      → 해당 사용자 "기기 1대"로 바뀌면 APNs 설정이 전부 맞은 것
+- [ ] **빌드 6을 TestFlight에 업로드** — 아카이브는 이미 만들어 둠:
+      `~/Library/Developer/Xcode/Archives/2026-08-14/GoingOn 0.1.1 (6).xcarchive`
+      Xcode → Window → Organizer(⌥⌘6) → 선택 → Distribute App → App Store Connect → Upload
+      (없으면 `flutter build ipa --export-method app-store`로 다시 만들면 됨)
+- [ ] 폰에 설치 → 앱 실행 → **알림 권한 "허용"**
+- [ ] **설정 탭 → "알림" 항목이 뭐라고 쓰여 있는지 확인** ← 진단이 여기 나옴
+      `이 기기로 알림을 받아요` = 성공 / `등록 실패 — …(사유)` = 괄호 안이 원인
+- [ ] 토큰 확인: `cd functions && NODE_PATH=./node_modules node ../tools/push-check.js list`
 - [ ] 실제 발송: `... push-check.js send <uid>` → **앱을 완전히 종료한 상태**에서 잠금화면에 뜨는지
-- [ ] 되면 친구 요청/GO?로 실제 트리거도 확인 (Functions 로그: `firebase functions:log --project goingon-c12f3`)
+- [ ] 되면 친구 요청/GO?로 실제 트리거도 확인 (`firebase functions:log --project goingon-c12f3`)
 
-**2026-08-14 시점 상태: 사용자 7명 전원 `fcmTokens` 0대** — 아직 실기기에서 앱을 켜지 않았음.
+### 빌드 5에서 실패했던 이유 (빌드 6에서 수정됨)
+`PushService.start()`가 `_registerToken()`을 `onTokenRefresh` 리스너보다 **먼저** 호출했음. iOS는 사용자가 "허용"을 누른 직후 APNs 등록이 안 끝나서 `getToken()`이 예외를 던지는데, 그러면 catch로 빠져서 **안전망 리스너가 아예 설치되지 않았음.** 그래서 토큰이 영영 저장되지 않았다(빌드 5 설치 후에도 `fcmTokens` 0대).
+수정: 리스너를 먼저 걸고, APNs 준비될 때까지 1·2·3·4·5·6초 간격으로 6회 재시도. 설정 화면에 등록 상태와 실패 사유를 표시하고 탭하면 재시도하게 함(TestFlight는 로그를 볼 수 없어서 진단을 화면에 띄우는 게 유일하게 빠른 길).
+
+### 무선 설치가 안 되는 이유
+폰↔맥 페어링 정보는 **맥에 저장**되는데 랩탑을 바꿔서 사라졌음. `xcrun devicectl list devices` = 기기 0대, Apple 계정에 등록된 기기도 0대.
+**케이블로 최초 1회만 연결하면** 이후 같은 Wi-Fi에서 무선 설치가 되고 사이클이 20~40분 → 2분으로 줄어듦. 남은 실기기 작업(GPS 실외, 러닝 복구)을 생각하면 케이블 하나 장만할 가치가 큼.
 
 ### 실기기 관련 제약 (중요)
 **케이블이 없어서 개발용 빌드를 못 함.** 개발용 프로비저닝 프로파일은 기기 등록이 필요한데 기기를 연결할 수 없음. 따라서 **실기기 검증은 TestFlight가 유일한 경로**이고, 한 사이클이 20~40분 걸림. 시뮬레이터는 APNs 토큰 자체를 못 받아 푸시 검증이 구조적으로 불가능.
