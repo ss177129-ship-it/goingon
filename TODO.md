@@ -1,21 +1,30 @@
 # TODO — 작업 과제 (우선순위 순)
 
-## 0. ⚠️ 푸시 알림 — 코드는 끝, 유저 수동 작업 3가지 남음
+## 0. ⚠️ 푸시 알림 — 마지막 검증 한 걸음만 남음 (2026-08-14 기준)
 
-Cloud Functions와 앱 코드는 작성·검증 완료. 아래 셋은 콘솔/Xcode 작업이라 AI가 대신 못 함.
+**끝난 것** (전부 검증됨):
+- Blaze 플랜, APNs 인증 키(.p8) → Firebase 업로드
+- Cloud Functions 4개 배포 (`onFriendRequest`, `onFriendRequestResolved`, `onRunRequest`, `cleanupSessions`)
+- App ID에 Push Notifications 활성화, `GoingOn App Store` 프로파일 재발급
+- IPA 빌드 + 서명 검증 (`codesign -d --entitlements`로 `aps-environment=production` 직접 확인)
+- TestFlight 업로드 + 내부 테스트 그룹 설정
 
-- [ ] **Blaze(종량제) 플랜 업그레이드** — https://console.firebase.google.com/project/goingon-c12f3/usage/details
-      Functions 배포의 전제 조건(카드 등록). 무료 한도가 실사용의 수백 배라 실제 요금은 사실상 0원이지만, 업그레이드 직후 **예산 알림(예: 월 5천원)을 반드시 설정**할 것
-- [ ] **APNs 인증키(.p8) 발급 → Firebase 업로드**
-      Apple Developer → Certificates, Identifiers & Profiles → Keys → `+` → Apple Push Notifications service(APNs) 체크 → 생성 → .p8 다운로드(**한 번만 받을 수 있음**)
-      → Firebase 콘솔 → 프로젝트 설정 → Cloud Messaging → Apple 앱 구성 → APNs 인증 키 업로드 (Key ID, Team ID 함께 입력)
-- [ ] **Xcode에서 Push Notifications capability 추가**
-      Runner 타겟 → Signing & Capabilities → `+ Capability` → Push Notifications.
-      (직접 파일을 고치면 코드 서명이 깨질 수 있어 반드시 Xcode UI로 할 것. 변경된 `Runner.entitlements`·`project.pbxproj`를 커밋에 포함)
+**남은 것 — 이것만 하면 끝:**
+- [ ] 폰 TestFlight에서 **GoingOn 0.1.1 (5)** 설치 → 앱 실행 → **알림 권한 "허용"**
+- [ ] 토큰 등록 확인: `cd functions && NODE_PATH=./node_modules node ../tools/push-check.js list`
+      → 해당 사용자 "기기 1대"로 바뀌면 APNs 설정이 전부 맞은 것
+- [ ] 실제 발송: `... push-check.js send <uid>` → **앱을 완전히 종료한 상태**에서 잠금화면에 뜨는지
+- [ ] 되면 친구 요청/GO?로 실제 트리거도 확인 (Functions 로그: `firebase functions:log --project goingon-c12f3`)
 
-셋을 마친 뒤: `firebase deploy --only functions --project goingon-c12f3`
+**2026-08-14 시점 상태: 사용자 7명 전원 `fcmTokens` 0대** — 아직 실기기에서 앱을 켜지 않았음.
 
-**검증은 실기기 필요** — 시뮬레이터는 APNs 토큰을 못 받아 푸시가 오지 않음(앱은 정상 동작하고 토큰 등록만 조용히 건너뜀).
+### 실기기 관련 제약 (중요)
+**케이블이 없어서 개발용 빌드를 못 함.** 개발용 프로비저닝 프로파일은 기기 등록이 필요한데 기기를 연결할 수 없음. 따라서 **실기기 검증은 TestFlight가 유일한 경로**이고, 한 사이클이 20~40분 걸림. 시뮬레이터는 APNs 토큰 자체를 못 받아 푸시 검증이 구조적으로 불가능.
+
+### 서명 설정 (건드리지 말 것)
+- Release는 **수동 서명** + `GoingOn App Store` 프로파일. 자동 서명으로 바꾸면 아카이브 단계에서 개발용 프로파일을 요구해 **케이블 없이는 빌드가 아예 안 됨** (한 번 시도했다 되돌림)
+- `aps-environment`는 빌드별로 분리: Debug/Profile → `Runner.entitlements`(development), Release → `RunnerRelease.entitlements`(production). 섞이면 앱은 정상인데 알림만 조용히 안 옴
+- 같은 이름의 프로파일이 맥에 두 개 이상 설치돼 있으면 export가 엉뚱한 걸 집음. 재발급 후엔 옛것을 지울 것
 
 
 작업 지시는 "TODO.md N번 해줘" 형식으로. 모든 과제는 CLAUDE.md의 **완료 기준**을 통과해야 완료이며, 완료 시 아래 "완료된 과제"로 이동.

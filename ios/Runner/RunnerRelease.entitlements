@@ -6,7 +6,10 @@
 	<array>
 		<string>Default</string>
 	</array>
+	<!-- TestFlight·App Store 빌드는 반드시 production. development로 두면
+	     앱은 정상 동작하는데 알림만 조용히 안 와서 원인 찾기가 매우 번거로움.
+	     개발용(development)은 Runner.entitlements 쪽에 있음 -->
 	<key>aps-environment</key>
-	<string>development</string>
+	<string>production</string>
 </dict>
 </plist>
