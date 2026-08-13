@@ -13,6 +13,13 @@ class LocationService {
   /// When In Use만 있는데 배경 추적을 강제로 켜면 iOS가 앱을 강제 종료시킴
   bool _canRunInBackground = false;
 
+  /// 폰을 잠가도 기록이 이어지는가.
+  ///
+  /// false면 화면이 꺼지는 순간 GPS가 멈춰 거리가 안 늘어난다 — 그래서 그때만
+  /// 화면을 강제로 켜두고(wakelock) 사용자에게도 알려야 한다. true면 잠금화면에
+  /// 맡기고 화면을 꺼도 되므로 배터리를 아낄 수 있다
+  bool get tracksInBackground => _canRunInBackground;
+
   /// 위치 권한 요청. When In Use를 먼저 받고, 그것뿐이면 Always로 업그레이드를
   /// 시도함(화면 꺼도 계속 기록되게). onBeforeAlwaysUpgrade는 시스템 다이얼로그
   /// 뜨기 직전에 왜 필요한지 안내할 기회 — 거절해도 크래시 없이 When In Use로

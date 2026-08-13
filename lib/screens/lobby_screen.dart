@@ -9,6 +9,7 @@ import '../services/auth_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
 import '../widgets/go_dialog.dart';
+import '../widgets/go_toast.dart';
 import 'run_screen.dart';
 
 /// 로비 — 프로토타입 s-lobby 충실 구현
@@ -101,8 +102,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
           _sub?.cancel();
           _showDeclineReply(declineMessage);
         } else {
-          ActiveRunGuard.active = false;
-          Navigator.pop(context);
+          Navigator.pop(context); // 정리는 PopScope의 _leaveLobby가 처리
         }
         return;
       }
@@ -175,9 +175,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       // 준비 전 단계로 되돌려 다시 시도할 수 있게 함
       if (!mounted) return;
       setState(() => _step = _steps.length - 2);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('준비 상태를 전달하지 못했어요. 다시 시도해 주세요.')),
-      );
+      GoToast.error(context, '준비 상태를 전달하지 못했어요. 다시 시도해 주세요.');
     }
   }
 
@@ -204,7 +202,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
       body: message,
     );
     if (!mounted) return;
-    ActiveRunGuard.active = false;
     Navigator.pop(context);
   }
 
@@ -232,9 +229,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('알리지 못했어요. 다시 시도해 주세요.')),
-      );
+      GoToast.error(context, '알리지 못했어요. 다시 시도해 주세요.');
     }
   }
 
@@ -270,6 +265,26 @@ class _LobbyScreenState extends State<LobbyScreen> {
     }
 
     final step = _steps[_step];
+    // 로비를 어떤 경로로 벗어나든 세션이 정리되어야 함. iOS는 화면 왼쪽에서
+    // 스와이프하면 뒤로 가는데, 그 경로는 '← 홈으로' 버튼을 거치지 않아서
+    // 세션이 waiting으로 남고 ActiveRunGuard가 true로 굳어버렸음 —
+    // 그러면 홈이 GO? 요청 시트를 영영 건너뛰게 됨
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) _leaveLobby();
+      },
+      child: _lobbyBody(step),
+    );
+  }
+
+  /// 로비 이탈 시 정리 — 버튼·스와이프·시스템 뒤로가기 모두 여기를 지남
+  void _leaveLobby() {
+    if (!widget.demo) _runs.cancelSession(widget.sessionId);
+    ActiveRunGuard.active = false;
+  }
+
+  Widget _lobbyBody(_Step step) {
     return Scaffold(
       body: SafeArea(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -279,11 +294,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   GestureDetector(
-                    onTap: () {
-                      if (!widget.demo) _runs.cancelSession(widget.sessionId);
-                      ActiveRunGuard.active = false;
-                      Navigator.pop(context);
-                    },
+                    onTap: () => Navigator.pop(context),
                     child: const Text('← 홈으로',
                         style:
                             TextStyle(fontSize: 11, color: GoColors.dim)),
@@ -438,9 +449,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                     FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
                     if (!mounted) return;
                     setState(() => _isLate = !next);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('상태를 전달하지 못했어요. 다시 시도해 주세요.')),
-                    );
+                    GoToast.error(context, '상태를 전달하지 못했어요. 다시 시도해 주세요.');
                   }
                 },
                 child: Text(_isLate ? '늦음 취소' : '조금 늦을 것 같아요',
@@ -543,11 +552,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                 shape:
                     RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              onPressed: () {
-                if (!widget.demo) _runs.cancelSession(widget.sessionId);
-                ActiveRunGuard.active = false;
-                Navigator.pop(context);
-              },
+              onPressed: () => Navigator.pop(context),
               child: const Text('다음에 다시',
                   style: TextStyle(
                       fontSize: 12, fontWeight: FontWeight.w600, color: GoColors.mid)),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../theme.dart';
 import '../widgets/brand_mark.dart';
+import '../widgets/go_toast.dart';
 import 'root_screen.dart';
 
 /// 로그인(Apple 등) 성공 직후 항상 거치는 프로필 설정 화면 — 이름과
@@ -27,9 +28,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
     final username = _usernameController.text.trim().toLowerCase();
     if (name.isEmpty || username.isEmpty) return;
     if (!RegExp(r'^[a-z0-9_]{3,20}$').hasMatch(username)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('아이디는 영문 소문자·숫자·_ 로 3~20자예요.')),
-      );
+      GoToast.error(context, '아이디는 영문 소문자·숫자·_ 로 3~20자예요.');
       return;
     }
     setState(() => _loading = true);
@@ -38,9 +37,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
       if (!mounted) return;
       if (!ok) {
         setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('이미 사용 중인 아이디예요. 다른 아이디를 입력해 주세요.')),
-        );
+        GoToast.error(context, '이미 사용 중인 아이디예요. 다른 아이디를 입력해 주세요.');
         return;
       }
       Navigator.pushAndRemoveUntil(context,
@@ -49,9 +46,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('저장에 실패했어요. 다시 시도해 주세요.')),
-      );
+      GoToast.error(context, '저장에 실패했어요. 다시 시도해 주세요.');
     }
   }
 

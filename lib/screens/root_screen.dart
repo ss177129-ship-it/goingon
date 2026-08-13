@@ -10,6 +10,7 @@ import '../services/run_recovery.dart';
 import '../services/run_service.dart';
 import '../widgets/bottom_nav.dart';
 import '../widgets/go_dialog.dart';
+import '../widgets/go_toast.dart';
 import 'finish_screen.dart';
 import 'home_screen.dart';
 import 'settings_screen.dart';
@@ -88,9 +89,7 @@ class _RootScreenState extends State<RootScreen> {
       // 스냅샷은 지우지 않음 — 다음 실행 때 다시 제안돼 재시도 기회가 남음
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('기록 저장에 실패했어요. 다음에 다시 시도할게요.')),
-      );
+      GoToast.error(context, '기록 저장에 실패했어요. 다음에 다시 시도할게요.');
       return;
     }
     await RunRecovery.clear();

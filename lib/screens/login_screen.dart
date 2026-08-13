@@ -5,6 +5,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../services/auth_service.dart';
 import '../theme.dart';
 import '../widgets/brand_mark.dart';
+import '../widgets/go_toast.dart';
 import 'nickname_screen.dart';
 import 'root_screen.dart';
 
@@ -46,9 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Apple 로그인에 실패했어요. 다시 시도해 주세요.')),
-      );
+      GoToast.error(context, 'Apple 로그인에 실패했어요. 다시 시도해 주세요.');
     }
   }
 
@@ -62,9 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Google 로그인에 실패했어요. 다시 시도해 주세요.')),
-      );
+      GoToast.error(context, 'Google 로그인에 실패했어요. 다시 시도해 주세요.');
     }
   }
 

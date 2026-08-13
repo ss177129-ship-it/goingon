@@ -13,6 +13,7 @@ import '../services/run_recovery.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
 import '../widgets/go_dialog.dart';
+import '../widgets/go_toast.dart';
 import 'finish_screen.dart';
 
 /// 러닝 화면 — 각자 GPS로 기록, 끝나면 합산 (MVP: 라이브 동기화 없음)
@@ -39,6 +40,10 @@ class _RunScreenState extends State<RunScreen>
   double _km = 0;
   bool _gpsOk = true;
   bool _finishing = false;
+
+  /// Always 권한을 못 받아 화면을 끄면 기록이 멈추는 상태. 이때만 화면을
+  /// 강제로 켜두고, 왜 그런지 사용자에게도 알려줌
+  bool _screenMustStayOn = false;
   late final AnimationController _breath;
 
   // ── 제스처 상호작용(탭/스와이프/롱프레스로 상대에게 신호 보내기) ──
@@ -109,6 +114,14 @@ class _RunScreenState extends State<RunScreen>
     if (!ok) {
       setState(() => _gpsOk = false);
       return;
+    }
+    // Always 권한을 받았으면 폰을 잠가도 GPS가 계속 돌므로 화면을 켜둘 이유가
+    // 없음 — 30~60분 화면을 켜두는 건 러닝 중 최대 배터리 소비원임.
+    // When In Use만 받았으면 화면이 꺼지는 순간 거리가 멈추므로 그대로 켜둠
+    if (_location.tracksInBackground) {
+      WakelockPlus.disable();
+    } else if (mounted) {
+      setState(() => _screenMustStayOn = true);
     }
     _location.start(
       (km) => setState(() => _km = km),
@@ -260,9 +273,7 @@ class _RunScreenState extends State<RunScreen>
         FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
         if (!mounted) return;
         setState(() => _finishing = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('결과 저장에 실패했어요. 다시 시도해 주세요.')),
-        );
+        GoToast.error(context, '결과 저장에 실패했어요. 다시 시도해 주세요.');
         return;
       }
       // 결과가 서버에 안전히 올라갔으니 로컬 복구 스냅샷은 폐기
@@ -385,6 +396,20 @@ class _RunScreenState extends State<RunScreen>
       );
     }
 
+    // 달리는 중에는 화면을 벗어날 수 없게 막음. iOS는 화면 왼쪽에서
+    // 스와이프하면 뒤로 가는데, 주머니에 넣거나 팔에 차고 달리다 그 제스처가
+    // 들어가면 러닝이 통째로 버려짐(기록 미제출 + 화면 이탈). 마치려면
+    // 반드시 '길게 눌러 종료'를 거치게 함
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !_finishing) _confirmFinish();
+      },
+      child: _runBody(),
+    );
+  }
+
+  Widget _runBody() {
     return Scaffold(
       backgroundColor: GoColors.canvas,
       body: SafeArea(
@@ -519,6 +544,20 @@ class _RunScreenState extends State<RunScreen>
           const SizedBox(height: 5),
           const Text('길게 누르면 종료',
               style: TextStyle(fontSize: 9, color: GoColors.dim)),
+          // 위치를 "항상 허용"으로 못 받은 경우에만 — 화면이 꺼지면 거리가
+          // 멈추므로, 사용자가 이유를 모른 채 기록을 잃지 않도록 알려줌
+          if (_screenMustStayOn) ...[
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: Text('화면을 끄면 거리가 멈춰요 — 설정에서 위치를 "항상 허용"으로 바꾸면 꺼도 기록돼요',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 10,
+                      height: 1.4,
+                      color: GoColors.amber.withOpacity(.9))),
+            ),
+          ],
           const SizedBox(height: 32),
         ]),
       ),

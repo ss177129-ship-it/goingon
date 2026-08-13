@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../services/friend_service.dart';
 import '../theme.dart';
 import 'initial_avatar.dart';
+import 'go_toast.dart';
 
 /// 아이디로 친구 찾기 시트 — 홈/'우리' 탭 어디서든 같은 방식으로 열 수 있게 공용화.
 ///
@@ -103,8 +104,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
   void _finish(String message) {
     if (!mounted) return;
     Navigator.pop(context);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    GoToast.show(context, message);
   }
 
   /// 시트를 닫지 않고 상태만 갱신 (취소·차단 해제처럼 이어서 뭔가 할 수 있는 경우)

@@ -12,6 +12,7 @@ import '../services/auth_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
 import '../widgets/brand_mark.dart';
+import '../widgets/go_toast.dart';
 import 'root_screen.dart';
 
 /// 완료 화면 — 프로토타입 s-finish 충실 구현 (라임 배경)
@@ -142,9 +143,7 @@ class _FinishScreenState extends State<FinishScreen> {
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('공유 카드를 만들지 못했어요. 다시 시도해 주세요.')),
-      );
+      GoToast.error(context, '공유 카드를 만들지 못했어요. 다시 시도해 주세요.');
     }
   }
 

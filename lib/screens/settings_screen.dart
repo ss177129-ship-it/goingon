@@ -6,6 +6,7 @@ import '../services/friend_service.dart';
 import '../theme.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/initial_avatar.dart';
+import '../widgets/go_toast.dart';
 import 'lobby_screen.dart';
 import 'login_screen.dart';
 
@@ -139,27 +140,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (input == null || input.isEmpty) return;
     if (!RegExp(r'^[a-z0-9_]{3,20}$').hasMatch(input)) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('영문 소문자·숫자·_ 로 3~20자로 입력해 주세요.')),
-      );
+      GoToast.error(context, '영문 소문자·숫자·_ 로 3~20자로 입력해 주세요.');
       return;
     }
     try {
       final ok = await _auth.setUsername(input);
       if (!mounted) return;
       if (!ok) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('이미 사용 중인 아이디예요.')),
-        );
+        GoToast.error(context, '이미 사용 중인 아이디예요.');
         return;
       }
       _load();
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('저장에 실패했어요. 다시 시도해 주세요.')),
-      );
+      GoToast.error(context, '저장에 실패했어요. 다시 시도해 주세요.');
     }
   }
 
@@ -267,14 +262,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await friends.unblockUser(_auth.uid, uid);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('$name님의 차단을 해제했어요. 다시 친구가 되려면 요청이 필요해요.')));
+      GoToast.show(context, '$name님의 차단을 해제했어요. 다시 친구가 되려면 요청이 필요해요.');
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('차단을 해제하지 못했어요. 다시 시도해 주세요.')),
-      );
+      GoToast.error(context, '차단을 해제하지 못했어요. 다시 시도해 주세요.');
     }
   }
 
@@ -292,9 +284,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('로그아웃에 실패했어요. 다시 시도해 주세요.')),
-      );
+      GoToast.error(context, '로그아웃에 실패했어요. 다시 시도해 주세요.');
       return;
     }
     if (!mounted) return;
@@ -321,9 +311,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
       setState(() => _busy = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('탈퇴에 실패했어요. 다시 시도해 주세요.')),
-      );
+      GoToast.error(context, '탈퇴에 실패했어요. 다시 시도해 주세요.');
     }
   }
 

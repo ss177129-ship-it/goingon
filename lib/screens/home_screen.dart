@@ -11,6 +11,7 @@ import '../services/run_service.dart';
 import '../theme.dart';
 import '../widgets/friend_search_sheet.dart';
 import '../widgets/go_dialog.dart';
+import '../widgets/go_toast.dart';
 import '../widgets/initial_avatar.dart';
 import 'lobby_screen.dart';
 
@@ -284,9 +285,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('요청을 보내지 못했어요. 다시 시도해 주세요.')),
-      );
+      GoToast.error(context, '요청을 보내지 못했어요. 다시 시도해 주세요.');
     }
   }
 
@@ -473,14 +472,11 @@ class _HomeScreenState extends State<HomeScreen> {
         await _friends.declineRequest(_auth.uid, r.fromUid);
       }
       if (!mounted || !accept) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('${_displayName(r.name)}님과 연결됐어요!')));
+      GoToast.show(context, '${_displayName(r.name)}님과 연결됐어요!');
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('처리하지 못했어요. 다시 시도해 주세요.')),
-      );
+      GoToast.error(context, '처리하지 못했어요. 다시 시도해 주세요.');
     }
   }
 
@@ -754,13 +750,11 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await action();
       if (!mounted || successMessage == null) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(successMessage)));
+      GoToast.show(context, successMessage);
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(failMessage)));
+      GoToast.error(context, failMessage);
     }
   }
 
