@@ -47,3 +47,9 @@ app.*.map.json
 # Claude Code — 로컬 전용 설정/락 파일 (기기별이라 커밋 안 함)
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+
+# APNs 인증 키 등 비밀 파일 — 절대 커밋 금지.
+# 이 키 하나로 우리 앱 사용자 전원에게 알림을 보낼 수 있음
+*.p8
+*.p12
+*.mobileprovision
