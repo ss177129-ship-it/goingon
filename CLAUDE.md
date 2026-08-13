@@ -22,7 +22,12 @@
 
 ## 아키텍처
 
-- Flutter + Firebase (Apple 로그인, Firestore). 백엔드 서버 없음
+- Flutter + Firebase (Apple 로그인, Firestore, Cloud Messaging) + **Cloud Functions**(`functions/`, TypeScript)
+  - "백엔드 서버 없음" 원칙은 2026-08-13 폐기함 — 푸시는 클라이언트끼리 못 보내므로 서버가 반드시 필요. 서버리스라 관리 부담은 작고, 무료 한도(월 200만 호출) 대비 실사용은 수천 건 수준
+  - Functions는 **푸시 발송 + 세션 정리**만 담당. 앱 로직을 서버로 옮기지 말 것 — 읽기/쓰기는 계속 클라이언트가 Firestore와 직접
+  - Firestore가 `nam5`(미국)에 있어 **Firestore 트리거는 us-central1**이어야 함. `setGlobalOptions`에 지정돼 있음
+  - `maxInstances: 10` 상한이 걸려 있음 — 무한 루프가 생겨도 청구서가 터지지 않게 하는 안전장치. 풀지 말 것
+  - 배포: `firebase deploy --only functions --project goingon-c12f3` (Blaze 플랜 필수)
 - `lib/screens/`: main.dart(스플래시 게이트) → login(Apple 로그인) → nickname(닉네임 설정, 로그인 성공 후 항상 거침) → root(홈/우리/설정 3탭 셸) → invite(초대코드) → lobby(준비단계) → run(GPS) → finish(합산+공유카드)
 - `lib/services/`: auth(Apple/Google 로그인+프로필 생성), friend(아이디 검색 → 확인 → 양방향 연결/삭제), run(세션 생명주기), location(GPS+보정), run_recovery(러닝 중 강제 종료 대비 로컬 스냅샷), active_run_guard, story_labels, week_key
 - Firestore: `users/{uid}` {name, username, friends[], blocked[], monthKey, monthKm, totalRuns, lastRunWeek, weekStreak}, `usernames/{username}` {uid}, `friendRequests/{fromUid}_{toUid}` {fromUid, toUid, createdAt}, `sessions/{id}` {hostId, guestId, participants, status: waiting|ready|running|finished|cancelled, ready{}, joined{}, late{}, gesture{}, results{uid:{seconds,km,kcal,mood}}}
@@ -43,7 +48,9 @@
 - **상태 관리**: StatefulWidget + setState + Stream 구독이 기존 패턴. 새 상태 관리 라이브러리/패턴 도입은 유저 승인 후에만
 - **에러 보고**: 삼중 캐치(FlutterError.onError + PlatformDispatcher.onError + runZonedGuarded)로 Crashlytics 연동 완료. 서비스 호출 실패는 `recordError(fatal: false)` + 유저 안내가 기존 관례 — 새 코드도 따를 것
 - **username 변경**: `usernames/{old}` 삭제 + `usernames/{new}` 생성 + `users/{uid}` 갱신은 반드시 **하나의 트랜잭션**으로. 실패 시 아이디가 유령으로 남거나 탈취될 수 있음
-- **권한 추가**: Info.plist 설명 문구 + `PrivacyInfo.xcprivacy` 갱신을 항상 한 세트로 처리
+- **권한 추가**: Info.plist 설명 문구 + `PrivacyInfo.xcprivacy` 갱신을 항상 한 세트로 처리 (xcprivacy는 **아직 없음** — 최초 작성은 TODO 심사 준비 항목)
+- **푸시**: 발송은 서버(`functions/src/push.ts`)만, 앱은 토큰 등록·알림 탭 처리만 함. 토큰은 `users/{uid}.fcmTokens` 배열(기기 여러 대·재설치 대비)이고 죽은 토큰은 발송 시점에 서버가 지움. 알림 권한은 앱 첫 실행이 아니라 **프로필이 준비된 뒤(RootScreen 진입)** 물음 — iOS는 한 번 거절당하면 다시 못 물음
+  - `UIBackgroundModes`에 `remote-notification`을 **넣지 않았음.** 알림(alert) 방식만 쓰므로 불필요하고, 안 쓰는 배경 모드 선언은 심사에서 지적받을 수 있음. 나중에 무음 데이터 메시지나 Live Activity 원격 갱신을 쓰게 되면 그때 추가할 것
 
 ## Apple 네이티브 통합 방침
 

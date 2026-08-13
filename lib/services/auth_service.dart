@@ -8,6 +8,8 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import 'push_service.dart';
+
 /// 인증 전략: Apple 또는 Google 로그인 필수 — 익명 로그인 없음.
 /// 어떤 방법으로 로그인하든 성공 후에는 항상 닉네임 설정 화면(NicknameScreen)을
 /// 거쳐 홈으로 이동 — 제공자가 이름을 줬든 안 줬든 흐름이 하나로 통일됨.
@@ -128,6 +130,9 @@ class AuthService {
   }
 
   Future<void> signOut() async {
+    // 이 기기 푸시 토큰을 먼저 떼어냄 — 안 지우면 다음에 이 폰으로 로그인한
+    // 사람에게 이전 사용자의 알림이 갈 수 있음
+    if (user != null) await PushService.instance.unregister(uid);
     // Apple로만 로그인한 경우 구글 세션이 없어 실패할 수 있음 — 무시
     await GoogleSignIn.instance.signOut().catchError((_) {});
     await _auth.signOut();

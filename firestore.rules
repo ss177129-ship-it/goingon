@@ -41,6 +41,14 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['totalRuns', 'monthKm', 'monthKey', 'weekStreak', 'lastRunWeek']);
 
+      // 푸시 기기 토큰 등록/해제 (push_service). 내 문서에만 쓸 수 있고,
+      // 죽은 토큰 정리는 서버(Admin SDK)가 규칙을 우회해 처리함
+      allow update: if request.auth != null && request.auth.uid == userId &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['fcmTokens']) &&
+        request.resource.data.fcmTokens is list &&
+        request.resource.data.fcmTokens.size() <= 10;
+
       // ── 친구 연결은 '요청 → 수락'으로만 이뤄짐 ──
       // 예전에는 아이디만 알면 누구나 상대의 friends에 자기를 밀어넣을 수
       // 있었음(동의 없는 연결). 이제 양쪽 문서 모두 "나에게 온 대기 중 요청이

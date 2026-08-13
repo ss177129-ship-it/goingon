@@ -1,0 +1,23 @@
+{
+  "name": "goingon-functions",
+  "description": "고잉온 푸시 알림 및 세션 정리 (Cloud Functions for Firebase)",
+  "private": true,
+  "engines": {
+    "node": "22"
+  },
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "lint": "tsc --noEmit",
+    "deploy": "npm run build && firebase deploy --only functions --project goingon-c12f3",
+    "logs": "firebase functions:log --project goingon-c12f3"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.2",
+    "firebase-functions": "^6.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

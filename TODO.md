@@ -1,5 +1,23 @@
 # TODO — 작업 과제 (우선순위 순)
 
+## 0. ⚠️ 푸시 알림 — 코드는 끝, 유저 수동 작업 3가지 남음
+
+Cloud Functions와 앱 코드는 작성·검증 완료. 아래 셋은 콘솔/Xcode 작업이라 AI가 대신 못 함.
+
+- [ ] **Blaze(종량제) 플랜 업그레이드** — https://console.firebase.google.com/project/goingon-c12f3/usage/details
+      Functions 배포의 전제 조건(카드 등록). 무료 한도가 실사용의 수백 배라 실제 요금은 사실상 0원이지만, 업그레이드 직후 **예산 알림(예: 월 5천원)을 반드시 설정**할 것
+- [ ] **APNs 인증키(.p8) 발급 → Firebase 업로드**
+      Apple Developer → Certificates, Identifiers & Profiles → Keys → `+` → Apple Push Notifications service(APNs) 체크 → 생성 → .p8 다운로드(**한 번만 받을 수 있음**)
+      → Firebase 콘솔 → 프로젝트 설정 → Cloud Messaging → Apple 앱 구성 → APNs 인증 키 업로드 (Key ID, Team ID 함께 입력)
+- [ ] **Xcode에서 Push Notifications capability 추가**
+      Runner 타겟 → Signing & Capabilities → `+ Capability` → Push Notifications.
+      (직접 파일을 고치면 코드 서명이 깨질 수 있어 반드시 Xcode UI로 할 것. 변경된 `Runner.entitlements`·`project.pbxproj`를 커밋에 포함)
+
+셋을 마친 뒤: `firebase deploy --only functions --project goingon-c12f3`
+
+**검증은 실기기 필요** — 시뮬레이터는 APNs 토큰을 못 받아 푸시가 오지 않음(앱은 정상 동작하고 토큰 등록만 조용히 건너뜀).
+
+
 작업 지시는 "TODO.md N번 해줘" 형식으로. 모든 과제는 CLAUDE.md의 **완료 기준**을 통과해야 완료이며, 완료 시 아래 "완료된 과제"로 이동.
 
 ## 1. 러닝 복구 플로우 검증 (2026-08-13 구현됨 — 검증 필요)

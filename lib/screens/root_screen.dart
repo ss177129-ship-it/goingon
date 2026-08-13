@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../services/location_service.dart';
+import '../services/push_service.dart';
 import '../services/run_recovery.dart';
 import '../services/run_service.dart';
 import '../widgets/bottom_nav.dart';
@@ -25,11 +28,36 @@ class RootScreen extends StatefulWidget {
 
 class _RootScreenState extends State<RootScreen> {
   int _index = 0;
+  StreamSubscription? _pushTapSub;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _offerRecovery());
+    _startPush();
+  }
+
+  /// 프로필이 준비된 뒤(= 여기까지 왔으면 항상 준비됨)에야 알림 권한을 물음.
+  /// 앱 첫 실행에 맥락 없이 물으면 거절당하기 쉽고, iOS는 한 번 거절당하면
+  /// 다시 물을 수 없어 설정에 들어가야만 되돌릴 수 있음
+  void _startPush() {
+    PushService.instance.start(AuthService().uid);
+    _pushTapSub = PushService.instance.taps.listen(_onPushTap);
+    final pending = PushService.instance.takePendingTap();
+    if (pending != null) _onPushTap(pending);
+  }
+
+  /// 어떤 알림이든 홈 탭으로 보냄 — 친구 요청은 홈 상단 섹션에 있고,
+  /// 러닝 요청은 홈이 구독 중인 세션 스트림이 수락 시트를 띄워줌
+  void _onPushTap(PushTap tap) {
+    if (!mounted) return;
+    setState(() => _index = 0);
+  }
+
+  @override
+  void dispose() {
+    _pushTapSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _offerRecovery() async {
