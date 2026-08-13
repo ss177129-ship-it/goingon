@@ -20,21 +20,24 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['totalRuns', 'monthKm', 'monthKey', 'weekStreak', 'lastRunWeek']);
 
-      // 내 문서: 아이디 검색으로 친구 1명 추가
+      // 내 문서: 친구 추가 — 한 번에 최대 1명, 기존 친구는 절대 지워지지 않음.
+      // "최대 1명"으로 둔 이유: arrayUnion으로 이미 친구인 uid를 다시 넣으면
+      // 배열 크기가 그대로라 정확히 +1을 요구하면 권한 거부로 떨어짐(재추가가
+      // 네트워크 오류처럼 보이는 버그였음). no-op도 통과시키되 대량 추가는 막음
       allow update: if request.auth != null && request.auth.uid == userId &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends']) &&
-        request.resource.data.friends.size() == resource.data.friends.size() + 1 &&
-        resource.data.friends.hasOnly(request.resource.data.friends);
+        resource.data.friends.hasOnly(request.resource.data.friends) &&
+        request.resource.data.friends.size() <= resource.data.friends.size() + 1;
 
-      // 내 문서: 친구 1명 제거 (회원탈퇴 등)
+      // 내 문서: 친구 제거 — 한 번에 최대 1명 (친구 삭제 / 회원탈퇴 반영)
       allow update: if request.auth != null && request.auth.uid == userId &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends']) &&
-        request.resource.data.friends.size() == resource.data.friends.size() - 1 &&
-        request.resource.data.friends.hasOnly(resource.data.friends);
+        request.resource.data.friends.hasOnly(resource.data.friends) &&
+        request.resource.data.friends.size() >= resource.data.friends.size() - 1;
 
       // 상대 문서: friends 필드만 바뀌는 경우, 오직 "내 uid"만 추가/제거할 수
       // 있음 (다른 사람의 친구 관계를 대신 조작하는 것은 막되, 서로 상대방
-      // 목록에 나를 추가하는 상호 연결/탈퇴 반영은 허용)
+      // 목록에 나를 추가하는 상호 연결/삭제 반영은 허용)
       allow update: if request.auth != null && userId != request.auth.uid &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends']) &&
         request.resource.data.friends.hasOnly(resource.data.friends.concat([request.auth.uid])) &&
@@ -51,17 +54,52 @@ service cloud.firestore {
     }
 
     match /sessions/{sessionId} {
-      // GO? 요청은 호스트-게스트가 이미 서로 친구인 경우에만 생성 가능
-      // (친구 목록에 없는 uid로 세션을 만들어 임의 사용자에게 요청을 보내는 것 차단)
+      function isParticipant() {
+        return request.auth != null && (
+          request.auth.uid == resource.data.hostId ||
+          request.auth.uid == resource.data.guestId
+        );
+      }
+      // 변경된 키 목록에 이 필드가 포함되는지
+      function touched(field) {
+        return request.resource.data.diff(resource.data).affectedKeys().hasAny([field]);
+      }
+      // {uid: 값} 형태의 맵에서 "내 uid 항목"만 건드렸는지
+      // (상대의 준비 상태나 기록을 대신 쓰는 것을 차단)
+      function onlyMyKey(before, after) {
+        return after.diff(before).affectedKeys().hasOnly([request.auth.uid]);
+      }
+
+      // GO? 요청은 내가 호스트일 때만, 그리고 상대가 이미 내 친구일 때만 생성 가능
       allow create: if request.auth != null &&
-        (request.auth.uid == request.resource.data.hostId ||
-         request.auth.uid == request.resource.data.guestId) &&
+        request.auth.uid == request.resource.data.hostId &&
+        request.resource.data.guestId is string &&
+        request.resource.data.guestId != request.auth.uid &&
+        request.resource.data.status == 'waiting' &&
+        !('results' in request.resource.data) &&
         request.resource.data.guestId in
-          get(/databases/$(database)/documents/users/$(request.resource.data.hostId)).data.friends;
-      allow read, update: if request.auth != null && (
-        request.auth.uid == resource.data.hostId ||
-        request.auth.uid == resource.data.guestId
-      );
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.friends;
+
+      allow read: if isParticipant();
+
+      // 참가자라도 아무 필드나 못 바꿈. hostId/guestId/participants/createdAt은
+      // 허용 목록에 없으므로 생성 이후 불변이고, {uid: 값} 맵은 자기 항목만 쓸 수 있음
+      allow update: if isParticipant() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'ready', 'late', 'joined', 'gesture', 'results',
+          'startedAt', 'declineMessage'
+        ]) &&
+        request.resource.data.status in
+          ['waiting', 'ready', 'running', 'finished', 'cancelled'] &&
+        (!touched('ready') ||
+          onlyMyKey(resource.data.get('ready', {}), request.resource.data.ready)) &&
+        (!touched('late') ||
+          onlyMyKey(resource.data.get('late', {}), request.resource.data.late)) &&
+        (!touched('joined') ||
+          onlyMyKey(resource.data.get('joined', {}), request.resource.data.joined)) &&
+        (!touched('results') ||
+          onlyMyKey(resource.data.get('results', {}), request.resource.data.results)) &&
+        (!touched('gesture') || request.resource.data.gesture.uid == request.auth.uid);
     }
   }
 }

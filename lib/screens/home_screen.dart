@@ -10,6 +10,7 @@ import '../services/friend_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
 import '../widgets/friend_search_sheet.dart';
+import '../widgets/go_dialog.dart';
 import '../widgets/initial_avatar.dart';
 import 'lobby_screen.dart';
 
@@ -29,12 +30,48 @@ class _HomeScreenState extends State<HomeScreen> {
   int _openSheets = 0;
   bool get _sheetShowing => _openSheets > 0;
   Map<String, dynamic>? _me;
+  int _incomingRetries = 0;
+  bool _incomingBroken = false;
+
+  // 친구 목록은 StreamBuilder 대신 직접 구독함 — 일시적인 오류로 목록이
+  // 빈 상태로 깜빡이거나, 스트림이 끊긴 걸 사용자가 모른 채 "친구 없음"
+  // 화면에 갇히는 일을 막기 위해 마지막 성공 목록을 들고 있어야 해서
+  StreamSubscription? _friendsSub;
+  List<Map<String, dynamic>> _friendList = const [];
+  bool _friendsError = false;
+  int _friendsRetries = 0;
+
+  /// GO? 요청 감지가 몇 번까지 자동 재시도할지. 인덱스 누락처럼 시간이
+  /// 지나도 낫지 않는 문제일 때 조용히 무한 재구독하는 대신 사용자에게 알림
+  static const _kMaxIncomingRetries = 5;
 
   @override
   void initState() {
     super.initState();
     _load();
     _listenIncoming();
+    _listenFriends();
+  }
+
+  void _listenFriends() {
+    _friendsSub?.cancel();
+    _friendsSub = _friends.friendsStream(_auth.uid).listen((list) {
+      if (!mounted) return;
+      setState(() {
+        _friendList = list;
+        _friendsError = false;
+        _friendsRetries = 0;
+      });
+    }, onError: (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+      if (!mounted) return;
+      setState(() => _friendsError = true);
+      if (_friendsRetries >= _kMaxIncomingRetries) return;
+      _friendsRetries++;
+      Future.delayed(Duration(seconds: 3 * _friendsRetries), () {
+        if (mounted) _listenFriends();
+      });
+    });
   }
 
   Future<void> _load() async {
@@ -53,15 +90,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// 친구가 GO?를 보내면 여기서 감지 → 수락 시트
   void _listenIncoming() {
+    _incomingSub?.cancel();
     _incomingSub = _runs.incomingSessions(_auth.uid).listen((snap) async {
+      // 한 번이라도 정상 수신되면 재시도 카운터를 되돌림
+      if (_incomingRetries != 0 || _incomingBroken) {
+        _incomingRetries = 0;
+        if (mounted && _incomingBroken) setState(() => _incomingBroken = false);
+      }
       for (final doc in snap.docs) {
         if (_handledSessions.contains(doc.id)) continue;
-        // 30분 넘게 응답 없는 요청은 뒤늦게 수락 시트로 띄우는 대신 정리함
+        // 오래 응답 없는 요청은 뒤늦게 수락 시트로 띄우는 대신 정리함
         // (createdAt이 아직 null이면 serverTimestamp 반영 전이므로 무시하지 않음)
         final createdAt = doc.data()['createdAt'] as Timestamp?;
         if (createdAt != null &&
-            DateTime.now().difference(createdAt.toDate()) >
-                const Duration(minutes: 30)) {
+            DateTime.now().difference(createdAt.toDate()) > kRequestTtl) {
           _runs.cancelSession(doc.id);
           continue;
         }
@@ -73,16 +115,31 @@ class _HomeScreenState extends State<HomeScreen> {
         final hostId = doc.data()['hostId'] as String;
         final host = await FirebaseFirestore.instance
             .collection('users').doc(hostId).get();
-        final hostName = host.data()?['name'] ?? '친구';
+        final hostName = _displayName(host.data()?['name']);
         if (!mounted) return;
         _showGoRequest(doc.id, hostName);
       }
-    }, onError: (_) {
-      // 권한/네트워크 문제로 감지가 끊기면 조용히 멈추는 대신 잠시 뒤 재구독
-      Future.delayed(const Duration(seconds: 5), () {
+    }, onError: (e, stack) {
+      // 권한/네트워크 문제로 감지가 끊기면 잠시 뒤 재구독하되, 인덱스 누락처럼
+      // 기다린다고 낫지 않는 문제일 때 무한 루프에 빠지지 않도록 횟수를 제한하고
+      // 사용자에게 알림 — 예전에는 조용히 재시도만 반복해서 GO? 요청을 영영
+      // 못 받으면서도 화면에는 아무 표시가 없었음
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+      if (_incomingRetries >= _kMaxIncomingRetries) {
+        if (mounted) setState(() => _incomingBroken = true);
+        return;
+      }
+      _incomingRetries++;
+      Future.delayed(Duration(seconds: 3 * _incomingRetries), () {
         if (mounted) _listenIncoming();
       });
     });
+  }
+
+  /// 이름이 비어 있거나 없는 계정 때문에 첫 글자 접근이 터지지 않도록
+  static String _displayName(Object? name) {
+    final s = name is String ? name.trim() : '';
+    return s.isEmpty ? '친구' : s;
   }
 
   void _showGoRequest(String sessionId, String hostName) {
@@ -220,53 +277,120 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _incomingSub?.cancel();
+    _friendsSub?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: _friends.friendsStream(_auth.uid),
-      builder: (context, snap) {
-        final friends = snap.data ?? [];
-        return ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            // ── 상단 워드마크 + 친구 찾기 ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 10, 12, 6),
-              child: Row(children: [
-                Text('goingon',
-                    style: GoTheme.serif(13,
-                        color: GoColors.ink.withOpacity(.3))),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => showFriendSearchSheet(context),
-                  icon: const Icon(Icons.search, color: GoColors.dim),
-                  tooltip: '친구 찾기',
-                ),
-              ]),
+    final friends = _friendList;
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        // ── 상단 워드마크 + 친구 찾기 ──
+        Padding(
+          padding: const EdgeInsets.fromLTRB(22, 10, 12, 6),
+          child: Row(children: [
+            Text('goingon',
+                style:
+                    GoTheme.serif(13, color: GoColors.ink.withOpacity(.3))),
+            const Spacer(),
+            IconButton(
+              onPressed: () => showFriendSearchSheet(context),
+              icon: const Icon(Icons.search, color: GoColors.dim),
+              tooltip: '친구 찾기',
             ),
-            // ── 내 프로필 카드 ──
-            _profileCard(friends.length),
-            // ── 같이 뛰는 사람들 ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 18, 22, 8),
-              child: Text('같이 뛰는 사람들',
-                  style: const TextStyle(fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.2, color: GoColors.dim)),
-            ),
-            if (friends.isEmpty)
-              _noFriendsYet()
-            else
-              ...friends.map(_friendRow),
-            // ── 초대 히어로 ──
-            _inviteHero(),
-            const SizedBox(height: 12),
-          ],
-        );
-      },
+          ]),
+        ),
+        // ── 연결 문제 안내 ──
+        if (_incomingBroken || _friendsError) _connectionNotice(),
+        // ── 내 프로필 카드 ──
+        _profileCard(friends.length),
+        // ── 같이 뛰는 사람들 ──
+        const Padding(
+          padding: EdgeInsets.fromLTRB(22, 18, 22, 8),
+          child: Text('같이 뛰는 사람들',
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2,
+                  color: GoColors.dim)),
+        ),
+        if (friends.isEmpty)
+          _noFriendsYet()
+        else
+          ...friends.map(_friendRow),
+        // ── 초대 히어로 ──
+        _inviteHero(),
+        // 친구가 없어도 전체 흐름을 체험할 수 있는 통로. 심사관이 로비·러닝·
+        // 완료 화면을 볼 유일한 방법이라 반드시 눈에 띄는 곳에 있어야 함
+        if (friends.isEmpty) _demoLink(),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget _demoLink() {
+    return Center(
+      child: TextButton(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const LobbyScreen(
+                sessionId: 'demo', partnerName: '지수', demo: true),
+          ),
+        ),
+        child: const Text('혼자서 먼저 체험해보기 →',
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: GoColors.limeDark)),
+      ),
+    );
+  }
+
+  /// 요청 감지나 친구 목록 구독이 끊겼을 때 — 조용히 실패하지 않고 알림.
+  /// 여기 걸리면 대개 Firestore 인덱스 미배포나 보안 규칙 문제임
+  Widget _connectionNotice() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(22, 6, 22, 0),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: GoColors.amber.withOpacity(.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: GoColors.amber.withOpacity(.25)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.wifi_off, size: 18, color: GoColors.amber),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            _incomingBroken
+                ? '지금은 함께 달리기 요청을 받지 못하고 있어요.'
+                : '친구 목록을 불러오지 못했어요.',
+            style: TextStyle(
+                fontSize: 12, height: 1.4, color: GoColors.ink.withOpacity(.7)),
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            setState(() {
+              _incomingRetries = 0;
+              _friendsRetries = 0;
+              _incomingBroken = false;
+              _friendsError = false;
+            });
+            _listenIncoming();
+            _listenFriends();
+            _load();
+          },
+          child: const Text('다시 시도',
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: GoColors.ink)),
+        ),
+      ]),
     );
   }
 
@@ -340,45 +464,74 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
   /// 친구 행 — 프로토타입의 friend-row (아바타 + 이름 + GO?)
+  /// 길게 누르면 친구 삭제 — 잘못 연결했을 때 되돌릴 수단이 필요함
   Widget _friendRow(Map<String, dynamic> f) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: GoColors.line)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
-      child: Row(children: [
-        InitialAvatar(
-          letter: f['name'][0],
-          size: 44,
-          fontSize: 18,
-          borderColor: GoColors.line,
-          borderWidth: 1.5,
+    final name = _displayName(f['name']);
+    final uid = f['uid'] as String;
+    return GestureDetector(
+      onLongPress: () => _confirmRemoveFriend(uid, name),
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: GoColors.line)),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(f['name'],
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600,
-                        color: GoColors.ink)),
-                const SizedBox(height: 1),
-                const Text('멀리 있어도, 함께',
-                    style: TextStyle(fontSize: 11, color: GoColors.mid)),
-              ]),
-        ),
-        FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: GoColors.lime,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14)),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
+        child: Row(children: [
+          InitialAvatar(
+            letter: name[0],
+            size: 44,
+            fontSize: 18,
+            borderColor: GoColors.line,
+            borderWidth: 1.5,
           ),
-          onPressed: () => _sendGo(f['uid'], f['name']),
-          child: Text('GO?', style: GoTheme.serif(18, color: GoColors.ink)),
-        ),
-      ]),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name,
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: GoColors.ink)),
+                  const SizedBox(height: 1),
+                  const Text('멀리 있어도, 함께',
+                      style: TextStyle(fontSize: 11, color: GoColors.mid)),
+                ]),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: GoColors.lime,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            onPressed: () => _sendGo(uid, name),
+            child: Text('GO?', style: GoTheme.serif(18, color: GoColors.ink)),
+          ),
+        ]),
+      ),
     );
+  }
+
+  Future<void> _confirmRemoveFriend(String uid, String name) async {
+    final confirmed = await GoDialog.confirm(
+      context,
+      title: '$name님과의 연결을 끊을까요?',
+      body: '서로의 목록에서 사라지고, 더 이상 함께 달리기 요청을 주고받을 수 없어요.\n'
+          '지금까지 함께 달린 기록은 그대로 남아요.',
+      confirmLabel: '연결 끊기',
+      destructive: true,
+    );
+    if (confirmed != true) return;
+    try {
+      await _friends.removeFriend(_auth.uid, uid);
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('연결을 끊지 못했어요. 다시 시도해 주세요.')),
+      );
+    }
   }
 
   /// 친구가 아직 없을 때
@@ -397,35 +550,6 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 6),
         const Text('한 명만 있으면 고잉온이 시작돼요.',
             style: TextStyle(fontSize: 12, color: GoColors.dim)),
-        const SizedBox(height: 10),
-        TextButton(
-          onPressed: () => showFriendSearchSheet(context),
-          child: const Text('아이디로 친구 찾기 →',
-              style: TextStyle(
-                  fontSize: 13,
-                  color: GoColors.limeDark,
-                  fontWeight: FontWeight.w600)),
-        ),
-        const SizedBox(height: 4),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: GoColors.line, width: 1.5),
-              padding: const EdgeInsets.symmetric(vertical: 13),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
-            ),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const LobbyScreen(
-                    sessionId: 'demo', partnerName: '지수', demo: true),
-              ));
-            },
-            child: Text('미리보기로 둘러보기',
-                style: GoTheme.serif(16, color: GoColors.ink)),
-          ),
-        ),
       ]),
     );
   }

@@ -49,9 +49,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
   bool _isLate = false;
   bool _partnerReady = false;
   bool _partnerLate = false;
+  bool _partnerJoined = false;
   bool _showTimeoutHelp = false;
   int? _countdown;
   Timer? _timeoutTimer;
+  Timer? _countdownTimer;
 
   bool get _meReady => _step == _steps.length - 1;
 
@@ -61,6 +63,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
     // 로비/러닝이 떠 있는 동안엔 새 GO? 요청 시트가 홈 화면에 겹쳐 뜨지 않게 함
     ActiveRunGuard.active = true;
     if (widget.demo) {
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (!mounted) return;
+        setState(() => _partnerJoined = true);
+      });
       Future.delayed(const Duration(milliseconds: 1200), () {
         if (!mounted) return;
         setState(() => _partnerLate = true);
@@ -79,6 +85,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
       if (mounted && !_partnerReady) setState(() => _showTimeoutHelp = true);
     });
     _subscribeToSession();
+    // 내가 로비에 들어왔다는 걸 상대에게 알림 — 실패해도 진행에는 지장이
+    // 없는 부가 정보라 조용히 넘어감
+    _runs.enterLobby(widget.sessionId, _uid).catchError((_) {});
   }
 
   void _subscribeToSession() {
@@ -103,9 +112,13 @@ class _LobbyScreenState extends State<LobbyScreen> {
       final late = Map<String, dynamic>.from(data['late'] ?? {});
       final partnerLate =
           late.entries.any((e) => e.key != _uid && e.value == true);
+      final joined = Map<String, dynamic>.from(data['joined'] ?? {});
+      final partnerJoined =
+          joined.entries.any((e) => e.key != _uid && e.value == true);
       setState(() {
         _partnerReady = partnerReady;
         _partnerLate = partnerLate;
+        _partnerJoined = partnerJoined;
       });
       _maybeCountdown();
       if (data['status'] == 'running' && _countdown == null) _goRun();
@@ -170,7 +183,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   void _startCountdown() {
     setState(() => _countdown = 3);
-    Timer.periodic(const Duration(seconds: 1), (t) {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) { t.cancel(); return; }
       if (_countdown! <= 1) {
         t.cancel();
@@ -208,6 +222,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
   void dispose() {
     _sub?.cancel();
     _timeoutTimer?.cancel();
+    _countdownTimer?.cancel();
     super.dispose();
   }
 
@@ -294,7 +309,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   child: _runner(widget.partnerName, _partnerReady,
                       isLate: _partnerLate,
                       fill: GoColors.coral, line: GoColors.coralDark,
-                      waitingText: '도착했어요')),
+                      // 상대가 앱을 안 켠 건지, 수락하고 준비 중인 건지
+                      // 구분해서 보여줌 — 예전엔 둘 다 똑같이 보였음
+                      waitingText:
+                          _partnerJoined ? '함께 준비 중' : '기다리는 중')),
             ]),
           ),
           // ── 스텝 도트 ──
@@ -477,7 +495,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
             child: CircularProgressIndicator(
                 strokeWidth: 2, color: GoColors.mid)),
         const SizedBox(width: 10),
-        Text('${widget.partnerName} 기다리는 중',
+        Text(
+            _partnerJoined
+                ? '${widget.partnerName} 준비 중'
+                : '${widget.partnerName} 기다리는 중',
             style: GoTheme.serif(20, color: GoColors.mid)),
       ]),
     );

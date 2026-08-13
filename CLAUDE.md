@@ -22,16 +22,20 @@
 
 - Flutter + Firebase (Apple 로그인, Firestore). 백엔드 서버 없음
 - `lib/screens/`: main.dart(스플래시 게이트) → login(Apple 로그인) → nickname(닉네임 설정, 로그인 성공 후 항상 거침) → home → invite(초대코드) → lobby(준비단계) → run(GPS) → finish(합산+공유카드)
-- `lib/services/`: auth(Apple 로그인+초대코드 발급), friend(코드로 양방향 연결), run(세션 생명주기), location(GPS+보정)
-- Firestore: `users/{uid}` {name, inviteCode, friends[]}, `inviteCodes/{code}` {uid}, `sessions/{id}` {hostId, guestId, participants, status: waiting|ready|running|finished|cancelled, ready{}, results{uid:{seconds,km,kcal}}}
-- 보안 규칙: `firestore.rules` (콘솔에 게시된 버전과 동기화 유지할 것. 세션은 hostId/guestId 직접 비교 — in participants 쓰면 쿼리 권한 거부남)
+- `lib/services/`: auth(Apple/Google 로그인+프로필 생성), friend(아이디 검색 → 확인 → 양방향 연결/삭제), run(세션 생명주기), location(GPS+보정)
+- Firestore: `users/{uid}` {name, username, friends[], monthKey, monthKm, totalRuns, lastRunWeek, weekStreak}, `usernames/{username}` {uid}, `sessions/{id}` {hostId, guestId, participants, status: waiting|ready|running|finished|cancelled, ready{}, joined{}, late{}, results{uid:{seconds,km,kcal}}}
+- 보안 규칙: `firestore.rules`, 복합 인덱스: `firestore.indexes.json` — 둘 다 소스가 기준이고 `firebase deploy --only firestore --project goingon-c12f3`로 배포. 배포 전 `--dry-run`으로 규칙 컴파일 확인할 것
+  - 세션은 hostId/guestId 직접 비교 (in participants 쓰면 쿼리 권한 거부남). `participants` 필드는 남아 있지만 읽는 곳이 없음
+  - 세션 update는 필드 허용 목록 방식 — hostId/guestId/createdAt은 생성 후 불변이고, ready/late/joined/results 맵은 자기 uid 항목만 쓸 수 있음. 새 필드를 쓰려면 규칙의 허용 목록에도 추가해야 함
+  - 친구 추가는 arrayUnion no-op(이미 친구)도 통과하도록 "한 번에 최대 1명"으로 검사함 — 정확히 +1을 요구하면 재추가가 권한 거부로 떨어짐
 
 ## 의도된 설계 결정 (바꾸지 말 것)
 
 - **러닝 중 실시간 동기화 없음** — 함께 시작하고, 끝나면 합산. 라이브 합산은 v1.1 (개발 난이도의 절반이 여기 있어서 의도적으로 잘랐음)
 - **백그라운드 위치 추적 있음** (2026-07-15 결정 변경 — 원래는 심사 난이도 때문에 없음이었으나, 폰을 잠그면 GPS·타이머가 멈춰 기록이 끊기는 문제가 실사용에 치명적이라 판단해 도입함). `location_service.dart`는 `AppleSettings(allowBackgroundLocationUpdates: true, showBackgroundLocationIndicator: true, pauseLocationUpdatesAutomatically: false)` 사용, Info.plist `UIBackgroundModes`에 `location` 포함, `wakelock_plus`로 화면 꺼짐 방지. 심사 시 위치 권한 설명 문구(NSLocationAlwaysAndWhenInUseUsageDescription 등)를 더 꼼꼼히 써야 하고 리젝 가능성이 있음을 인지하고 진행 중
 - **Apple 로그인 필수 — 익명 로그인 없음** — 모든 가입은 Apple 인증(`AuthService.signInWithApple`)을 거쳐야 하고, 성공 후에는 이름을 받았든 안 받았든 항상 `NicknameScreen`을 거쳐 홈으로 이동. 계정이 실제 신원에 묶여 있어 로그아웃/재설치 후에도 항상 복구됨. Google 로그인(`AuthService.signInWithGoogle`)도 구현·연동 완료 — Apple이 이미 있으므로 추가해도 'Sign in with Apple' 의무와 무관. 카카오 등 다른 소셜로그인은 계속 v1.1로 미룸
-- **데모 모드** (`demo: true` 플래그, lobby/run/finish 관통) — 가상 파트너 '지수'와 전체 플로우 체험. 혼자 테스트용 + **Apple 심사관용이므로 절대 제거 금지**
+- **데모 모드** (`demo: true` 플래그, lobby/run/finish 관통) — 가상 파트너 '지수'와 전체 플로우 체험. 혼자 테스트용 + **Apple 심사관용이므로 절대 제거 금지**. 진입점은 두 곳: 홈(친구 0명일 때만 보이는 '혼자서 먼저 체험해보기') + 설정('혼자 미리 체험하기'). 홈 쪽 UI를 정리하더라도 설정 쪽 진입점은 항상 남겨둘 것
+- **친구 추가는 승인 없이 즉시 연결됨** (아이디를 아는 사람이 곧 연결 권한) — 대신 연결 전 상대 이름을 보여주는 확인 단계와, 홈 친구 행 롱프레스로 연결을 끊는 수단을 둠. '친구 요청 → 수락' 모델과 차단/신고는 아직 없음(출시 전 과제)
 - **완료 화면 공유 카드** — RepaintBoundary 캡처 → share_plus. 셋로그식 성장 엔진이라 완성도 유지가 전략적으로 중요
 
 ## 실행

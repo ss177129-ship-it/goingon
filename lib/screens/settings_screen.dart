@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../theme.dart';
 import '../widgets/go_dialog.dart';
+import 'lobby_screen.dart';
 import 'login_screen.dart';
 
 const _kAppVersion = '0.1.0';
@@ -233,6 +234,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
         icon: Icons.notifications_outlined,
         title: '알림',
         subtitle: '준비 중이에요',
+      ),
+      // 친구가 없어도 로비 → 러닝 → 완료 전체를 볼 수 있는 통로.
+      // 홈의 링크는 친구가 생기면 사라지므로, 항상 찾을 수 있는 자리에도 둠
+      _row(
+        icon: Icons.play_circle_outline,
+        title: '혼자 미리 체험하기',
+        subtitle: '가상의 친구와 전체 흐름을 둘러봐요',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const LobbyScreen(
+                sessionId: 'demo', partnerName: '지수', demo: true),
+          ),
+        ),
       ),
       _row(
         icon: Icons.logout,
