@@ -9,6 +9,16 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  # build/ 아래에는 SwiftPM이 받아온 남의 소스(flutterfire 등)가 들어 있어서,
+  # 빼두지 않으면 `flutter analyze`가 남의 코드 오류 수천 건을 쏟아내며
+  # 정작 우리 lib/ 문제를 파묻어버림
+  exclude:
+    - build/**
+    - ios/**
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

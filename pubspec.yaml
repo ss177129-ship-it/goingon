@@ -23,8 +23,9 @@ dependencies:
   share_plus: ^10.0.0
   path_provider: ^2.1.4
 
-  # 폰트/서체
-  google_fonts: ^6.2.1
+  # 폰트는 google_fonts(런타임 다운로드) 대신 assets/fonts/에 번들함 —
+  # 이 앱은 타이포그래피가 정체성이라, 네트워크가 없다고 시스템 기본
+  # 폰트로 폴백되면 브랜드가 통째로 무너짐
 
   # 상태 유지
   shared_preferences: ^2.3.2
@@ -43,6 +44,22 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/splash/
+
+  # 패밀리 이름은 lib/theme.dart의 _serifFamily/_sansFamily와 일치해야 함
+  fonts:
+    # 본문 — 가변 폰트 한 파일로 100~900 굵기를 모두 커버
+    - family: NotoSansKR
+      fonts:
+        - asset: assets/fonts/NotoSansKR-Variable.ttf
+    # 타이틀·숫자 — 프로토타입의 Instrument Serif italic
+    - family: InstrumentSerif
+      fonts:
+        - asset: assets/fonts/InstrumentSerif-Regular.ttf
+        - asset: assets/fonts/InstrumentSerif-Italic.ttf
+          style: italic
 
 flutter_native_splash:
   color: "#F0EAE0"

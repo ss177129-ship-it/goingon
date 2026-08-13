@@ -10,7 +10,9 @@
 - 타이포: 타이틀/숫자 = Instrument Serif *italic* (`GoTheme.serif()`), 본문 = Noto Sans KR
 - 컬러 의미: 나 = lime, 상대 = coral, 공명/kcal = 골드. 절대 섞지 말 것
 - 카드 라운딩 18~22px, 화면 좌우 여백 22~28px, 섹션 라벨은 11px/600/letterSpacing 1.2/dim
-- **이모지 글리프 사용 금지** — Noto Sans KR 폴백 이슈로 ?로 깨짐. Material Icons 또는 텍스트만 사용 (이미 한 차례 전부 교체함)
+- 폰트는 `assets/fonts/`에 **번들**되어 있음(런타임 다운로드 아님). 패밀리 이름은 `pubspec.yaml`의 `fonts:`와 `lib/theme.dart`의 `_serifFamily`/`_sansFamily`가 일치해야 함
+  - **Instrument Serif에는 한글 글리프가 없음.** 그래서 `GoTheme.serif()`는 `fontFamilyFallback`으로 NotoSansKR을 반드시 물고 있어야 하고, 이 연결을 끊으면 세리프 타이틀의 한글이 전부 ?(두부)로 깨짐 — 실제로 한 번 깨뜨렸다가 복구함
+- **이모지 글리프는 아직 사용하지 말 것** — 예전에 ?로 깨져 전부 교체했음. 원인은 폰트 폴백 사슬이 끊긴 것이었고 지금은 `Apple Color Emoji`를 사슬 끝에 물려 뒀지만, **실제로 되는지 검증 전임**. 쓰려면 먼저 한 글자 띄워보고 확인할 것. 그 전까지는 Material Icons 또는 텍스트만 사용
 
 ## 현재 최우선 과제 (유저가 직접 지시한 것)
 
