@@ -6,6 +6,10 @@ import 'week_key.dart';
 /// 띄우지 않고 정리하고, 같은 상대에게 다시 보낼 때도 재사용하지 않음
 const kRequestTtl = Duration(minutes: 30);
 
+/// 데모 모드가 쓰는 가짜 세션 id. Firestore에 이런 문서는 존재하지 않으므로,
+/// 이 id로 결과를 제출하거나 복구를 시도하면 반드시 실패함
+const kDemoSessionId = 'demo';
+
 /// 함께 달리기 세션 (MVP 전략: 실시간 위치 동기화 없음 —
 /// 함께 '시작'하고, 끝나면 결과를 '합산'. 라이브 합산은 v1.1)
 ///

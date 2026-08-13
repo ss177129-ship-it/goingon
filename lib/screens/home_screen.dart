@@ -41,6 +41,11 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _friendsError = false;
   int _friendsRetries = 0;
 
+  // 나에게 온 친구 요청. 푸시가 없어서 앱을 열어야 보이므로, 홈 최상단에
+  // 눈에 띄게 둠 — 놓치면 상대는 무한정 기다리게 됨
+  StreamSubscription? _requestsSub;
+  List<FriendRequest> _requests = const [];
+
   /// GO? 요청 감지가 몇 번까지 자동 재시도할지. 인덱스 누락처럼 시간이
   /// 지나도 낫지 않는 문제일 때 조용히 무한 재구독하는 대신 사용자에게 알림
   static const _kMaxIncomingRetries = 5;
@@ -51,6 +56,17 @@ class _HomeScreenState extends State<HomeScreen> {
     _load();
     _listenIncoming();
     _listenFriends();
+    _listenRequests();
+  }
+
+  void _listenRequests() {
+    _requestsSub?.cancel();
+    _requestsSub = _friends.incomingRequestsStream(_auth.uid).listen((list) {
+      if (mounted) setState(() => _requests = list);
+    }, onError: (e, stack) {
+      // 요청 목록이 없어도 앱의 나머지는 동작하므로 배너까지 띄우지는 않음
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+    });
   }
 
   void _listenFriends() {
@@ -278,6 +294,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _incomingSub?.cancel();
     _friendsSub?.cancel();
+    _requestsSub?.cancel();
     super.dispose();
   }
 
@@ -304,6 +321,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         // ── 연결 문제 안내 ──
         if (_incomingBroken || _friendsError) _connectionNotice(),
+        // ── 나에게 온 친구 요청 ──
+        if (_requests.isNotEmpty) ..._requestSection(),
         // ── 내 프로필 카드 ──
         _profileCard(friends.length),
         // ── 같이 뛰는 사람들 ──
@@ -347,6 +366,122 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: GoColors.limeDark)),
       ),
     );
+  }
+
+  /// 나에게 온 친구 요청 — 프로필 카드보다 위에 둠. 푸시가 없어서 앱을
+  /// 열었을 때 보이는 게 전부이고, 놓치면 상대는 무한정 기다리게 됨
+  List<Widget> _requestSection() {
+    return [
+      const Padding(
+        padding: EdgeInsets.fromLTRB(22, 14, 22, 8),
+        child: Text('나에게 온 요청',
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.2,
+                color: GoColors.dim)),
+      ),
+      ..._requests.map(_requestRow),
+    ];
+  }
+
+  Widget _requestRow(FriendRequest r) {
+    final name = _displayName(r.name);
+    return Container(
+      margin: const EdgeInsets.fromLTRB(22, 0, 22, 8),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: GoColors.coral.withOpacity(.07),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: GoColors.coral.withOpacity(.25), width: 1.5),
+      ),
+      child: Column(children: [
+        Row(children: [
+          InitialAvatar(
+            letter: name[0],
+            size: 40,
+            fontSize: 17,
+            fill: GoColors.coral.withOpacity(.12),
+            borderColor: GoColors.coralDark,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('$name님이 함께 달리고 싶어해요',
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: GoColors.ink)),
+                  if (r.username.isNotEmpty) ...[
+                    const SizedBox(height: 1),
+                    Text('@${r.username}',
+                        style: const TextStyle(
+                            fontSize: 11, color: GoColors.mid)),
+                  ],
+                ]),
+          ),
+        ]),
+        const SizedBox(height: 12),
+        Row(children: [
+          Expanded(
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: GoColors.line, width: 1.5),
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () => _respondToRequest(r, accept: false),
+              child: const Text('거절',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: GoColors.mid)),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 2,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: GoColors.lime,
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () => _respondToRequest(r, accept: true),
+              child: const Text('수락하고 연결',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: GoColors.ink)),
+            ),
+          ),
+        ]),
+      ]),
+    );
+  }
+
+  Future<void> _respondToRequest(FriendRequest r, {required bool accept}) async {
+    try {
+      if (accept) {
+        await _friends.acceptRequest(_auth.uid, r.fromUid);
+      } else {
+        // 거절은 조용히 — 상대에게 알리지 않음
+        await _friends.declineRequest(_auth.uid, r.fromUid);
+      }
+      if (!mounted || !accept) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${_displayName(r.name)}님과 연결됐어요!')));
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('처리하지 못했어요. 다시 시도해 주세요.')),
+      );
+    }
   }
 
   /// 요청 감지나 친구 목록 구독이 끊겼을 때 — 조용히 실패하지 않고 알림.
@@ -464,12 +599,12 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
   /// 친구 행 — 프로토타입의 friend-row (아바타 + 이름 + GO?)
-  /// 길게 누르면 친구 삭제 — 잘못 연결했을 때 되돌릴 수단이 필요함
+  /// 길게 누르면 연결 끊기 / 차단 메뉴
   Widget _friendRow(Map<String, dynamic> f) {
     final name = _displayName(f['name']);
     final uid = f['uid'] as String;
     return GestureDetector(
-      onLongPress: () => _confirmRemoveFriend(uid, name),
+      onLongPress: () => _showFriendActions(uid, name),
       child: Container(
         decoration: const BoxDecoration(
           border: Border(top: BorderSide(color: GoColors.line)),
@@ -513,6 +648,73 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// 연결 끊기 / 차단 선택. 둘의 차이가 분명해야 해서 설명을 함께 보여줌 —
+  /// 끊기는 상대가 다시 요청을 보낼 수 있고, 차단은 그것까지 막음
+  void _showFriendActions(String uid, String name) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: GoColors.paper,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(28, 24, 28, 40),
+        child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(name, style: GoTheme.serif(20)),
+              const SizedBox(height: 16),
+              _actionTile(
+                label: '연결 끊기',
+                note: '서로의 목록에서 사라져요. 상대가 다시 요청을 보낼 수는 있어요.',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _confirmRemoveFriend(uid, name);
+                },
+              ),
+              const SizedBox(height: 8),
+              _actionTile(
+                label: '차단하기',
+                note: '연결이 끊기고, 상대는 나를 검색하거나 요청을 보낼 수 없게 돼요.',
+                destructive: true,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _confirmBlock(uid, name);
+                },
+              ),
+            ]),
+      ),
+    );
+  }
+
+  Widget _actionTile({
+    required String label,
+    required String note,
+    required VoidCallback onTap,
+    bool destructive = false,
+  }) {
+    return OutlinedButton(
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(color: GoColors.line, width: 1.5),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        alignment: Alignment.centerLeft,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+      onPressed: onTap,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label,
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: destructive ? GoColors.coralDark : GoColors.ink)),
+        const SizedBox(height: 2),
+        Text(note,
+            style: const TextStyle(
+                fontSize: 11, height: 1.4, color: GoColors.mid)),
+      ]),
+    );
+  }
+
   Future<void> _confirmRemoveFriend(String uid, String name) async {
     final confirmed = await GoDialog.confirm(
       context,
@@ -523,14 +725,42 @@ class _HomeScreenState extends State<HomeScreen> {
       destructive: true,
     );
     if (confirmed != true) return;
+    await _runFriendAction(
+      () => _friends.removeFriend(_auth.uid, uid),
+      failMessage: '연결을 끊지 못했어요. 다시 시도해 주세요.',
+    );
+  }
+
+  Future<void> _confirmBlock(String uid, String name) async {
+    final confirmed = await GoDialog.confirm(
+      context,
+      title: '$name님을 차단할까요?',
+      body: '연결이 끊기고, 오가던 요청도 사라져요.\n'
+          '상대는 나를 검색하거나 요청을 보낼 수 없게 돼요.\n'
+          '설정에서 언제든 해제할 수 있어요.',
+      confirmLabel: '차단하기',
+      destructive: true,
+    );
+    if (confirmed != true) return;
+    await _runFriendAction(
+      () => _friends.blockUser(_auth.uid, uid),
+      failMessage: '차단하지 못했어요. 다시 시도해 주세요.',
+      successMessage: '$name님을 차단했어요.',
+    );
+  }
+
+  Future<void> _runFriendAction(Future<void> Function() action,
+      {required String failMessage, String? successMessage}) async {
     try {
-      await _friends.removeFriend(_auth.uid, uid);
+      await action();
+      if (!mounted || successMessage == null) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(successMessage)));
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('연결을 끊지 못했어요. 다시 시도해 주세요.')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(failMessage)));
     }
   }
 
@@ -573,7 +803,7 @@ class _HomeScreenState extends State<HomeScreen> {
               textAlign: TextAlign.center,
               style: GoTheme.serif(21, color: GoColors.paper)),
           const SizedBox(height: 6),
-          Text('아이디로 찾아서 바로 연결해요.',
+          Text('아이디로 찾아 요청을 보내요.',
               style: TextStyle(
                   fontSize: 12, color: GoColors.paper.withOpacity(.55))),
           const SizedBox(height: 16),

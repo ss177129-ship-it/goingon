@@ -9,6 +9,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/active_run_guard.dart';
 import '../services/auth_service.dart';
 import '../services/location_service.dart';
+import '../services/run_recovery.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
 import '../widgets/go_dialog.dart';
@@ -116,6 +117,16 @@ class _RunScreenState extends State<RunScreen>
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(
           () => _seconds = DateTime.now().difference(_startedAt!).inSeconds);
+      // 앱이 강제 종료돼도 기록이 사라지지 않도록 5초마다 스냅샷 저장 —
+      // 다시 열면 RootScreen이 발견해서 기록 마무리를 제안함
+      if (_seconds % 5 == 0) {
+        RunRecovery.save(
+          sessionId: widget.sessionId,
+          partnerName: widget.partnerName,
+          km: _km,
+          seconds: _seconds,
+        );
+      }
     });
   }
 
@@ -254,6 +265,8 @@ class _RunScreenState extends State<RunScreen>
         );
         return;
       }
+      // 결과가 서버에 안전히 올라갔으니 로컬 복구 스냅샷은 폐기
+      await RunRecovery.clear();
     }
     if (!mounted) return;
     Navigator.pushReplacement(context, MaterialPageRoute(

@@ -8,8 +8,8 @@ import 'initial_avatar.dart';
 
 /// 아이디로 친구 찾기 시트 — 홈/'우리' 탭 어디서든 같은 방식으로 열 수 있게 공용화.
 ///
-/// 찾기와 연결이 두 단계로 나뉘어 있음: 먼저 상대가 누구인지 보여주고,
-/// "맞아요, 연결할래요"를 누른 뒤에야 실제로 연결됨
+/// 찾기와 연결이 분리되어 있고, 연결은 **요청 → 상대 수락**으로만 이뤄짐.
+/// 찾은 뒤 보이는 버튼은 지금 어떤 사이인지(FriendRelation)에 따라 달라짐
 Future<void> showFriendSearchSheet(BuildContext context) {
   return showModalBottomSheet(
     context: context,
@@ -31,9 +31,11 @@ class _FriendSearchSheet extends StatefulWidget {
 class _FriendSearchSheetState extends State<_FriendSearchSheet> {
   final _controller = TextEditingController();
   final _friends = FriendService();
+  late final _myUid = AuthService().uid;
   bool _busy = false;
   FriendCandidate? _found;
   String? _error;
+  String? _notice;
 
   Future<void> _search() async {
     final input = _controller.text.trim();
@@ -42,13 +44,15 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
     setState(() {
       _busy = true;
       _error = null;
+      _notice = null;
       _found = null;
     });
     try {
-      final candidate = await _friends.lookupByUsername(input);
+      final candidate = await _friends.lookupByUsername(input, _myUid);
       if (!mounted) return;
       setState(() {
         _found = candidate;
+        // 나를 차단한 사람도 "없음"으로 나옴 — 있다는 사실 자체를 알리지 않음
         _error = candidate == null ? '그런 아이디를 쓰는 사람이 없어요.' : null;
       });
     } catch (e, stack) {
@@ -60,33 +64,57 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
     }
   }
 
-  Future<void> _connect() async {
-    final candidate = _found;
-    if (candidate == null) return;
+  /// 관계 상태에 따라 눌렀을 때 할 일이 달라짐
+  Future<void> _act() async {
+    final c = _found;
+    if (c == null) return;
     setState(() {
       _busy = true;
       _error = null;
+      _notice = null;
     });
     try {
-      final result = await _friends.connect(AuthService().uid, candidate.uid);
-      if (!mounted) return;
-      switch (result) {
-        case FriendAddResult.connected:
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('${candidate.name}님과 연결됐어요! 이제 함께 달릴 수 있어요')));
-        case FriendAddResult.alreadyFriend:
-          setState(() => _error = '이미 함께 달리는 사이예요.');
-        case FriendAddResult.myself:
-          setState(() => _error = '내 아이디예요. 상대방의 아이디를 입력해 주세요.');
+      switch (c.relation) {
+        case FriendRelation.none:
+          await _friends.sendRequest(_myUid, c.uid);
+          _finish('${c.name}님에게 요청을 보냈어요. 수락하면 함께 달릴 수 있어요');
+        case FriendRelation.requestSent:
+          await _friends.cancelRequest(_myUid, c.uid);
+          _replace(c, FriendRelation.none, '요청을 취소했어요.');
+        case FriendRelation.requestReceived:
+          await _friends.acceptRequest(_myUid, c.uid);
+          _finish('${c.name}님과 연결됐어요! 이제 함께 달릴 수 있어요');
+        case FriendRelation.blockedByMe:
+          await _friends.unblockUser(_myUid, c.uid);
+          _replace(c, FriendRelation.none, '차단을 해제했어요.');
+        case FriendRelation.friend:
+        case FriendRelation.self:
+          break; // 버튼이 비활성이라 여기 오지 않음
       }
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
-      setState(() => _error = '연결에 실패했어요. 인터넷을 확인해 주세요.');
+      setState(() => _error = '처리하지 못했어요. 잠시 후 다시 시도해 주세요.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  void _finish(String message) {
+    if (!mounted) return;
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  /// 시트를 닫지 않고 상태만 갱신 (취소·차단 해제처럼 이어서 뭔가 할 수 있는 경우)
+  void _replace(FriendCandidate c, FriendRelation relation, String notice) {
+    if (!mounted) return;
+    setState(() {
+      _found = FriendCandidate(
+          uid: c.uid, name: c.name, username: c.username, relation: relation);
+      _notice = notice;
+    });
   }
 
   @override
@@ -97,6 +125,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = _found;
     return Padding(
       padding: EdgeInsets.fromLTRB(
           28, 28, 28, MediaQuery.of(context).viewInsets.bottom + 40),
@@ -106,7 +135,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
           children: [
             Text('친구 찾기', style: GoTheme.serif(24)),
             const SizedBox(height: 6),
-            const Text('상대방의 아이디를 입력하면 누구인지 먼저 보여드려요.',
+            const Text('아이디로 찾아 요청을 보내면, 상대가 수락했을 때 연결돼요.',
                 style: TextStyle(fontSize: 13, color: GoColors.mid)),
             const SizedBox(height: 20),
             TextField(
@@ -127,10 +156,11 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
                 ),
               ),
               onChanged: (_) {
-                if (_found != null || _error != null) {
+                if (_found != null || _error != null || _notice != null) {
                   setState(() {
                     _found = null;
                     _error = null;
+                    _notice = null;
                   });
                 }
               },
@@ -139,41 +169,66 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
             if (_error != null) ...[
               const SizedBox(height: 10),
               Text(_error!,
-                  style: const TextStyle(
-                      fontSize: 12, color: GoColors.coralDark)),
+                  style:
+                      const TextStyle(fontSize: 12, color: GoColors.coralDark)),
             ],
-            if (_found != null) ...[
+            if (_notice != null) ...[
+              const SizedBox(height: 10),
+              Text(_notice!,
+                  style:
+                      const TextStyle(fontSize: 12, color: GoColors.limeDark)),
+            ],
+            if (c != null) ...[
               const SizedBox(height: 14),
-              _foundCard(_found!),
+              _foundCard(c),
             ],
             const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: GoColors.lime,
-                  disabledBackgroundColor: GoColors.lime.withOpacity(.4),
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                ),
-                onPressed: _busy ? null : (_found == null ? _search : _connect),
-                child: _busy
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: GoColors.ink))
-                    : Text(_found == null ? '찾기' : '맞아요, 연결할래요',
-                        style: GoTheme.serif(18, color: GoColors.ink)),
-              ),
-            ),
+            SizedBox(width: double.infinity, child: _actionButton(c)),
           ]),
     );
   }
 
-  /// 연결 전 확인 카드 — 오타 하나로 모르는 사람과 이어지지 않도록
+  Widget _actionButton(FriendCandidate? c) {
+    final label = c == null ? '찾기' : _actionLabel(c.relation);
+    final enabled = !_busy && (c == null || label != null);
+    return FilledButton(
+      style: FilledButton.styleFrom(
+        backgroundColor: GoColors.lime,
+        disabledBackgroundColor: GoColors.lime.withOpacity(.35),
+        padding: const EdgeInsets.symmetric(vertical: 15),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+      onPressed: enabled ? (c == null ? _search : _act) : null,
+      child: _busy
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child:
+                  CircularProgressIndicator(strokeWidth: 2, color: GoColors.ink))
+          : Text(label ?? _stateLabel(c!.relation),
+              style: GoTheme.serif(18, color: GoColors.ink)),
+    );
+  }
+
+  /// 누를 수 있는 상태면 버튼 문구, 아니면 null(비활성)
+  String? _actionLabel(FriendRelation r) => switch (r) {
+        FriendRelation.none => '함께 달리자고 요청하기',
+        FriendRelation.requestSent => '요청 취소하기',
+        FriendRelation.requestReceived => '수락하고 연결하기',
+        FriendRelation.blockedByMe => '차단 해제하기',
+        FriendRelation.friend => null,
+        FriendRelation.self => null,
+      };
+
+  String _stateLabel(FriendRelation r) => switch (r) {
+        FriendRelation.friend => '이미 함께 달리는 사이예요',
+        FriendRelation.self => '내 아이디예요',
+        _ => '',
+      };
+
+  /// 연결 전 확인 카드 — 오타 하나로 모르는 사람에게 요청이 가지 않도록
   Widget _foundCard(FriendCandidate c) {
+    final status = _relationNote(c.relation);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -203,9 +258,25 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
                 const SizedBox(height: 2),
                 Text('@${c.username}',
                     style: const TextStyle(fontSize: 12, color: GoColors.dim)),
+                if (status != null) ...[
+                  const SizedBox(height: 4),
+                  Text(status,
+                      style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: GoColors.mid)),
+                ],
               ]),
         ),
       ]),
     );
   }
+
+  String? _relationNote(FriendRelation r) => switch (r) {
+        FriendRelation.requestSent => '요청을 보내고 기다리는 중',
+        FriendRelation.requestReceived => '나에게 요청을 보냈어요',
+        FriendRelation.friend => '이미 연결됨',
+        FriendRelation.blockedByMe => '차단한 상대',
+        _ => null,
+      };
 }

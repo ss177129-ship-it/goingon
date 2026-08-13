@@ -1,10 +1,16 @@
 # GoingOn (고잉온)
 
-멀리 있는 친구·연인과 **같은 시간에 함께 달리는** iOS 앱. 핵심 철학: **"기록이 아니라 관계"** — Strava식 퍼포먼스 경쟁이 아니라, 떨어져 있는 두 사람이 발을 맞추는 감각을 판다. 창업자(이찬웅)는 비전공자 1인 개발이며, 한 달 내 App Store 출시가 목표.
+멀리 있는 친구·연인과 **같은 시간에 함께 달리는** iOS 앱. 핵심 철학: **"기록이 아니라 관계"** — Strava식 퍼포먼스 경쟁이 아니라, 떨어져 있는 두 사람이 발을 맞추는 감각을 판다. 창업자(이찬웅)는 비전공자 1인 개발.
+
+**출시 목표일은 정해두지 않는다.** 남은 일정은 `TODO.md`의 우선순위가 기준이며, "일정이 급하다"를 이유로 완료 기준이나 심사 준비 항목을 생략하지 말 것.
+
+**작업 과제는 `TODO.md` 참조.** 이 파일(CLAUDE.md)은 변하지 않는 규칙만 담는다 — 여기에 할 일을 추가하지 말 것.
 
 ## 디자인 기준 (가장 중요)
 
 `design/prototype_v2.html` 이 **디자인의 단일 기준(source of truth)**. 화면 작업 전 반드시 이 파일을 열어 해당 화면의 마크업/CSS를 확인하고 간격·라운딩·타이포를 그대로 따를 것.
+
+**단, 프로토타입과 이 파일의 규칙이 충돌하면 이 파일이 우선.** 대표 사례: 프로토타입에 이모지가 있어도 쓰지 않음(아래 이모지 규칙), 프로토타입 설정 화면에 GoingOn+ 구독 항목이 있어도 구현하지 않음(수익화는 출시 후 — "의도된 설계 결정" 참조).
 
 - 색: paper `#F0EAE0`, canvas `#EBE4D6`, lime `#C5E040`, limeDark `#6A9810`, coral `#F05840`, coralDark `#B03020`, ink `#1A1A16`, resonance(골드) `#D4A84B`, amber `#D97706`, mid `#78746E`, dim `#B0ACA6`, line `rgba(26,26,22,.09)` → `lib/theme.dart`의 `GoColors`
 - 타이포: 타이틀/숫자 = Instrument Serif *italic* (`GoTheme.serif()`), 본문 = Noto Sans KR
@@ -14,37 +20,73 @@
   - **Instrument Serif에는 한글 글리프가 없음.** 그래서 `GoTheme.serif()`는 `fontFamilyFallback`으로 NotoSansKR을 반드시 물고 있어야 하고, 이 연결을 끊으면 세리프 타이틀의 한글이 전부 ?(두부)로 깨짐 — 실제로 한 번 깨뜨렸다가 복구함
 - **이모지 글리프는 아직 사용하지 말 것** — 예전에 ?로 깨져 전부 교체했음. 원인은 폰트 폴백 사슬이 끊긴 것이었고 지금은 `Apple Color Emoji`를 사슬 끝에 물려 뒀지만, **실제로 되는지 검증 전임**. 쓰려면 먼저 한 글자 띄워보고 확인할 것. 그 전까지는 Material Icons 또는 텍스트만 사용
 
-## 현재 최우선 과제 (유저가 직접 지시한 것)
-
-1. **UI 간격/폴리시 전면 정리** — 전 화면을 prototype_v2.html과 나란히 비교하며 패딩·간격·정렬·크기를 맞출 것. 유저 피드백: "전체적으로 간격이나 이런 것들이 깔끔하지 않다"
-2. **'우리' 탭 구현** — 프로토타입의 `s-us` 화면 참조. 함께한 여정(합산 거리로 두 도시 사이 거리를 몇 번 메웠는지), 스트릭, 마일스톤, 함께한 순간 리스트. MVP에선 Firestore `sessions`(status=finished)를 읽어 실데이터로 구성하되, 데이터 없으면 빈 상태 디자인
-3. **'설정' 탭 구현** — 프로토타입의 `s-settings` 참조. MVP 범위: 프로필(이름 변경), 내 초대 코드 표시, 알림 토글(로컬 저장), 로그아웃, 회원탈퇴, 버전. GoingOn+ 구독 항목은 넣지 말 것(수익화는 출시 후)
-
 ## 아키텍처
 
 - Flutter + Firebase (Apple 로그인, Firestore). 백엔드 서버 없음
-- `lib/screens/`: main.dart(스플래시 게이트) → login(Apple 로그인) → nickname(닉네임 설정, 로그인 성공 후 항상 거침) → home → invite(초대코드) → lobby(준비단계) → run(GPS) → finish(합산+공유카드)
-- `lib/services/`: auth(Apple/Google 로그인+프로필 생성), friend(아이디 검색 → 확인 → 양방향 연결/삭제), run(세션 생명주기), location(GPS+보정)
-- Firestore: `users/{uid}` {name, username, friends[], monthKey, monthKm, totalRuns, lastRunWeek, weekStreak}, `usernames/{username}` {uid}, `sessions/{id}` {hostId, guestId, participants, status: waiting|ready|running|finished|cancelled, ready{}, joined{}, late{}, results{uid:{seconds,km,kcal}}}
+- `lib/screens/`: main.dart(스플래시 게이트) → login(Apple 로그인) → nickname(닉네임 설정, 로그인 성공 후 항상 거침) → root(홈/우리/설정 3탭 셸) → invite(초대코드) → lobby(준비단계) → run(GPS) → finish(합산+공유카드)
+- `lib/services/`: auth(Apple/Google 로그인+프로필 생성), friend(아이디 검색 → 확인 → 양방향 연결/삭제), run(세션 생명주기), location(GPS+보정), run_recovery(러닝 중 강제 종료 대비 로컬 스냅샷), active_run_guard, story_labels, week_key
+- Firestore: `users/{uid}` {name, username, friends[], blocked[], monthKey, monthKm, totalRuns, lastRunWeek, weekStreak}, `usernames/{username}` {uid}, `friendRequests/{fromUid}_{toUid}` {fromUid, toUid, createdAt}, `sessions/{id}` {hostId, guestId, participants, status: waiting|ready|running|finished|cancelled, ready{}, joined{}, late{}, gesture{}, results{uid:{seconds,km,kcal,mood}}}
+  - **친구 요청은 문서의 존재 자체가 "대기 중"**임 — status 필드가 없고 수락·거절·취소가 전부 삭제. id가 `보낸사람_받는사람`으로 고정이라 중복 요청이 구조적으로 불가능하고, 받은 요청 조회는 `toUid` 단일 조건이라 복합 인덱스도 필요 없음
+  - 존재하지 않는 요청 문서를 배치에서 `delete`하면 규칙이 `resource`를 못 읽어 **권한 거부**가 남 — 반드시 `exists` 확인 후 배치에 넣을 것
 - 보안 규칙: `firestore.rules`, 복합 인덱스: `firestore.indexes.json` — 둘 다 소스가 기준이고 `firebase deploy --only firestore --project goingon-c12f3`로 배포. 배포 전 `--dry-run`으로 규칙 컴파일 확인할 것
   - 세션은 hostId/guestId 직접 비교 (in participants 쓰면 쿼리 권한 거부남). `participants` 필드는 남아 있지만 읽는 곳이 없음
   - 세션 update는 필드 허용 목록 방식 — hostId/guestId/createdAt은 생성 후 불변이고, ready/late/joined/results 맵은 자기 uid 항목만 쓸 수 있음. 새 필드를 쓰려면 규칙의 허용 목록에도 추가해야 함
-  - 친구 추가는 arrayUnion no-op(이미 친구)도 통과하도록 "한 번에 최대 1명"으로 검사함 — 정확히 +1을 요구하면 재추가가 권한 거부로 떨어짐
+  - **친구 추가는 "대기 중인 요청이 실제로 존재할 때"만 통과함** (내 문서·상대 문서 양쪽 모두). 수락 배치에서 요청 문서를 함께 지워도 규칙은 배치 이전 상태를 보므로 `exists()`가 참임. `friends`에 직접 쓰는 코드를 새로 만들지 말 것 — 규칙이 거부함
+  - 차단은 `users/{uid}.blocked`. 차단은 친구 관계를 동시에 끊어야 해서 `blocked`+`friends`를 같이 바꾸는 것만 허용되고, 그 경로에서 friends는 줄어들기만 가능
+
+## 기술 원칙 (모든 구현이 따라야 함)
+
+- **시간 계산**: 경과 시간은 Timer 틱 누적이 아니라 **타임스탬프 차이(now - startedAt)**로 계산 (run_screen에 이미 구현됨 — 이 방식을 유지할 것). iOS는 백그라운드에서 Timer를 정지시키므로 틱 누적은 반드시 틀린다. 세션의 공동 출발 시각(`startedAt`)은 serverTimestamp이며 먼저 찍힌 값을 유지함
+- **세션 복구**: 러닝 중 앱이 죽어도 기록이 살아남아야 함. `run_recovery.dart`가 러닝 중 5초마다 스냅샷을 로컬 저장하고, RootScreen 진입 시 발견하면 기록 마무리를 제안함. 이 경로를 끊지 말 것. 24시간 넘게 running인 세션은 사실상 종료로 간주(run_service.finishedSessionsWith와 기준 공유)
+- **GPS 필터** (location_service.dart — 검증된 값이므로 **유저 승인 없이 변경 금지**): accuracy 30m 초과 무시, 두 지점 간 속도 10m/s 초과 시 이상치로 버림(dt≤0이면 절대 거리 50m 기준), distanceFilter 5m. 이 기준을 바꾸면 실내 드리프트(가만히 있어도 거리 증가)가 재발할 수 있음
+- **집계 필드**: `users`의 monthKm/totalRuns/weekStreak 갱신은 반드시 트랜잭션(`_bumpMonthlyStats`) 경유. 결과 재제출 시 이중 집계 방지(isFirstSubmit)가 걸려 있음 — 이 구조를 우회하는 직접 쓰기 금지
+- **상태 관리**: StatefulWidget + setState + Stream 구독이 기존 패턴. 새 상태 관리 라이브러리/패턴 도입은 유저 승인 후에만
+- **에러 보고**: 삼중 캐치(FlutterError.onError + PlatformDispatcher.onError + runZonedGuarded)로 Crashlytics 연동 완료. 서비스 호출 실패는 `recordError(fatal: false)` + 유저 안내가 기존 관례 — 새 코드도 따를 것
+- **username 변경**: `usernames/{old}` 삭제 + `usernames/{new}` 생성 + `users/{uid}` 갱신은 반드시 **하나의 트랜잭션**으로. 실패 시 아이디가 유령으로 남거나 탈취될 수 있음
+- **권한 추가**: Info.plist 설명 문구 + `PrivacyInfo.xcprivacy` 갱신을 항상 한 세트로 처리
+
+## Apple 네이티브 통합 방침
+
+완성도 있는 iOS 네이티브 경험이 목표. 네이티브 기능은 검증된 플러그인 우선, 없으면 `ios/Runner`에 Swift + MethodChannel로 구현.
+
+- capability/entitlement 추가는 Xcode에서 수행하고, 변경된 파일(Runner.entitlements, Info.plist, project.pbxproj)을 커밋에 포함할 것
+- **승인된 통합 (출시 전)**: 햅틱(HapticFeedback — 롱프레스 제스처에 일부 적용됨, 카운트다운·종료 등으로 확장 예정), Live Activities(ActivityKit — 잠금화면/Dynamic Island에 러닝 세션 표시)
+- **v1.1 예정**: HealthKit(워크아웃 기록 + kcal 정확도 — 현재는 MET 9.8 × 65kg 고정 추정), CMPedometer(GPS 교차 검증)
+- 이 외 네이티브 API 도입은 유저 승인 후에만
 
 ## 의도된 설계 결정 (바꾸지 말 것)
 
-- **러닝 중 실시간 동기화 없음** — 함께 시작하고, 끝나면 합산. 라이브 합산은 v1.1 (개발 난이도의 절반이 여기 있어서 의도적으로 잘랐음)
-- **백그라운드 위치 추적 있음** (2026-07-15 결정 변경 — 원래는 심사 난이도 때문에 없음이었으나, 폰을 잠그면 GPS·타이머가 멈춰 기록이 끊기는 문제가 실사용에 치명적이라 판단해 도입함). `location_service.dart`는 `AppleSettings(allowBackgroundLocationUpdates: true, showBackgroundLocationIndicator: true, pauseLocationUpdatesAutomatically: false)` 사용, Info.plist `UIBackgroundModes`에 `location` 포함, `wakelock_plus`로 화면 꺼짐 방지. 심사 시 위치 권한 설명 문구(NSLocationAlwaysAndWhenInUseUsageDescription 등)를 더 꼼꼼히 써야 하고 리젝 가능성이 있음을 인지하고 진행 중
-- **Apple 로그인 필수 — 익명 로그인 없음** — 모든 가입은 Apple 인증(`AuthService.signInWithApple`)을 거쳐야 하고, 성공 후에는 이름을 받았든 안 받았든 항상 `NicknameScreen`을 거쳐 홈으로 이동. 계정이 실제 신원에 묶여 있어 로그아웃/재설치 후에도 항상 복구됨. Google 로그인(`AuthService.signInWithGoogle`)도 구현·연동 완료 — Apple이 이미 있으므로 추가해도 'Sign in with Apple' 의무와 무관. 카카오 등 다른 소셜로그인은 계속 v1.1로 미룸
-- **데모 모드** (`demo: true` 플래그, lobby/run/finish 관통) — 가상 파트너 '지수'와 전체 플로우 체험. 혼자 테스트용 + **Apple 심사관용이므로 절대 제거 금지**. 진입점은 두 곳: 홈(친구 0명일 때만 보이는 '혼자서 먼저 체험해보기') + 설정('혼자 미리 체험하기'). 홈 쪽 UI를 정리하더라도 설정 쪽 진입점은 항상 남겨둘 것
-- **친구 추가는 승인 없이 즉시 연결됨** (아이디를 아는 사람이 곧 연결 권한) — 대신 연결 전 상대 이름을 보여주는 확인 단계와, 홈 친구 행 롱프레스로 연결을 끊는 수단을 둠. '친구 요청 → 수락' 모델과 차단/신고는 아직 없음(출시 전 과제)
+- **러닝 중 실시간 동기화 없음** — 함께 시작하고, 끝나면 합산. 라이브 합산은 v1.1 (개발 난이도의 절반이 여기 있어서 의도적으로 잘랐음). 단, 제스처 신호(탭/스와이프/롱프레스 → `gesture` 필드 하나 덮어쓰기)는 순간 이벤트라 이 원칙과 무관하게 허용됨
+- **백그라운드 위치 추적 있음** (2026-07-15 결정 변경). Always 권한을 받았을 때만 `allowBackgroundLocationUpdates`를 켬 — When In Use만 있는데 켜면 iOS가 앱을 강제 종료시킴. Info.plist `UIBackgroundModes`에 `location` 포함, `wakelock_plus`로 화면 꺼짐 방지. 심사 시 위치 권한 설명 문구를 꼼꼼히 써야 하고 리젝 가능성 인지하고 진행 중
+- **Apple 로그인 필수 — 익명 로그인 없음** — 모든 가입은 Apple 인증을 거쳐야 하고, 성공 후 항상 `NicknameScreen`을 거쳐 홈으로. Google 로그인도 구현·연동 완료. 카카오 등은 v1.1
+- **데모 모드** (`demo: true` 플래그, lobby/run/finish 관통) — 가상 파트너 '지수'와 전체 플로우 체험. 혼자 테스트용 + **Apple 심사관용이므로 절대 제거 금지** (심사 가이드라인 2.1 — 핵심 기능이 2인 동시 러닝이라 심사관이 혼자 체험할 유일한 수단). 친구 0명·기기 1대 상태에서도 반드시 진입 가능해야 함. 진입점: 설정('혼자 미리 체험하기' — **항상 유지**) + 홈(친구 0명일 때 — UI 정리 시 조정 가능). 데모 러닝은 RunRecovery에 저장하지 않음
+- **수익화 UI 출시 전 노출 금지** — GoingOn+ 구독 등 결제 관련 화면·버튼은 프로토타입에 있어도 구현하지 않음. 수익화는 출시 후 별도 결정
+- **친구 연결은 '요청 → 수락' 모델** (2026-08-13 결정, 구현 예정 — TODO 참조). 아이디로 찾아 **요청을 보내고, 상대가 수락해야** 연결됨. 인스타 팔로우 요청 방식이며, 타깃 사용자가 SNS에 익숙해 이 쪽이 오히려 자연스럽다는 판단. 아이디를 아는 사람이 곧 연결 권한이 되는 구조(카톡 방식)는 폐기함
+  - **차단은 필수** — 요청·수락만으로는 같은 사람이 요청을 반복해 보내는 걸 못 막음. 차단된 상대는 요청 전송·검색 결과 노출·세션 생성이 모두 거부돼야 하며, 이는 보안 규칙에서도 막을 것
+  - 거절은 **상대에게 알리지 않음**(조용히 사라짐). 거절 통보는 상처를 주고 재요청을 유발함
+  - 자유 입력 텍스트는 이름·아이디뿐임(GO? 거절 메시지는 3개 중 선택식). 즉 심사 대응의 초점은 유해 텍스트 필터링이 아니라 **동의 없는 연락 차단**임
 - **완료 화면 공유 카드** — RepaintBoundary 캡처 → share_plus. 셋로그식 성장 엔진이라 완성도 유지가 전략적으로 중요
+- **GO? 요청 TTL 30분** — 같은 상대에게 살아 있는 요청이 있으면 재사용(중복 세션 방지)
+
+## 완료 기준 (이게 전부 통과하기 전엔 "완료"라고 말하지 말 것)
+
+1. `flutter analyze` — 에러 0, 새로 추가된 워닝 0
+2. `flutter test` — 전부 통과 (테스트를 통과시키려고 테스트를 약화·삭제하는 것 금지)
+3. 빌드가 실제로 됨 — 시뮬레이터에서 앱이 크래시 없이 해당 화면까지 도달
+4. 화면 작업이면: `xcrun simctl io booted screenshot /tmp/check.png`로 스크린샷을 찍어 직접 보고 prototype_v2.html과 비교한 결과를 보고할 것 ("확인했음" 한 줄 금지 — 무엇이 일치하고 무엇이 다른지 명시)
+5. 실패하면: 원인 분석 → 수정 → 1번부터 다시. 우회 금지
+
+## 금지 사항
+
+- firestore.rules를 느슨하게 풀어서 권한 에러를 "해결"하지 말 것 — 규칙이 거부하면 쿼리가 틀린 것
+- `design/prototype_v2.html` 수정 금지 (디자인 기준이지 작업 대상이 아님)
+- "의도된 설계 결정" 섹션과 충돌하는 구현 금지 — 충돌하면 구현을 멈추고 유저에게 물을 것
+- 이 파일에 작업 과제를 추가하지 말 것 — 과제는 TODO.md에
 
 ## 실행
 
 VS Code: 우하단 디바이스 선택(iPhone 16e) → Run > Start Debugging. 저장 시 핫 리로드.
-수정 후에는 시뮬레이터로 직접 화면을 확인하고 마무리할 것.
 
 ## 로드맵 (참고)
 
-실기기 GPS 테스트 → 친구 1명과 실전 테스트 → TestFlight → 스토어 심사(위치 권한 설명 중요, 리젝 1~2회 예상) → 출시 후: 푸시(FCM), 라이브 합산, 정기런, 카카오 로그인, 구독
+UI 폴리시 → 햅틱 확장 → Live Activities → 심사 준비(Privacy Manifest·권한 문구) → 실기기 GPS 테스트(복구 플로우 포함) → 친구 1명과 실전 테스트 → TestFlight → 스토어 심사(리젝 1~2회 예상) → 출시 후(v1.1): 푸시(FCM), 라이브 합산, HealthKit, CMPedometer, 정기런, 카카오 로그인, 구독

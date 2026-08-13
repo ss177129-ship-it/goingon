@@ -2,8 +2,10 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../services/friend_service.dart';
 import '../theme.dart';
 import '../widgets/go_dialog.dart';
+import '../widgets/initial_avatar.dart';
 import 'lobby_screen.dart';
 import 'login_screen.dart';
 
@@ -161,6 +163,121 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// 차단 목록 — 차단은 되돌릴 수 있어야 하므로 해제 경로를 반드시 둠
+  void _showBlockedList() {
+    final friends = FriendService();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: GoColors.paper,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: .5,
+        maxChildSize: .9,
+        builder: (_, scrollController) =>
+            StreamBuilder<List<Map<String, dynamic>>>(
+          stream: friends.blockedStream(_auth.uid),
+          builder: (context, snap) {
+            final blocked = snap.data ?? const [];
+            return ListView(
+              controller: scrollController,
+              padding: const EdgeInsets.fromLTRB(28, 24, 28, 40),
+              children: [
+                Text('차단 목록', style: GoTheme.serif(24)),
+                const SizedBox(height: 6),
+                const Text('차단한 사람은 나를 검색하거나 요청을 보낼 수 없어요.',
+                    style: TextStyle(fontSize: 13, color: GoColors.mid)),
+                const SizedBox(height: 20),
+                if (snap.connectionState == ConnectionState.waiting)
+                  const Center(child: CircularProgressIndicator())
+                else if (blocked.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 28),
+                    child: Center(
+                      child: Text('차단한 사람이 없어요',
+                          style: GoTheme.serif(17, color: GoColors.mid)),
+                    ),
+                  )
+                else
+                  ...blocked.map((b) => _blockedRow(b, friends)),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _blockedRow(Map<String, dynamic> b, FriendService friends) {
+    final rawName = b['name'];
+    final name = (rawName is String && rawName.trim().isNotEmpty)
+        ? rawName.trim()
+        : '이름 없음';
+    final username = b['username'] as String?;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: GoColors.line),
+      ),
+      child: Row(children: [
+        InitialAvatar(
+          letter: name[0],
+          size: 40,
+          fontSize: 16,
+          borderColor: GoColors.line,
+          borderWidth: 1.5,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: GoColors.ink)),
+                if (username != null && username.isNotEmpty) ...[
+                  const SizedBox(height: 1),
+                  Text('@$username',
+                      style:
+                          const TextStyle(fontSize: 11, color: GoColors.dim)),
+                ],
+              ]),
+        ),
+        TextButton(
+          onPressed: () => _unblock(b['uid'] as String, name, friends),
+          child: const Text('차단 해제',
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: GoColors.ink)),
+        ),
+      ]),
+    );
+  }
+
+  Future<void> _unblock(
+      String uid, String name, FriendService friends) async {
+    try {
+      await friends.unblockUser(_auth.uid, uid);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('$name님의 차단을 해제했어요. 다시 친구가 되려면 요청이 필요해요.')));
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('차단을 해제하지 못했어요. 다시 시도해 주세요.')),
+      );
+    }
+  }
+
   /// 모든 계정이 Apple 로그인에 묶여 있으므로 로그아웃해도 항상 복구 가능
   Future<void> _logout() async {
     final confirmed = await GoDialog.confirm(
@@ -234,6 +351,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         icon: Icons.notifications_outlined,
         title: '알림',
         subtitle: '준비 중이에요',
+      ),
+      _row(
+        icon: Icons.block,
+        title: '차단 목록',
+        subtitle: '차단한 사람을 확인하고 해제해요',
+        onTap: _showBlockedList,
       ),
       // 친구가 없어도 로비 → 러닝 → 완료 전체를 볼 수 있는 통로.
       // 홈의 링크는 친구가 생기면 사라지므로, 항상 찾을 수 있는 자리에도 둠
