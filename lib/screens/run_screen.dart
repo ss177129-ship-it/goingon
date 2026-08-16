@@ -2,13 +2,16 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../services/active_run_guard.dart';
 import '../services/auth_service.dart';
+import '../services/demo_resonance.dart';
 import '../services/location_service.dart';
+import '../services/resonance.dart';
 import '../services/run_recovery.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
@@ -66,10 +69,23 @@ class _RunScreenState extends State<RunScreen>
   Offset? _gestureStart;
   Timer? _holdTimer;
 
+  // ── 공명 이벤트 레이어 ──
+  // 화면·소리·햅틱이 각자 "지금 바뀌었나"를 판정하지 않도록, 판정은 엔진
+  // 한 곳에서만 하고 나머지는 이벤트만 받는다. 아직 구독자는 디버그 로그
+  // 하나뿐이며, broadcast 스트림이라 아무도 안 들으면 이벤트는 그냥 버려진다
+  final _resonance = ResonanceEngine();
+  DemoResonanceDriver? _demoResonance;
+  ResonanceEventLog? _resonanceLog;
+
   @override
   void initState() {
     super.initState();
     ActiveRunGuard.active = true;
+    if (kDebugMode) _resonanceLog = ResonanceEventLog.attach(_resonance);
+    // 실제 세션에는 발맞춤을 알 방법이 아직 없다(러닝 중 실시간 동기화 없음).
+    // 그래서 연속값을 흘려 넣는 곳은 데모의 가상 파트너뿐이고, 실제 세션에서는
+    // 신호·마일스톤 이벤트만 흐른다
+    if (widget.demo) _demoResonance = DemoResonanceDriver(_resonance)..start();
     _breath = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 900))
       ..repeat(reverse: true);
@@ -107,6 +123,7 @@ class _RunScreenState extends State<RunScreen>
           _seconds = DateTime.now().difference(_startedAt!).inSeconds;
           _km = _seconds * 0.003; // 약 5'30"/km 페이스
         });
+        _reportProgress();
       });
       return;
     }
@@ -143,8 +160,17 @@ class _RunScreenState extends State<RunScreen>
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() => _seconds = _elapsedSeconds);
       _saveSnapshot();
+      _reportProgress();
     });
   }
+
+  /// 1km 통과·10분 경과 같은 지점을 공명 레이어에 알린다. 엔진이 중복을
+  /// 걸러주므로 매 틱 불러도 된다
+  void _reportProgress() => _resonance.updateProgress(
+        km: _km,
+        elapsed: Duration(seconds: _elapsedSeconds),
+        at: DateTime.now(),
+      );
 
   /// 시작 시각과의 차이로 구한 경과 시간(초).
   ///
@@ -237,6 +263,13 @@ class _RunScreenState extends State<RunScreen>
 
   void _playGesture(String type, {required bool fromPartner}) {
     if (!mounted) return;
+    final kind = SignalKind.fromGestureType(type);
+    final now = DateTime.now();
+    if (fromPartner) {
+      _resonance.signalReceived(kind, at: now);
+    } else {
+      _resonance.signalSent(kind, at: now);
+    }
     if (type == 'heart' && !fromPartner) HapticFeedback.mediumImpact();
     setState(() {
       _gestureType = type;
@@ -300,6 +333,7 @@ class _RunScreenState extends State<RunScreen>
     if (_finishing) return;
     setState(() => _finishing = true);
     _timer?.cancel();
+    _demoResonance?.stop();
     _location.stop();
     WakelockPlus.disable();
     final kcal = LocationService.estimateKcal(_seconds);
@@ -333,6 +367,9 @@ class _RunScreenState extends State<RunScreen>
 
   @override
   void dispose() {
+    _demoResonance?.stop();
+    _resonanceLog?.cancel();
+    _resonance.dispose();
     _breath.dispose();
     _gesturePop.dispose();
     _sessionSub?.cancel();
