@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/friend_service.dart';
 import '../services/push_service.dart';
+import '../services/sound_settings.dart';
 import '../theme.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/initial_avatar.dart';
@@ -27,6 +28,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _auth = AuthService();
   Map<String, dynamic>? _me;
   bool _busy = false;
+
+  bool _soundOn = SoundSettings.cached;
 
   bool get _pushRegistered => (_me?['fcmTokens'] as List?)?.isNotEmpty ?? false;
 
@@ -77,6 +80,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _load();
+    SoundSettings.load().then((on) {
+      if (mounted) setState(() => _soundOn = on);
+    });
+  }
+
+  Future<void> _setSound(bool on) async {
+    setState(() => _soundOn = on);
+    await SoundSettings.save(on);
   }
 
   Future<void> _load() async {
@@ -295,6 +306,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         subtitle: _pushStatus,
         titleColor: _pushRegistered ? null : GoColors.amber,
         onTap: _retryPush,
+      ),
+      // 사운드는 러닝 화면에서만 나는데 끄는 자리가 여기밖에 없다.
+      // 끄면 러닝 중 오디오 세션 자체를 잡지 않는다
+      _row(
+        icon: _soundOn ? Icons.volume_up_outlined : Icons.volume_off_outlined,
+        title: '사운드',
+        subtitle: _soundOn ? '공명할 때 소리로도 알려줘요' : '소리를 내지 않아요',
+        trailing: Switch(
+          value: _soundOn,
+          activeThumbColor: GoColors.limeDark,
+          onChanged: _setSound,
+        ),
+        onTap: () => _setSound(!_soundOn),
       ),
       _row(
         icon: Icons.block,

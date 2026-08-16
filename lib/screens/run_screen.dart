@@ -16,6 +16,9 @@ import '../services/location_service.dart';
 import '../services/resonance.dart';
 import '../services/run_recovery.dart';
 import '../services/run_service.dart';
+import '../services/sound/resonance_sound.dart';
+import '../services/sound/soloud_sound_engine.dart';
+import '../services/sound_settings.dart';
 import '../theme.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
@@ -92,6 +95,10 @@ class _RunScreenState extends State<RunScreen>
   /// 전이가 있을 때만 바뀌면 되므로 여기 담아두고 그때만 리빌드한다
   SyncState _syncState = SyncState.drifting;
 
+  /// 공명 사운드. **꺼져 있으면 아예 만들지 않는다** — 오디오 세션을 잡는
+  /// 것 자체가 다른 앱의 재생에 영향을 주기 때문
+  ResonanceSound? _sound;
+
   @override
   void initState() {
     super.initState();
@@ -109,8 +116,22 @@ class _RunScreenState extends State<RunScreen>
         AnimationController(vsync: this, duration: kLongPressTimeout)
           ..addListener(() => _stopHold.value = _stopHoldController.value);
     WakelockPlus.enable();
+    _startSoundIfEnabled();
     if (!widget.demo) _listenPartnerGesture();
     _start();
+  }
+
+  /// 설정을 읽고 켜져 있을 때만 사운드를 올린다. 화면이 먼저 떠 있어도
+  /// 상관없다 — 패드는 어차피 나란히(0.70) 이상에서만 들린다
+  Future<void> _startSoundIfEnabled() async {
+    if (!await SoundSettings.load()) return;
+    if (!mounted) return;
+    final sound = ResonanceSound(
+      engine: _resonance,
+      sound: SoLoudSoundEngine(),
+    );
+    _sound = sound;
+    await sound.start();
   }
 
   /// 상대가 보낸 제스처 신호 감지 — 위치/페이스는 안 보내고 이 필드 하나만 봄
@@ -286,6 +307,7 @@ class _RunScreenState extends State<RunScreen>
     setState(() => _finishing = true);
     _timer?.cancel();
     _demoResonance?.stop();
+    await _sound?.stop();
     _location.stop();
     WakelockPlus.disable();
     final kcal = LocationService.estimateKcal(_seconds);
@@ -320,6 +342,7 @@ class _RunScreenState extends State<RunScreen>
   @override
   void dispose() {
     _demoResonance?.stop();
+    _sound?.stop();
     _stopHoldController.dispose();
     _stopHold.dispose();
     _stateSub?.cancel();

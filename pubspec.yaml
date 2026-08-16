@@ -45,6 +45,8 @@ dependencies:
   # 앱을 켤 때마다 친구 아바타를 다시 내려받지 않으려면 캐시가 필요함
   image_picker: ^1.1.2
   cached_network_image: ^3.4.1
+  audio_session: ^0.2.4
+  flutter_soloud: ^4.1.7
 
 dev_dependencies:
   flutter_test:
@@ -57,6 +59,11 @@ flutter:
 
   assets:
     - assets/splash/
+    # 공명 사운드. 지금 들어 있는 것은 **합성 임시 음원**이고 최종 음원으로
+    # 교체할 자리다 — 설계서(docs/sound_ux_v1.md §5)가 말하는 프로토타입
+    # 산출물이 이 저장소에 없어 같은 규격(모노 44.1k, 8초 심리스 루프)으로
+    # 만들어 넣었다
+    - assets/audio/
 
   # 패밀리 이름은 lib/theme.dart의 _serifFamily/_sansFamily와 일치해야 함
   fonts:
