@@ -194,7 +194,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
     return FilledButton(
       style: FilledButton.styleFrom(
         backgroundColor: GoColors.lime,
-        disabledBackgroundColor: GoColors.lime.withOpacity(.35),
+        disabledBackgroundColor: GoColors.lime.withValues(alpha: .35),
         padding: const EdgeInsets.symmetric(vertical: 15),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),

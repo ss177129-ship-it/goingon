@@ -54,7 +54,7 @@ class GoToast {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
             color: isError
-                ? GoColors.coral.withOpacity(.35)
+                ? GoColors.coral.withValues(alpha: .35)
                 : GoColors.line,
             width: 1.5,
           ),

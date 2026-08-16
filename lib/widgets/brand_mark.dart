@@ -40,9 +40,9 @@ class BrandMark extends StatelessWidget {
   factory BrandMark.standard() => BrandMark(
         width: 74, height: 46, circleSize: 40,
         leftDx: 3, rightDx: 3, topDy: 4,
-        leftFill: GoColors.lime.withOpacity(.4),
+        leftFill: GoColors.lime.withValues(alpha: .4),
         leftBorder: GoColors.limeDark,
-        rightFill: GoColors.coral.withOpacity(.35),
+        rightFill: GoColors.coral.withValues(alpha: .35),
         rightBorder: GoColors.coralDark,
       );
 
@@ -50,9 +50,9 @@ class BrandMark extends StatelessWidget {
   factory BrandMark.compact() => BrandMark(
         width: 66, height: 42, circleSize: 38,
         leftDx: 2, rightDx: 2, topDy: 2,
-        leftFill: GoColors.limeDark.withOpacity(.15),
+        leftFill: GoColors.limeDark.withValues(alpha: .15),
         leftBorder: GoColors.limeDark,
-        rightFill: GoColors.coral.withOpacity(.25),
+        rightFill: GoColors.coral.withValues(alpha: .25),
         rightBorder: GoColors.coralDark,
       );
 
@@ -64,9 +64,9 @@ class BrandMark extends StatelessWidget {
       BrandMark(
         width: 88, height: 54, circleSize: 50,
         leftDx: 4, rightDx: 4, topDy: 2,
-        leftFill: GoColors.lime.withOpacity(.4),
+        leftFill: GoColors.lime.withValues(alpha: .4),
         leftBorder: GoColors.limeDark,
-        rightFill: GoColors.coral.withOpacity(.35),
+        rightFill: GoColors.coral.withValues(alpha: .35),
         rightBorder: GoColors.coralDark,
         leftScale: leftScale,
         rightScale: rightScale,

@@ -197,7 +197,8 @@ OS가 보장하는 백그라운드 실행을 얻으므로, 위치 권한만으�
 
 ## 5. 기술 부채 (TECH_REVIEW.md 2026-07-12 지적 사항 중 잔여)
 
-- [ ] `withOpacity` → `withValues` 일괄 치환 (57곳, 기계적)
+- [x] ~~`withOpacity` → `withValues` 일괄 치환~~ — 2026-08-16 완료. 실제로는 73곳이었고 인자가 전부 숫자 리터럴이라 기계적 치환이 안전했음.
+      `flutter analyze` 123건 → **50건** (deprecated 73건 전부 소멸). 알파값은 그대로라 화면 변화 없음(브랜드 마크의 반투명 겹침으로 확인)
 - [ ] friendsStream 이중 구독 정리 — RootScreen에서 한 번만 구독해 홈/우리 탭에 내려주기
 - [ ] 세션 상태 전이(waiting→ready→running→finished)에 대한 유닛 테스트 작성
 

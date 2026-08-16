@@ -13,7 +13,7 @@ class GoBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: GoColors.paper.withOpacity(.95),
+        color: GoColors.paper.withValues(alpha: .95),
         border: Border(top: BorderSide(color: GoColors.line)),
       ),
       padding: const EdgeInsets.fromLTRB(28, 10, 28, 6),

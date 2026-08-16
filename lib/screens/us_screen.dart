@@ -128,7 +128,7 @@ class _UsScreenState extends State<UsScreen> {
                   shape: BoxShape.circle,
                   color: Colors.white,
                   border: Border.all(
-                      color: GoColors.mid.withOpacity(.4), width: 2),
+                      color: GoColors.mid.withValues(alpha: .4), width: 2),
                 ),
                 child: const Icon(Icons.wifi_off_rounded,
                     size: 28, color: GoColors.mid),
@@ -185,7 +185,7 @@ class _UsScreenState extends State<UsScreen> {
                   shape: BoxShape.circle,
                   color: Colors.white,
                   border: Border.all(
-                      color: GoColors.coralDark.withOpacity(.4), width: 2),
+                      color: GoColors.coralDark.withValues(alpha: .4), width: 2),
                 ),
                 child: const Icon(Icons.people_alt_outlined,
                     size: 30, color: GoColors.coralDark),
@@ -242,7 +242,7 @@ class _UsScreenState extends State<UsScreen> {
                   shape: BoxShape.circle,
                   color: Colors.white,
                   border: Border.all(
-                      color: GoColors.limeDark.withOpacity(.4), width: 2),
+                      color: GoColors.limeDark.withValues(alpha: .4), width: 2),
                 ),
                 child: const Icon(Icons.directions_run,
                     size: 30, color: GoColors.limeDark),
@@ -380,7 +380,7 @@ class _UsScreenState extends State<UsScreen> {
           Text('멀리 있어도, 함께',
               style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600,
                   letterSpacing: 1.26,
-                  color: GoColors.paper.withOpacity(.4))),
+                  color: GoColors.paper.withValues(alpha: .4))),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 14),
             child: Row(children: [
@@ -407,7 +407,7 @@ class _UsScreenState extends State<UsScreen> {
           Center(
             child: Text('$partnerName님과 함께',
                 style: TextStyle(
-                    fontSize: 11, color: GoColors.paper.withOpacity(.5))),
+                    fontSize: 11, color: GoColors.paper.withValues(alpha: .5))),
           ),
           const SizedBox(height: 14),
           Text.rich(TextSpan(children: [
@@ -425,7 +425,7 @@ class _UsScreenState extends State<UsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(color: GoColors.amber.withOpacity(.22), width: 1.5),
+          border: Border.all(color: GoColors.amber.withValues(alpha: .22), width: 1.5),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -453,12 +453,12 @@ class _UsScreenState extends State<UsScreen> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: done
-                      ? GoColors.amber.withOpacity(.16)
-                      : GoColors.ink.withOpacity(.04),
+                      ? GoColors.amber.withValues(alpha: .16)
+                      : GoColors.ink.withValues(alpha: .04),
                   borderRadius: BorderRadius.circular(8),
                   border: isToday && !done
                       ? Border.all(
-                          color: GoColors.limeDark.withOpacity(.4), width: 1.5)
+                          color: GoColors.limeDark.withValues(alpha: .4), width: 1.5)
                       : null,
                 ),
                 child: Text(_kWeekdayLabels[i],
@@ -473,7 +473,7 @@ class _UsScreenState extends State<UsScreen> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: GoColors.lime.withOpacity(.1),
+                color: GoColors.lime.withValues(alpha: .1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text('이번 주는 아직 함께 달리지 않았어요. 지금 GO?를 보내볼까요?',
@@ -613,9 +613,9 @@ class _UsScreenState extends State<UsScreen> {
       margin: const EdgeInsets.fromLTRB(22, 0, 22, 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: isNext ? Colors.white : GoColors.lime.withOpacity(.1),
+        color: isNext ? Colors.white : GoColors.lime.withValues(alpha: .1),
         border: Border.all(
-            color: isNext ? GoColors.line : GoColors.limeDark.withOpacity(.16),
+            color: isNext ? GoColors.line : GoColors.limeDark.withValues(alpha: .16),
             width: isNext ? 1 : 1),
         borderRadius: BorderRadius.circular(14),
       ),
@@ -676,7 +676,7 @@ class _UsScreenState extends State<UsScreen> {
                 margin: const EdgeInsets.only(bottom: 5),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: GoColors.lime.withOpacity(.15),
+                  color: GoColors.lime.withValues(alpha: .15),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(storyLabel,

@@ -173,7 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
-              color: GoColors.coral.withOpacity(.1),
+              color: GoColors.coral.withValues(alpha: .1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text('함께 달리기 요청',
@@ -185,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
             letter: hostName[0],
             size: 88,
             fontSize: 36,
-            fill: GoColors.coral.withOpacity(.12),
+            fill: GoColors.coral.withValues(alpha: .12),
             borderColor: GoColors.coralDark,
             photoUrl: hostPhotoUrl,
           ),
@@ -310,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Row(children: [
             Text('goingon',
                 style:
-                    GoTheme.serif(13, color: GoColors.ink.withOpacity(.3))),
+                    GoTheme.serif(13, color: GoColors.ink.withValues(alpha: .3))),
             const Spacer(),
             IconButton(
               onPressed: () => showFriendSearchSheet(context),
@@ -391,9 +391,9 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.fromLTRB(22, 0, 22, 8),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
-        color: GoColors.coral.withOpacity(.07),
+        color: GoColors.coral.withValues(alpha: .07),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: GoColors.coral.withOpacity(.25), width: 1.5),
+        border: Border.all(color: GoColors.coral.withValues(alpha: .25), width: 1.5),
       ),
       child: Column(children: [
         Row(children: [
@@ -401,7 +401,7 @@ class _HomeScreenState extends State<HomeScreen> {
             letter: name[0],
             size: 40,
             fontSize: 17,
-            fill: GoColors.coral.withOpacity(.12),
+            fill: GoColors.coral.withValues(alpha: .12),
             borderColor: GoColors.coralDark,
             photoUrl: r.photoUrl,
           ),
@@ -489,9 +489,9 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.fromLTRB(22, 6, 22, 0),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: GoColors.amber.withOpacity(.08),
+        color: GoColors.amber.withValues(alpha: .08),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: GoColors.amber.withOpacity(.25)),
+        border: Border.all(color: GoColors.amber.withValues(alpha: .25)),
       ),
       child: Row(children: [
         const Icon(Icons.wifi_off, size: 18, color: GoColors.amber),
@@ -502,7 +502,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ? '지금은 함께 달리기 요청을 받지 못하고 있어요.'
                 : '친구 목록을 불러오지 못했어요.',
             style: TextStyle(
-                fontSize: 12, height: 1.4, color: GoColors.ink.withOpacity(.7)),
+                fontSize: 12, height: 1.4, color: GoColors.ink.withValues(alpha: .7)),
           ),
         ),
         TextButton(
@@ -549,7 +549,7 @@ class _HomeScreenState extends State<HomeScreen> {
           letter: myName.isEmpty ? '' : myName[0],
           size: 60,
           fontSize: 26,
-          fill: GoColors.lime.withOpacity(.18),
+          fill: GoColors.lime.withValues(alpha: .18),
           borderColor: GoColors.limeDark,
           emptyIcon: Icons.person_outline,
           photoUrl: _me?['photoUrl'] as String?,
@@ -768,7 +768,7 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 22),
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(.5),
+        color: Colors.white.withValues(alpha: .5),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: GoColors.line, width: 1.5),
       ),
@@ -795,7 +795,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: Column(children: [
           Icon(Icons.search,
-              size: 34, color: GoColors.paper.withOpacity(.8)),
+              size: 34, color: GoColors.paper.withValues(alpha: .8)),
           const SizedBox(height: 8),
           Text('함께 달리고 싶은\n사람이 있나요?',
               textAlign: TextAlign.center,
@@ -803,7 +803,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 6),
           Text('아이디로 찾아 요청을 보내요.',
               style: TextStyle(
-                  fontSize: 12, color: GoColors.paper.withOpacity(.55))),
+                  fontSize: 12, color: GoColors.paper.withValues(alpha: .55))),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,

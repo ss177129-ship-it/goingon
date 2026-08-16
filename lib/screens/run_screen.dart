@@ -250,9 +250,9 @@ class _RunScreenState extends State<RunScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(.15),
+        color: color.withValues(alpha: .15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(.3)),
+        border: Border.all(color: color.withValues(alpha: .3)),
       ),
       child: Text(label, style: GoTheme.serif(15, color: color)),
     );
@@ -426,7 +426,7 @@ class _RunScreenState extends State<RunScreen>
                           style: TextStyle(fontSize: 9,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1,
-                              color: GoColors.limeDark.withOpacity(.6))),
+                              color: GoColors.limeDark.withValues(alpha: .6))),
                       Text(LocationService.pace(_km, _seconds),
                           style: GoTheme.serif(22, color: GoColors.limeDark)),
                       const Text('km당',
@@ -448,7 +448,7 @@ class _RunScreenState extends State<RunScreen>
                           style: TextStyle(fontSize: 9,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1,
-                              color: GoColors.coralDark.withOpacity(.6))),
+                              color: GoColors.coralDark.withValues(alpha: .6))),
                       Text('나란히',
                           style: GoTheme.serif(22, color: GoColors.coralDark)),
                       const Text('함께 시작했어요',
@@ -502,7 +502,7 @@ class _RunScreenState extends State<RunScreen>
                   border: Border.all(color: GoColors.line),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withOpacity(.05),
+                        color: Colors.black.withValues(alpha: .05),
                         blurRadius: 6, offset: const Offset(0, 1)),
                   ],
                 ),
@@ -530,8 +530,8 @@ class _RunScreenState extends State<RunScreen>
               width: 52, height: 52,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: GoColors.ink.withOpacity(.07),
-                border: Border.all(color: GoColors.ink.withOpacity(.1)),
+                color: GoColors.ink.withValues(alpha: .07),
+                border: Border.all(color: GoColors.ink.withValues(alpha: .1)),
               ),
               child: const Center(
                 child: Text('멈춤',
@@ -555,7 +555,7 @@ class _RunScreenState extends State<RunScreen>
                   style: TextStyle(
                       fontSize: 10,
                       height: 1.4,
-                      color: GoColors.amber.withOpacity(.9))),
+                      color: GoColors.amber.withValues(alpha: .9))),
             ),
           ],
           const SizedBox(height: 32),
@@ -587,10 +587,10 @@ class _RunScreenState extends State<RunScreen>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(colors: [
-                fill.withOpacity(.3),
-                fill.withOpacity(.06),
+                fill.withValues(alpha: .3),
+                fill.withValues(alpha: .06),
               ]),
-              border: Border.all(color: border.withOpacity(.55), width: 2),
+              border: Border.all(color: border.withValues(alpha: .55), width: 2),
             ),
           ),
         );

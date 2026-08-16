@@ -173,7 +173,7 @@ class _FinishScreenState extends State<FinishScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: GoColors.ink.withOpacity(.08),
+                      color: GoColors.ink.withValues(alpha: .08),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(children: [
@@ -181,7 +181,7 @@ class _FinishScreenState extends State<FinishScreen> {
                           style: TextStyle(fontSize: 8,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.2,
-                              color: GoColors.ink.withOpacity(.4))),
+                              color: GoColors.ink.withValues(alpha: .4))),
                       const SizedBox(height: 12),
                       Row(children: [
                         _togetherStat(_fmt(widget.mySeconds), '내가 달린 시간'),
@@ -203,7 +203,7 @@ class _FinishScreenState extends State<FinishScreen> {
                   const SizedBox(height: 8),
                   Text('goingon · 멀리 있어도, 함께',
                       style: GoTheme.serif(12,
-                          color: GoColors.ink.withOpacity(.35))),
+                          color: GoColors.ink.withValues(alpha: .35))),
                 ]),
               ),
             ),
@@ -214,7 +214,7 @@ class _FinishScreenState extends State<FinishScreen> {
               child: Text('개인 기록',
                   style: TextStyle(fontSize: 8, fontWeight: FontWeight.w600,
                       letterSpacing: 1.2,
-                      color: GoColors.ink.withOpacity(.4))),
+                      color: GoColors.ink.withValues(alpha: .4))),
             ),
             const SizedBox(height: 8),
             Row(children: [
@@ -232,7 +232,7 @@ class _FinishScreenState extends State<FinishScreen> {
                       ? "${widget.partnerName}의 기록이 도착하면 '우리' 탭에 합산될 거예요. 먼저 쉬고 있어요."
                       : '${widget.partnerName}는 아직 달리는 중이에요',
                   style: TextStyle(
-                      fontSize: 11, color: GoColors.ink.withOpacity(.4))),
+                      fontSize: 11, color: GoColors.ink.withValues(alpha: .4))),
             ],
             const SizedBox(height: 18),
             // ── CTA ──
@@ -258,7 +258,7 @@ class _FinishScreenState extends State<FinishScreen> {
               onPressed: _shareCard,
               child: Text('오늘의 순간 공유하기',
                   style: TextStyle(
-                      fontSize: 12, color: GoColors.ink.withOpacity(.4))),
+                      fontSize: 12, color: GoColors.ink.withValues(alpha: .4))),
             ),
           ]),
         ),
@@ -273,20 +273,20 @@ class _FinishScreenState extends State<FinishScreen> {
         const SizedBox(height: 2),
         Text(label,
             style: TextStyle(fontSize: 8, letterSpacing: .8,
-                color: GoColors.ink.withOpacity(.4))),
+                color: GoColors.ink.withValues(alpha: .4))),
       ]),
     );
   }
 
   Widget _tDivider() =>
-      Container(width: 1, height: 32, color: GoColors.ink.withOpacity(.12));
+      Container(width: 1, height: 32, color: GoColors.ink.withValues(alpha: .12));
 
   Widget _personalCard(String who, double? km, Color color, {String? mood}) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: GoColors.ink.withOpacity(.07),
+          color: GoColors.ink.withValues(alpha: .07),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -298,7 +298,7 @@ class _FinishScreenState extends State<FinishScreen> {
               style: GoTheme.serif(km == null ? 14 : 22)),
           Text('개인 총 거리',
               style: TextStyle(
-                  fontSize: 9, color: GoColors.ink.withOpacity(.4))),
+                  fontSize: 9, color: GoColors.ink.withValues(alpha: .4))),
           if (mood != null) ...[
             const SizedBox(height: 4),
             Text("'$mood'",
