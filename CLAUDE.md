@@ -26,11 +26,13 @@
 
 `design/prototype_v2.html` 이 **디자인의 단일 기준**. 화면 작업 전 해당 화면의 마크업/CSS를 열어 간격·라운딩·타이포를 그대로 따를 것.
 
+**사운드 작업은 `docs/sound_ux_v1.md`가 단일 기준.** 사운드·햅틱·브리핑 관련 코드를 만지기 전에 반드시 읽을 것. 문서의 금지 목록(실패음, 상시 배경음 등)은 협상 불가. 세션 화면 개편 프롬프트는 `docs/session_ui_prompts.md`에 있다.
+
 **프로토타입과 이 파일이 충돌하면 이 파일이 우선.** 프로토타입에 이모지가 있어도 쓰지 않고, GoingOn+ 구독 항목이 있어도 구현하지 않는다.
 
 - 색: paper `#F0EAE0`, canvas `#EBE4D6`, lime `#C5E040`, limeDark `#6A9810`, coral `#F05840`, coralDark `#B03020`, ink `#1A1A16`, resonance(골드) `#D4A84B`, amber `#D97706`, mid `#78746E`, dim `#B0ACA6`, line `rgba(26,26,22,.09)` → `lib/theme.dart`의 `GoColors`
 - 타이포: 타이틀/숫자 = Instrument Serif *italic* (`GoTheme.serif()`), 본문 = Noto Sans KR
-- 컬러 의미: 나 = lime, 상대 = coral, 공명/kcal = 골드. 절대 섞지 말 것
+- 컬러 의미: 나 = lime, 상대 = coral, **공명 = 골드(전용)**. 절대 섞지 말 것. kcal 등 일반 지표는 ink/mid — 골드가 "우리 둘이 만든 것"이라는 희소성을 가지려면 공명 외에는 쓰지 않는다 (2026-08-16 결정, 이전 규칙은 공명/kcal 공용이었음)
 - 카드 라운딩 18~22px, 화면 좌우 여백 22~28px, 섹션 라벨은 11px/600/letterSpacing 1.2/dim
 
 ### 폰트 — 번들이 유일한 안전망
