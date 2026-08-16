@@ -17,6 +17,7 @@ import '../services/run_service.dart';
 import '../theme.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
+import '../widgets/resonance_canvas.dart';
 import 'finish_screen.dart';
 
 /// 강제 종료 대비 스냅샷을 남기는 최소 간격.
@@ -56,7 +57,6 @@ class _RunScreenState extends State<RunScreen>
   /// Always 권한을 못 받아 화면을 끄면 기록이 멈추는 상태. 이때만 화면을
   /// 강제로 켜두고, 왜 그런지 사용자에게도 알려줌
   bool _screenMustStayOn = false;
-  late final AnimationController _breath;
 
   // ── 제스처 상호작용(탭/스와이프/롱프레스로 상대에게 신호 보내기) ──
   late final AnimationController _gesturePop;
@@ -76,6 +76,11 @@ class _RunScreenState extends State<RunScreen>
   final _resonance = ResonanceEngine();
   DemoResonanceDriver? _demoResonance;
   ResonanceEventLog? _resonanceLog;
+  StreamSubscription<ResonanceEvent>? _stateSub;
+
+  /// 상태어에 쓰는 값. 원 그림은 매 프레임 엔진을 직접 읽지만, 텍스트는
+  /// 전이가 있을 때만 바뀌면 되므로 여기 담아두고 그때만 리빌드한다
+  SyncState _syncState = SyncState.drifting;
 
   @override
   void initState() {
@@ -86,9 +91,10 @@ class _RunScreenState extends State<RunScreen>
     // 그래서 연속값을 흘려 넣는 곳은 데모의 가상 파트너뿐이고, 실제 세션에서는
     // 신호·마일스톤 이벤트만 흐른다
     if (widget.demo) _demoResonance = DemoResonanceDriver(_resonance)..start();
-    _breath = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 900))
-      ..repeat(reverse: true);
+    _stateSub = _resonance.events.listen((e) {
+      if (e is! ResonanceStateChanged || !mounted) return;
+      setState(() => _syncState = e.to);
+    });
     _gesturePop = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 500));
     WakelockPlus.enable();
@@ -296,37 +302,32 @@ class _RunScreenState extends State<RunScreen>
     }
   }
 
+  /// 신호는 순간이므로 자리를 차지하지 않는다 — 원 위에 잠깐 떴다 사라진다.
+  /// 달리면서 곁눈으로 읽히려면 이 글자도 커야 해서 칩 대신 큰 글씨로 둠
   Widget _gestureLabelWidget() {
-    return SizedBox(
-      height: 28,
-      child: Center(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          child: _gestureType == null
-              ? const SizedBox.shrink(key: ValueKey('empty'))
-              : ScaleTransition(
-                  key: ValueKey(_gestureSeq),
-                  scale: CurvedAnimation(
-                      parent: _gesturePop, curve: Curves.easeOutBack),
-                  child: _gestureChip(_gestureType!),
-                ),
-        ),
+    return IgnorePointer(
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: _gestureType == null
+            ? const SizedBox.shrink(key: ValueKey('empty'))
+            : ScaleTransition(
+                key: ValueKey(_gestureSeq),
+                scale: CurvedAnimation(
+                    parent: _gesturePop, curve: Curves.easeOutBack),
+                child: _gestureChip(_gestureType!),
+              ),
       ),
     );
   }
 
   Widget _gestureChip(String type) {
     final (text, color) = _gestureLabel(type);
-    final label = _gestureFromPartner ? '${widget.partnerName} · $text' : text;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: .15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: .3)),
-      ),
-      child: Text(label, style: GoTheme.serif(15, color: color)),
-    );
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      _caption(_gestureFromPartner ? widget.partnerName : '나',
+          color: color.withValues(alpha: .7)),
+      const SizedBox(height: 2),
+      Text(text, style: GoTheme.serif(34, color: color)),
+    ]);
   }
 
   Future<void> _finish(String? mood) async {
@@ -368,9 +369,9 @@ class _RunScreenState extends State<RunScreen>
   @override
   void dispose() {
     _demoResonance?.stop();
+    _stateSub?.cancel();
     _resonanceLog?.cancel();
     _resonance.dispose();
-    _breath.dispose();
     _gesturePop.dispose();
     _sessionSub?.cancel();
     _gestureLabelTimer?.cancel();
@@ -484,120 +485,105 @@ class _RunScreenState extends State<RunScreen>
     );
   }
 
+
+  /// 캡션 라벨 — 이 화면에서 34px 미만이 허용되는 **유일한** 글자.
+  /// 달리는 사람은 3초 이상 화면을 못 본다는 전제에서, 값은 크게 두고
+  /// 값이 무엇인지 알려주는 꼬리표만 작게 남긴다
+  Widget _caption(String text, {Color color = GoColors.dim}) => Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 11,
+          height: 1.3,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.2,
+          color: color,
+        ),
+      );
+
+  /// 상태어 — 이 화면의 두 번째 주인공.
+  ///
+  /// 발맞춤 값이 없는 실제 세션에서는 상태를 아는 척하지 않고 '함께'만 쓴다
+  /// ([ResonanceEngine.hasCloseness] 주석 참조)
+  String get _stateWord {
+    if (!_resonance.hasCloseness) return '함께';
+    return switch (_syncState) {
+      SyncState.drifting => '각자의 리듬',
+      SyncState.approaching => '가까워져요',
+      SyncState.aligned => '나란히',
+      SyncState.resonant => '공명',
+    };
+  }
+
+  /// 공명일 때만 골드. 그 외에는 상대의 색(coral) — 색 배정은 섞지 않는다
+  Color get _stateColor =>
+      _resonance.hasCloseness && _syncState == SyncState.resonant
+          ? GoColors.resonance
+          : GoColors.coralDark;
+
   Widget _runBody() {
     return Scaffold(
       backgroundColor: GoColors.canvas,
       body: SafeArea(
         child: Column(children: [
-          // ── 상단: 나 | 함께 | 파트너 (프로토타입 run-pace-row) ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(28, 12, 28, 0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Column(crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('나 · 페이스',
-                          style: TextStyle(fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 1,
-                              color: GoColors.limeDark.withValues(alpha: .6))),
-                      Text(LocationService.pace(_km, _seconds),
-                          style: GoTheme.serif(22, color: GoColors.limeDark)),
-                      const Text('km당',
-                          style:
-                              TextStyle(fontSize: 9, color: GoColors.dim)),
-                    ]),
-                const Spacer(),
-                const Padding(
-                  padding: EdgeInsets.only(top: 6),
-                  child: Text('함께 달리는\n중이에요',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 8, letterSpacing: 1.2,
-                          color: GoColors.dim)),
-                ),
-                const Spacer(),
-                Column(crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text('${widget.partnerName} · 상태',
-                          style: TextStyle(fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 1,
-                              color: GoColors.coralDark.withValues(alpha: .6))),
-                      Text('나란히',
-                          style: GoTheme.serif(22, color: GoColors.coralDark)),
-                      const Text('함께 시작했어요',
-                          style: TextStyle(
-                              fontSize: 9, color: GoColors.coralDark)),
-                    ]),
-              ],
-            ),
+          const SizedBox(height: 8),
+          // ── 내 페이스 — 곁눈으로 0.5초 안에 읽혀야 하는 단 하나의 숫자 ──
+          _caption('나 · 페이스',
+              color: GoColors.limeDark.withValues(alpha: .6)),
+          Text(LocationService.pace(_km, _seconds),
+              style: GoTheme.serif(68, color: GoColors.limeDark)
+                  .copyWith(height: 1.1)),
+          _caption('km당'),
+          const SizedBox(height: 14),
+          // ── 상대 상태어 ──
+          _caption('${widget.partnerName} · 상태',
+              color: GoColors.coralDark.withValues(alpha: .6)),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 400),
+            child: Text(_stateWord,
+                key: ValueKey(_stateWord),
+                style: GoTheme.serif(44, color: _stateColor)
+                    .copyWith(height: 1.2)),
           ),
-          const Spacer(),
-          // ── 함께 달리는 감각 — 겹치는 두 원. 탭/스와이프/롱프레스로
-          // 상대에게 신호를 보낼 수 있음 (design/prototype_v2.html의
-          // run-canvas-wrap 제스처)
-          _gestureLabelWidget(),
-          const SizedBox(height: 4),
-          Listener(
-            behavior: HitTestBehavior.opaque,
-            onPointerDown: _onGesturePointerDown,
-            onPointerUp: _onGesturePointerUp,
-            onPointerCancel: _onGesturePointerCancel,
-            child: SizedBox(
-              width: 220, height: 140,
+          // ── 겹치는 두 원 (탭·스와이프·길게 누르기로 신호) ──
+          Expanded(
+            child: Listener(
+              behavior: HitTestBehavior.opaque,
+              onPointerDown: _onGesturePointerDown,
+              onPointerUp: _onGesturePointerUp,
+              onPointerCancel: _onGesturePointerCancel,
               child: Stack(alignment: Alignment.center, children: [
-                Positioned(
-                  left: 30,
-                  child: _breathingCircle(GoColors.lime, GoColors.limeDark),
-                ),
-                Positioned(
-                  right: 30,
-                  child: _breathingCircle(GoColors.coral, GoColors.coralDark),
+                Positioned.fill(child: ResonanceCanvas(engine: _resonance)),
+                Align(
+                  alignment: const Alignment(0, -0.72),
+                  child: _gestureLabelWidget(),
                 ),
               ]),
             ),
           ),
-          const SizedBox(height: 8),
-          const Text('탭·스와이프·길게 누르면 신호를 보낼 수 있어요',
-              style: TextStyle(fontSize: 9, color: GoColors.dim)),
-          const Spacer(),
-          // ── 함께 합산 바 (프로토타입 together-bar) ──
+          // ── 함께 달린 것 ──
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Column(children: [
-              const Text('함께 달린 것',
-                  style: TextStyle(fontSize: 8, fontWeight: FontWeight.w600,
-                      letterSpacing: 1.2, color: GoColors.dim)),
-              const SizedBox(height: 6),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: GoColors.line),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withValues(alpha: .05),
-                        blurRadius: 6, offset: const Offset(0, 1)),
-                  ],
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Row(children: [
-                  _togetherCell(_timeText, GoColors.ink),
-                  _togetherDivider(),
-                  _togetherCell(_km.toStringAsFixed(1), GoColors.ink),
-                  _togetherDivider(),
-                  _togetherCell(
-                      '${LocationService.estimateKcal(_seconds)}',
-                      GoColors.resonance),
-                ]),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: GoColors.line),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withValues(alpha: .05),
+                      blurRadius: 6, offset: const Offset(0, 1)),
+                ],
               ),
-              const SizedBox(height: 5),
-              const Text('합산은 완료 후 계산돼요',
-                  style: TextStyle(fontSize: 9, color: GoColors.dim)),
-            ]),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(children: [
+                _togetherCell(_timeText, '시간'),
+                _togetherDivider(),
+                _togetherCell(_km.toStringAsFixed(1), 'km'),
+              ]),
+            ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
           // ── 멈춤 ──
           GestureDetector(
             onLongPress: _finishing ? null : _confirmFinish,
@@ -608,68 +594,36 @@ class _RunScreenState extends State<RunScreen>
                 color: GoColors.ink.withValues(alpha: .07),
                 border: Border.all(color: GoColors.ink.withValues(alpha: .1)),
               ),
-              child: const Center(
-                child: Text('멈춤',
-                    style: TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w600,
-                        color: GoColors.mid)),
-              ),
+              child: Center(child: _caption('멈춤', color: GoColors.mid)),
             ),
           ),
           const SizedBox(height: 5),
-          const Text('길게 누르면 종료',
-              style: TextStyle(fontSize: 9, color: GoColors.dim)),
+          _caption('길게 누르면 종료'),
           // 위치를 "항상 허용"으로 못 받은 경우에만 — 화면이 꺼지면 거리가
           // 멈추므로, 사용자가 이유를 모른 채 기록을 잃지 않도록 알려줌
           if (_screenMustStayOn) ...[
             const SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 28),
-              child: Text('화면을 끄면 거리가 멈춰요 — 설정에서 위치를 "항상 허용"으로 바꾸면 꺼도 기록돼요',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontSize: 10,
-                      height: 1.4,
-                      color: GoColors.amber.withValues(alpha: .9))),
+              child: _caption('화면을 끄면 거리가 멈춰요 — 위치를 "항상 허용"으로 바꾸면 꺼도 기록돼요',
+                  color: GoColors.amber.withValues(alpha: .9)),
             ),
           ],
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
         ]),
       ),
     );
   }
 
-  Widget _togetherCell(String v, Color color) {
-    return Expanded(
-        child: Center(child: Text(v, style: GoTheme.serif(20, color: color))));
-  }
+  Widget _togetherCell(String value, String label) => Expanded(
+        child: Column(children: [
+          Text(value,
+              style: GoTheme.serif(40, color: GoColors.ink)
+                  .copyWith(height: 1.1)),
+          _caption(label),
+        ]),
+      );
 
   Widget _togetherDivider() =>
-      Container(width: 1, height: 24, color: GoColors.line);
-
-  Widget _breathingCircle(Color fill, Color border) {
-    // 나(정방향)와 상대(역방향)가 엇갈려 숨쉬어요 — 각자의 발걸음처럼
-    final reverse = fill == GoColors.coral;
-    return AnimatedBuilder(
-      animation: _breath,
-      builder: (_, __) {
-        final t = reverse ? 1 - _breath.value : _breath.value;
-        final scale = .95 + t * .1;
-        return Transform.scale(
-          scale: scale,
-          child: Container(
-            width: 120, height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(colors: [
-                fill.withValues(alpha: .3),
-                fill.withValues(alpha: .06),
-              ]),
-              border: Border.all(color: border.withValues(alpha: .55), width: 2),
-            ),
-          ),
-        );
-      },
-    );
-  }
+      Container(width: 1, height: 44, color: GoColors.line);
 }

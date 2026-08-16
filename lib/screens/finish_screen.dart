@@ -198,6 +198,16 @@ class _FinishScreenState extends State<FinishScreen> {
                                 : '$_togetherKcal',
                             'kcal 합산'),
                       ]),
+                      // 러닝 화면에 있던 '합산은 완료 후 계산돼요'가 온 자리 —
+                      // 합산이 실제로 일어나는 곳에서 한 번만 말한다
+                      const SizedBox(height: 8),
+                      Text(
+                          _waiting
+                              ? '${widget.partnerName}의 기록이 도착하면 합쳐져요'
+                              : '둘의 기록을 합친 값이에요',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: GoColors.ink.withValues(alpha: .4))),
                     ]),
                   ),
                   const SizedBox(height: 8),

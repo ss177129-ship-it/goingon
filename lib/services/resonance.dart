@@ -262,6 +262,14 @@ class ResonanceEngine {
 
   SyncState get state => _state;
 
+  /// 발맞춤 값이 실제로 들어오고 있는가.
+  ///
+  /// 실제 세션에는 아직 이 값을 만들 방법이 없다(러닝 중 실시간 동기화 없음).
+  /// 그때 [state]는 `drifting`으로 남는데, 그걸 화면에 "각자의 리듬"이라고
+  /// 쓰면 **모르는 것을 아는 것처럼 말하는 셈**이다. 화면은 이 값이 false면
+  /// 상태어 대신 중립적인 문구를 보여야 한다
+  bool get hasCloseness => _smoothed != null;
+
   /// 지금 공명을 얼마나 유지하고 있는지 (공명이 아니면 [Duration.zero])
   Duration get resonanceHeldFor {
     final since = _resonantSince;

@@ -461,6 +461,22 @@ class _LobbyScreenState extends State<LobbyScreen> {
             ),
           ],
           const Spacer(),
+          // 러닝 화면에서 옮겨온 안내 — 달리는 중에는 안내문이 읽히지 않는다.
+          // 손이 비어 있고 화면을 보고 있는 지금이 이 문장의 자리다
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 28),
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.touch_app_outlined,
+                      size: 14, color: GoColors.dim),
+                  SizedBox(width: 6),
+                  Flexible(
+                    child: Text('달리는 중엔 화면을 탭·스와이프·길게 눌러 신호를 보낼 수 있어요',
+                        style: TextStyle(fontSize: 11, color: GoColors.mid)),
+                  ),
+                ]),
+          ),
           // ── 액션 버튼 ──
           Padding(
             padding: const EdgeInsets.fromLTRB(28, 14, 28, 14),
