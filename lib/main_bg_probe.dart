@@ -88,18 +88,31 @@ class _ProbeState extends State<_Probe> with WidgetsBindingObserver {
         showBackgroundLocationIndicator: _always,
         pauseLocationUpdatesAutomatically: false,
       ),
-    ).listen((_) => _record(_kFixes));
-
-    // run_screen과 동일: 1초 타이머, 5초마다 저장
-    var seconds = 0;
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      seconds = DateTime.now().millisecondsSinceEpoch ~/ 1000 - _startedAt;
-      if (seconds % 5 == 0) _record(_kTicks);
+    ).listen((_) {
+      _record(_kFixes);
+      _snapshot(); // run_screen과 동일 — 위치 콜백에서도 저장한다
     });
+
+    // run_screen과 동일: 1초 타이머에서도 저장을 시도한다
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _snapshot());
 
     setState(() => _status = _always
         ? '측정 중 — 위치 "항상 허용" 확보됨'
         : '측정 중 — "앱 사용 중에만" 상태 (배경 추적 불가)');
+  }
+
+  /// run_screen의 `_saveSnapshot`과 같은 간격 제어. 타이머와 위치 콜백
+  /// 어느 쪽에서 불리든 5초에 한 번만 실제로 남긴다
+  DateTime? _lastSnapshotAt;
+
+  void _snapshot() {
+    final now = DateTime.now();
+    final last = _lastSnapshotAt;
+    if (last != null && now.difference(last) < const Duration(seconds: 5)) {
+      return;
+    }
+    _lastSnapshotAt = now;
+    _record(_kTicks);
   }
 
   Future<void> _record(String key) async {

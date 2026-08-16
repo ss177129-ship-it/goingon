@@ -16,6 +16,11 @@ import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
 import 'finish_screen.dart';
 
+/// 강제 종료 대비 스냅샷을 남기는 최소 간격.
+/// 예전에도 5초 주기였고 그대로 유지한다. 달라진 것은 이제 타이머뿐 아니라
+/// 위치 콜백에서도 저장을 부르며, 어느 쪽에서 불리든 이 간격이 지켜진다는 점
+const _kSnapshotInterval = Duration(seconds: 5);
+
 /// 러닝 화면 — 각자 GPS로 기록, 끝나면 합산 (MVP: 라이브 동기화 없음)
 class RunScreen extends StatefulWidget {
   final String sessionId;
@@ -40,6 +45,10 @@ class _RunScreenState extends State<RunScreen>
   double _km = 0;
   bool _gpsOk = true;
   bool _finishing = false;
+
+  /// 마지막으로 스냅샷을 남긴 시각 — 타이머와 위치 콜백이 서로 겹쳐 부를 때
+  /// 저장이 몰리지 않도록 여기서 간격을 맞춘다
+  DateTime? _lastSnapshotAt;
 
   /// Always 권한을 못 받아 화면을 끄면 기록이 멈추는 상태. 이때만 화면을
   /// 강제로 켜두고, 왜 그런지 사용자에게도 알려줌
@@ -124,23 +133,52 @@ class _RunScreenState extends State<RunScreen>
       setState(() => _screenMustStayOn = true);
     }
     _location.start(
-      (km) => setState(() => _km = km),
+      (km) {
+        setState(() => _km = km);
+        // 위치가 갱신될 때도 스냅샷을 남긴다 — 아래 _saveSnapshot 주석 참조
+        _saveSnapshot();
+      },
       onError: _handleGpsError,
     );
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(
-          () => _seconds = DateTime.now().difference(_startedAt!).inSeconds);
-      // 앱이 강제 종료돼도 기록이 사라지지 않도록 5초마다 스냅샷 저장 —
-      // 다시 열면 RootScreen이 발견해서 기록 마무리를 제안함
-      if (_seconds % 5 == 0) {
-        RunRecovery.save(
-          sessionId: widget.sessionId,
-          partnerName: widget.partnerName,
-          km: _km,
-          seconds: _seconds,
-        );
-      }
+      setState(() => _seconds = _elapsedSeconds);
+      _saveSnapshot();
     });
+  }
+
+  /// 시작 시각과의 차이로 구한 경과 시간(초).
+  ///
+  /// 배경에서는 Timer가 멈춰 `_seconds`가 낡은 값으로 남으므로, 스냅샷을
+  /// 저장할 때는 이 값을 직접 계산해 써야 한다 — 안 그러면 배경에서 저장한
+  /// 기록의 시간이 실제보다 짧게 남는다
+  int get _elapsedSeconds => _startedAt == null
+      ? 0
+      : DateTime.now().difference(_startedAt!).inSeconds;
+
+  /// 강제 종료 대비 스냅샷. **타이머와 위치 콜백 양쪽에서 부른다.**
+  ///
+  /// 예전에는 1초 타이머 안에서만 저장했는데, 실기기에서 재보니 앱이 배경으로
+  /// 내려가면 **타이머가 35초까지 멈췄다**(2026-08-16 측정). 그 구간에 앱이
+  /// 정리되면 그만큼의 기록이 사라진다.
+  ///
+  /// 그렇다고 위치 콜백만 믿을 수도 없다. `distanceFilter`가 5m라 멈춰 서
+  /// 있으면 콜백 자체가 오지 않고, 같은 측정에서 위치 콜백의 공백은 84초로
+  /// 오히려 더 컸다.
+  ///
+  /// 그래서 양쪽 모두에서 부르고, 여기서 간격만 조절한다. 어느 한쪽이 멈춰도
+  /// 다른 쪽이 기록을 남기고, 둘 다 멈추면 어차피 손쓸 방법이 없다.
+  /// 중복 저장은 같은 키를 덮어쓸 뿐이라 해가 없다.
+  void _saveSnapshot() {
+    final now = DateTime.now();
+    final last = _lastSnapshotAt;
+    if (last != null && now.difference(last) < _kSnapshotInterval) return;
+    _lastSnapshotAt = now;
+    RunRecovery.save(
+      sessionId: widget.sessionId,
+      partnerName: widget.partnerName,
+      km: _km,
+      seconds: _elapsedSeconds,
+    );
   }
 
   /// 러닝 도중 위치 서비스가 꺼지거나 권한이 취소되는 등
