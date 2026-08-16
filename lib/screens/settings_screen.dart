@@ -1,5 +1,6 @@
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../services/auth_service.dart';
 import '../services/friend_service.dart';
@@ -13,7 +14,10 @@ import 'lobby_screen.dart';
 import 'login_screen.dart';
 import 'profile_edit_screen.dart';
 
-const _kAppVersion = '0.1.0';
+/// 버전은 **번들에서 직접 읽는다.** 예전에는 여기 문자열을 박아뒀는데,
+/// pubspec이 0.1.1+10까지 가는 동안 이 상수만 0.1.0에 남아 있었다.
+/// 테스터가 설정 화면을 보고 "나는 0.1.0인데?"라고 말하게 만드는 값이라,
+/// 사람이 손으로 맞춰야 하는 구조 자체를 없앤다 (2026-08-16)
 
 /// '설정' 탭 — 프로토타입 s-settings. MVP 범위: 프로필(이름 변경),
 /// 아이디(검색용 핸들), 알림(준비 중 — FCM 미구현), 로그아웃, 회원탈퇴, 버전.
@@ -28,6 +32,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _auth = AuthService();
   Map<String, dynamic>? _me;
   bool _busy = false;
+
+  /// "0.1.1 (10)" — 빌드 번호까지 보여야 테스터와 같은 것을 보고 말할 수 있다
+  String _appVersion = '';
 
   bool _soundOn = SoundSettings.cached;
   bool _briefingOn = SoundSettings.briefingCached;
@@ -81,6 +88,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _load();
+    PackageInfo.fromPlatform().then((info) {
+      if (mounted) {
+        setState(() => _appVersion = '${info.version} (${info.buildNumber})');
+      }
+    });
     SoundSettings.load().then((on) {
       if (mounted) setState(() => _soundOn = on);
     });
@@ -374,8 +386,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _row(
         icon: Icons.info_outline,
         title: '버전',
-        trailing: const Text(_kAppVersion,
-            style: TextStyle(fontSize: 13, color: GoColors.mid)),
+        trailing: Text(_appVersion,
+            style: const TextStyle(fontSize: 13, color: GoColors.mid)),
       ),
       const SizedBox(height: 12),
     ]);

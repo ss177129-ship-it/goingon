@@ -48,6 +48,7 @@ dependencies:
   audio_session: ^0.2.4
   flutter_soloud: ^4.1.7
   flutter_tts: ^4.2.5
+  package_info_plus: ^9.0.1
 
 dev_dependencies:
   flutter_test:
