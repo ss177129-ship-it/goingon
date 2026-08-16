@@ -45,7 +45,9 @@
 		<string>화면을 꺼도 러닝 기록이 끊기지 않게 하려면 위치 접근을 "항상 허용"으로 설정해 주세요. 위치는 달리기 중에만 사용되고, 친구에게 실시간 위치가 공유되지 않아요.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>프로필 사진으로 쓸 사진 한 장을 고르기 위해 사진첩이 필요해요. 고른 사진만 앱으로 전달되고, 나머지 사진은 앱이 볼 수 없어요.</string>
-		<key>UIBackgroundModes</key>
+		<key>NSMotionUsageDescription</key>
+	<string>발걸음 리듬(케이던스)을 읽어 함께 달리는 상대와 발이 맞는 순간을 알려드려요. 거부해도 러닝 기록에는 영향이 없어요.</string>
+	<key>UIBackgroundModes</key>
 		<array>
 			<string>location</string>
 			<!-- 화면을 끄거나 주머니에 넣어도 공명 사운드가 이어지려면 필요.

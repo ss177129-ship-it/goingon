@@ -12,5 +12,9 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    // 케이던스는 pub.dev 플러그인이 안 내줘서 직접 붙인다 (CadencePlugin 주석 참조)
+    CadencePlugin.register(
+      with: engineBridge.pluginRegistry.registrar(
+        forPlugin: "GoingOnCadencePlugin")!)
   }
 }
