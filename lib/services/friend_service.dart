@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'shared_stream.dart';
+
 /// 친구 연결 — 아이디로 찾아 **요청을 보내고, 상대가 수락해야** 연결됨
 /// (인스타 팔로우 요청 방식). 아이디를 아는 사람이 곧 연결 권한이 되는
 /// 카톡 방식은 폐기함 — 동의 없는 연락을 막는 게 목적.
@@ -182,9 +184,16 @@ class FriendService {
   /// 내 친구 목록 실시간 스트림.
   ///
   /// 내 문서는 러닝이 끝날 때마다(monthKm 등) 갱신되므로, uid 목록이 실제로
-  /// 바뀐 경우에만 상대 문서를 다시 읽음
+  /// 바뀐 경우에만 상대 문서를 다시 읽음.
+  ///
+  /// 홈 탭과 '우리' 탭이 각각 구독하는데 `IndexedStack`이라 둘 다 살아 있다.
+  /// 그대로 두면 같은 목록을 Firestore에서 두 번 듣게 되므로 [_shared]로
+  /// 원본 구독을 하나로 묶는다 — 호출부는 평범한 스트림으로 쓰면 된다
   Stream<List<Map<String, dynamic>>> friendsStream(String myUid) =>
-      _profilesFromField(myUid, 'friends');
+      _shared.of(myUid, () => _profilesFromField(myUid, 'friends'));
+
+  /// 인스턴스가 화면마다 새로 만들어지므로 공유 캐시는 클래스 전체가 나눠 씀
+  static final _shared = SharedStream<List<Map<String, dynamic>>>();
 
   Stream<List<Map<String, dynamic>>> _profilesFromField(
       String myUid, String field) {
