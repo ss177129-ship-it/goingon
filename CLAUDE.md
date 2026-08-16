@@ -30,10 +30,11 @@
   - 배포: `firebase deploy --only functions --project goingon-c12f3` (Blaze 플랜 필수)
 - `lib/screens/`: main.dart(스플래시 게이트) → login(Apple 로그인) → nickname(닉네임 설정, 로그인 성공 후 항상 거침) → root(홈/우리/설정 3탭 셸) → invite(초대코드) → lobby(준비단계) → run(GPS) → finish(합산+공유카드)
 - `lib/services/`: auth(Apple/Google 로그인+프로필 생성), friend(아이디 검색 → 확인 → 양방향 연결/삭제), run(세션 생명주기), location(GPS+보정), run_recovery(러닝 중 강제 종료 대비 로컬 스냅샷), active_run_guard, story_labels, week_key
-- Firestore: `users/{uid}` {name, username, friends[], blocked[], monthKey, monthKm, totalRuns, lastRunWeek, weekStreak}, `usernames/{username}` {uid}, `friendRequests/{fromUid}_{toUid}` {fromUid, toUid, createdAt}, `sessions/{id}` {hostId, guestId, participants, status: waiting|ready|running|finished|cancelled, ready{}, joined{}, late{}, gesture{}, results{uid:{seconds,km,kcal,mood}}}
+- Firestore: `users/{uid}` {name, username, photoUrl?, friends[], blocked[], monthKey, monthKm, totalRuns, lastRunWeek, weekStreak}, `usernames/{username}` {uid}, `friendRequests/{fromUid}_{toUid}` {fromUid, toUid, createdAt}, `sessions/{id}` {hostId, guestId, participants, status: waiting|ready|running|finished|cancelled, ready{}, joined{}, late{}, gesture{}, results{uid:{seconds,km,kcal,mood}}}
   - **친구 요청은 문서의 존재 자체가 "대기 중"**임 — status 필드가 없고 수락·거절·취소가 전부 삭제. id가 `보낸사람_받는사람`으로 고정이라 중복 요청이 구조적으로 불가능하고, 받은 요청 조회는 `toUid` 단일 조건이라 복합 인덱스도 필요 없음
   - 존재하지 않는 요청 문서를 배치에서 `delete`하면 규칙이 `resource`를 못 읽어 **권한 거부**가 남 — 반드시 `exists` 확인 후 배치에 넣을 것
-- 보안 규칙: `firestore.rules`, 복합 인덱스: `firestore.indexes.json` — 둘 다 소스가 기준이고 `firebase deploy --only firestore --project goingon-c12f3`로 배포. 배포 전 `--dry-run`으로 규칙 컴파일 확인할 것
+- 프로필 사진은 **Firebase Storage** `avatars/{uid}.jpg`에 두고 Firestore에는 주소(`photoUrl`)만 저장 (`avatar_service.dart`). 이미지를 문서에 직접 넣지 말 것 — 친구 목록이 실시간 스트림이라 매 스냅샷마다 따라옴. 파일 이름이 uid로 고정이라 사진을 바꾸면 항상 덮어씀(고아 파일 없음). 덮어쓸 때마다 다운로드 토큰이 새로 발급돼 주소가 바뀌므로 업로드 후 `photoUrl` 갱신을 반드시 함께 할 것
+- 보안 규칙: `firestore.rules` + `storage.rules`, 복합 인덱스: `firestore.indexes.json` — 셋 다 소스가 기준이고 `firebase deploy --only firestore,storage --project goingon-c12f3`로 배포. 배포 전 `--dry-run`으로 규칙 컴파일 확인할 것
   - 세션은 hostId/guestId 직접 비교 (in participants 쓰면 쿼리 권한 거부남). `participants` 필드는 남아 있지만 읽는 곳이 없음
   - 세션 update는 필드 허용 목록 방식 — hostId/guestId/createdAt은 생성 후 불변이고, ready/late/joined/results 맵은 자기 uid 항목만 쓸 수 있음. 새 필드를 쓰려면 규칙의 허용 목록에도 추가해야 함
   - **친구 추가는 "대기 중인 요청이 실제로 존재할 때"만 통과함** (내 문서·상대 문서 양쪽 모두). 수락 배치에서 요청 문서를 함께 지워도 규칙은 배치 이전 상태를 보므로 `exists()`가 참임. `friends`에 직접 쓰는 코드를 새로 만들지 말 것 — 규칙이 거부함
@@ -55,6 +56,10 @@
 ## Apple 네이티브 통합 방침
 
 완성도 있는 iOS 네이티브 경험이 목표. 네이티브 기능은 검증된 플러그인 우선, 없으면 `ios/Runner`에 Swift + MethodChannel로 구현.
+
+- **배포 타깃은 iOS 26.0** (2026-08-16에 13.0에서 올림). 타깃 사용자를 얼리어답터로 좁히고 최신 API를 쓰기로 한 결정이며, 그 아래 버전은 설치 자체가 불가능함. 되돌리려면 유저 승인 필요
+  - 이 덕분에 **`HKWorkoutSession`을 아이폰에서 쓸 수 있음** — 워치 없이도 OS가 보장하는 백그라운드 실행을 얻는 경로라, "러닝 중 앱이 죽어 기록이 날아가는" 문제의 근본 해법이 열렸음 (GPS 감사 I-1)
+  - 새 API를 쓸 때 `@available` 분기나 버전 체크를 넣지 말 것 — 최소 버전이 26이므로 불필요한 복잡도임
 
 - capability/entitlement 추가는 Xcode에서 수행하고, 변경된 파일(Runner.entitlements, Info.plist, project.pbxproj)을 커밋에 포함할 것
 - **승인된 통합 (출시 전)**: 햅틱(HapticFeedback — 롱프레스 제스처에 일부 적용됨, 카운트다운·종료 등으로 확장 예정), Live Activities(ActivityKit — 잠금화면/Dynamic Island에 러닝 세션 표시)
