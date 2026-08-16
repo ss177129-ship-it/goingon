@@ -120,7 +120,23 @@ service cloud.firestore {
           get(/databases/$(database)/documents/users/$(toUid)).data.get('blocked', []);
       }
 
-      allow read: if request.auth != null && (
+      // 단건 조회는 **문서 데이터가 아니라 문서 id로** 판정한다.
+      //
+      // 왜: id가 "보낸사람_받는사람"이라 없는 문서를 읽는 것이 곧 "요청이
+      // 없다"를 확인하는 정상 동작인데, resource.data를 보는 규칙은 문서가
+      // 없으면 null을 참조해 **권한 거부**가 난다. 그래서 아직 아무 사이도
+      // 아닌 사람을 검색할 때마다 친구 찾기가 통째로 실패했다(2026-08-16).
+      // 배치 delete에서 겪은 것과 같은 함정이다.
+      //
+      // 느슨해진 것은 아니다: id에 내 uid가 들어간 쌍만 볼 수 있으므로
+      // 남의 요청 관계를 캐는 것은 여전히 불가능하다
+      function involvesMe(requestId) {
+        return requestId.split('_').hasAny([request.auth.uid]);
+      }
+      allow get: if request.auth != null && involvesMe(requestId);
+
+      // 목록 조회(나에게 온 요청)는 문서가 실제로 있으므로 데이터로 판정
+      allow list: if request.auth != null && (
         request.auth.uid == resource.data.fromUid ||
         request.auth.uid == resource.data.toUid
       );

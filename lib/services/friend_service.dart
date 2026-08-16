@@ -232,7 +232,19 @@ class FriendService {
   }
 
   /// 입력한 아이디를 저장·검색 형태로 통일 (앞뒤 공백 제거 + 소문자)
-  static String normalizeUsername(String raw) => raw.trim().toLowerCase();
+  /// 검색어를 저장된 아이디 형태로 맞춘다.
+  ///
+  /// **앞의 `@`를 떼는 것이 핵심.** 앱은 아이디를 어디서나 `@ruty`로 보여주는데
+  /// 검색창에는 `ruty`만 받으면, 화면에서 본 그대로 입력한 사람이 "그런 아이디
+  /// 없음"을 보게 된다(2026-08-16 실제 제보). 저장은 `[a-z0-9_]`만 허용하므로
+  /// `@`는 어떤 아이디에도 들어 있을 수 없어, 떼어내도 잃는 것이 없다.
+  ///
+  /// 가운데 공백도 지운다 — 복사해 붙이면 "@ ruty"처럼 끼어드는 일이 흔하다
+  static String normalizeUsername(String raw) => raw
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'\s'), '')
+      .replaceAll(RegExp(r'^@+'), '');
 }
 
 /// 검색으로 찾은 상대 — 연결 전에 "이 사람이 맞는지"와 "지금 어떤 사이인지"를

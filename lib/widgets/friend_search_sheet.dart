@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart' show FirebaseException;
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 
@@ -59,10 +60,27 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
-      setState(() => _error = '찾지 못했어요. 인터넷을 확인해 주세요.');
+      setState(() => _error = _searchErrorText(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// 실패 원인을 있는 그대로 말한다.
+  ///
+  /// 예전에는 무슨 일이 나든 "인터넷을 확인해 주세요"였다. 실제로는 보안
+  /// 규칙이 거부하고 있었는데 사용자는 와이파이를 껐다 켜고 있었고, 제보도
+  /// "인터넷 문제 같다"로 올라와 원인을 찾는 데 시간이 더 들었다.
+  /// **틀린 안내는 없느니만 못하다**
+  String _searchErrorText(Object e) {
+    if (e is FirebaseException) {
+      return switch (e.code) {
+        'permission-denied' => '지금은 찾을 수 없어요. (권한 설정 문제로 보여요)',
+        'unavailable' || 'deadline-exceeded' => '연결이 불안정해요. 인터넷을 확인해 주세요.',
+        _ => '찾지 못했어요. 잠시 후 다시 시도해 주세요.',
+      };
+    }
+    return '찾지 못했어요. 잠시 후 다시 시도해 주세요.';
   }
 
   /// 관계 상태에 따라 눌렀을 때 할 일이 달라짐
