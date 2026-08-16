@@ -35,6 +35,15 @@ service cloud.firestore {
       allow update: if request.auth != null && request.auth.uid == userId &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['username']);
 
+      // 프로필 사진 — 실제 이미지는 Storage(avatars/{uid}.jpg)에 있고 여기엔
+      // 주소만 들어감. 사진을 지우면 필드 자체가 사라지므로(FieldValue.delete)
+      // "photoUrl이 아예 없음"과 "문자열"만 유효한 상태임
+      allow update: if request.auth != null && request.auth.uid == userId &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['photoUrl']) &&
+        (!('photoUrl' in request.resource.data) ||
+          request.resource.data.photoUrl is string);
+
       // 러닝 종료 시 통계 자동 갱신 (run_service._bumpMonthlyStats) —
       // createdAt은 여기 포함되지 않으므로 생성 이후 절대 못 바뀜
       allow update: if request.auth != null && request.auth.uid == userId &&

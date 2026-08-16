@@ -29,6 +29,21 @@ class _UsScreenState extends State<UsScreen> {
   Future<List<Map<String, dynamic>>>? _sessionsFuture;
   List<Map<String, dynamic>>? _lastSessions;
 
+  /// 상단 짝 아바타의 '나' 쪽에 쓸 내 프로필 사진. 내 문서는 친구 스트림에
+  /// 안 들어오므로 한 번만 따로 읽음 — 실패해도 첫 글자 아바타로 그려지니
+  /// 조용히 넘어감
+  String? _myPhotoUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _auth.myProfile().then((me) {
+      if (!mounted) return;
+      final url = me?['photoUrl'];
+      if (url is String && url.isNotEmpty) setState(() => _myPhotoUrl = url);
+    }).catchError((_) {});
+  }
+
   void _reloadSessions(String partnerUid) {
     setState(() {
       _sessionsFuture = _runs.finishedSessionsWith(_auth.uid, partnerUid);
@@ -339,9 +354,10 @@ class _UsScreenState extends State<UsScreen> {
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
         child: Row(children: [
-          _pairAvatar(_avatarLetter(null), GoColors.limeDark),
+          _pairAvatar(_avatarLetter(null), GoColors.limeDark,
+              photoUrl: _myPhotoUrl),
           _pairAvatar(_avatarLetter(partnerName), GoColors.coralDark,
-              overlap: true),
+              overlap: true, photoUrl: partner['photoUrl'] as String?),
           const SizedBox(width: 8),
           Expanded(
             child: Text('함께 달린 지 $daysTogether일째',
@@ -553,7 +569,8 @@ class _UsScreenState extends State<UsScreen> {
   String _avatarLetter(String? name) =>
       (name == null || name.isEmpty) ? '나' : name[0];
 
-  Widget _pairAvatar(String letter, Color borderColor, {bool overlap = false}) {
+  Widget _pairAvatar(String letter, Color borderColor,
+      {bool overlap = false, String? photoUrl}) {
     return Container(
       margin: EdgeInsets.only(left: overlap ? -12 : 0),
       child: InitialAvatar(
@@ -561,6 +578,7 @@ class _UsScreenState extends State<UsScreen> {
         size: 30,
         fontSize: 13,
         borderColor: borderColor,
+        photoUrl: photoUrl,
       ),
     );
   }

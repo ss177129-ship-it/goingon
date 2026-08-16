@@ -1,0 +1,31 @@
+rules_version = '2';
+
+// 프로필 사진 외에는 Storage를 쓰지 않음. 기본이 전면 거부이므로
+// avatars/ 아래만 열어두고 나머지 경로는 규칙 자체를 두지 않음.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // 파일 이름이 곧 소유자 uid — avatars/{uid}.jpg 하나뿐이라
+    // 사진을 바꾸면 항상 같은 자리를 덮어씀(옛 파일이 쌓이지 않음)
+    match /avatars/{fileName} {
+      function mine() {
+        return request.auth != null && fileName == request.auth.uid + '.jpg';
+      }
+
+      // 친구·요청 목록에서 상대 아바타를 봐야 하므로 로그인한 사람은 모두 읽음.
+      // (실제로는 getDownloadURL의 토큰이 붙은 주소로 내려받게 됨)
+      allow read: if request.auth != null;
+
+      // 업로드는 내 파일만. 앱이 512px로 줄여 올리므로 100KB 안쪽이지만,
+      // 앱을 거치지 않는 호출까지 감안해 1MB·이미지로 상한을 둠
+      // (image_picker가 원본 형식에 따라 png를 돌려줄 때가 있어 jpeg으로
+      //  못 박지 않음 — 확장자는 항상 .jpg지만 실제 타입은 다를 수 있음)
+      allow write: if mine() &&
+        request.resource.size < 1 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+
+      // 사진 삭제 / 회원탈퇴 시 정리 (write 규칙은 request.resource가 없어 못 씀)
+      allow delete: if mine();
+    }
+  }
+}

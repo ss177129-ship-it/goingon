@@ -244,6 +244,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
           borderColor: GoColors.line,
           borderWidth: 1.5,
           emptyIcon: Icons.person_outline,
+          photoUrl: c.photoUrl,
         ),
         const SizedBox(width: 14),
         Expanded(

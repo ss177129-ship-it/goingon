@@ -10,6 +10,7 @@ import '../widgets/initial_avatar.dart';
 import '../widgets/go_toast.dart';
 import 'lobby_screen.dart';
 import 'login_screen.dart';
+import 'profile_edit_screen.dart';
 
 const _kAppVersion = '0.1.0';
 
@@ -28,6 +29,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _busy = false;
 
   bool get _pushRegistered => (_me?['fcmTokens'] as List?)?.isNotEmpty ?? false;
+
+  String get _myName {
+    final raw = _me?['name'];
+    return (raw is String) ? raw.trim() : '';
+  }
+
+  String? get _myPhotoUrl {
+    final raw = _me?['photoUrl'];
+    return (raw is String && raw.isNotEmpty) ? raw : null;
+  }
+
+  String get _profileSummary {
+    final username = (_me?['username'] as String?) ?? '';
+    if (username.isEmpty) return '아이디를 설정하면 친구가 검색으로 찾을 수 있어요';
+    return _myName.isEmpty ? '@$username' : '$_myName · @$username';
+  }
 
   String get _pushStatus {
     if (_pushRegistered) return '이 기기로 알림을 받아요';
@@ -77,115 +94,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _editName() async {
-    final controller = TextEditingController(text: _me?['name'] ?? '');
-    final name = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: GoColors.paper,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18)),
-        title: Text('이름 변경', style: GoTheme.serif(20)),
-        content: TextField(
-          controller: controller,
-          maxLength: 10,
-          autofocus: true,
-          decoration: InputDecoration(
-            counterText: '',
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: GoColors.line),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('취소', style: TextStyle(color: GoColors.mid)),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: GoColors.ink),
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: Text('저장', style: GoTheme.serif(15, color: GoColors.lime)),
-          ),
-        ],
-      ),
-    );
-    if (name == null || name.isEmpty) return;
-    await _auth.updateName(name);
-    _load();
-  }
-
-  /// 아이디(검색용 고유 핸들) 설정/변경 — 다른 사람이 "아이디로 찾기"에서
-  /// 이 값으로 나를 찾아 친구 추가할 수 있음
-  Future<void> _editUsername() async {
-    final controller = TextEditingController(text: _me?['username'] ?? '');
-    final input = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: GoColors.paper,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18)),
-        title: Text('아이디 설정', style: GoTheme.serif(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: controller,
-              maxLength: 20,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: 'yourname123',
-                counterText: '',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: GoColors.line),
-                ),
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text('영문 소문자·숫자·_ 로 3~20자',
-                style: TextStyle(fontSize: 11, color: GoColors.dim)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('취소', style: TextStyle(color: GoColors.mid)),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: GoColors.ink),
-            onPressed: () =>
-                Navigator.pop(ctx, controller.text.trim().toLowerCase()),
-            child: Text('저장', style: GoTheme.serif(15, color: GoColors.lime)),
-          ),
-        ],
-      ),
-    );
-    if (input == null || input.isEmpty) return;
-    if (!RegExp(r'^[a-z0-9_]{3,20}$').hasMatch(input)) {
-      if (!mounted) return;
-      GoToast.error(context, '영문 소문자·숫자·_ 로 3~20자로 입력해 주세요.');
-      return;
-    }
-    try {
-      final ok = await _auth.setUsername(input);
-      if (!mounted) return;
-      if (!ok) {
-        GoToast.error(context, '이미 사용 중인 아이디예요.');
-        return;
-      }
-      _load();
-    } catch (e, stack) {
-      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
-      if (!mounted) return;
-      GoToast.error(context, '저장에 실패했어요. 다시 시도해 주세요.');
-    }
+  /// 이름·아이디·사진은 '프로필 편집'(ProfileEditScreen)에서 한꺼번에 다룸.
+  /// 돌아오면 여기 요약(이름·아이디 줄)도 갱신해야 하므로 다시 읽음
+  Future<void> _openProfileEdit() async {
+    await Navigator.push(context,
+        MaterialPageRoute(builder: (_) => const ProfileEditScreen()));
+    if (mounted) _load();
   }
 
   /// 차단 목록 — 차단은 되돌릴 수 있어야 하므로 해제 경로를 반드시 둠
@@ -256,6 +170,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           fontSize: 16,
           borderColor: GoColors.line,
           borderWidth: 1.5,
+          photoUrl: b['photoUrl'] as String?,
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -353,17 +268,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.fromLTRB(24, 14, 24, 6),
         child: Text('설정', style: GoTheme.serif(28)),
       ),
+      // 프로토타입 s-settings의 '프로필 편집' 한 줄. 사진·이름·아이디를
+      // 한 화면에서 다루므로 여기서는 지금 상태만 요약해 보여줌
       _row(
-        icon: Icons.person_outline,
-        title: '프로필',
-        subtitle: _me?['name'] ?? '',
-        onTap: _editName,
-      ),
-      _row(
-        icon: Icons.alternate_email,
-        title: '아이디',
-        subtitle: _me?['username'] ?? '설정 안 함 — 친구가 검색으로 찾을 수 있어요',
-        onTap: _editUsername,
+        leading: InitialAvatar(
+          letter: _myName.isEmpty ? '' : _myName[0],
+          size: 24,
+          fontSize: 11,
+          borderColor: GoColors.limeDark,
+          borderWidth: 1.2,
+          emptyIcon: Icons.person_outline,
+          photoUrl: _myPhotoUrl,
+        ),
+        title: '프로필 편집',
+        subtitle: _profileSummary,
+        onTap: _openProfileEdit,
       ),
       // 푸시가 안 될 때 폰에서 바로 원인이 보이게 함. 실기기 검증이
       // TestFlight밖에 없어서(한 사이클 20~40분) 로그를 볼 수 없기 때문에,
@@ -419,13 +338,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _row({
-    required IconData icon,
+    IconData? icon,
+    Widget? leading,
     required String title,
     String? subtitle,
     Color? titleColor,
     Widget? trailing,
     VoidCallback? onTap,
   }) {
+    assert(icon != null || leading != null);
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -436,7 +357,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Row(children: [
           SizedBox(
             width: 24,
-            child: Icon(icon, size: 20, color: titleColor ?? GoColors.ink),
+            child: leading ??
+                Icon(icon, size: 20, color: titleColor ?? GoColors.ink),
           ),
           const SizedBox(width: 14),
           Expanded(

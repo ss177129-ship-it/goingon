@@ -8,6 +8,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import 'avatar_service.dart';
 import 'push_service.dart';
 
 /// 인증 전략: Apple 또는 Google 로그인 필수 — 익명 로그인 없음.
@@ -157,6 +158,16 @@ class AuthService {
       batch.delete(_db.collection('usernames').doc(username));
     }
     await batch.commit();
+
+    // 프로필 사진은 Storage에 따로 있어서 배치로 지워지지 않음. Auth 계정을
+    // 지우기 전에 처리해야 함 — 로그인이 풀리면 규칙상 내 파일도 못 지움.
+    // 사진이 없는 계정이 대부분이고 여기서 실패해도 탈퇴는 이어져야 하므로
+    // 예외를 삼킴(고아 파일은 나중에 정리 가능)
+    try {
+      await AvatarService().deleteFile(myUid);
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+    }
 
     // Auth 계정 삭제는 세션이 오래됐으면 requires-recent-login으로 실패할 수
     // 있음. 그 시점엔 Firestore 데이터가 이미 지워진 뒤라 '탈퇴 실패'로 보이면

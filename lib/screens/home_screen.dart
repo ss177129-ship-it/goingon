@@ -134,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
             .collection('users').doc(hostId).get();
         final hostName = _displayName(host.data()?['name']);
         if (!mounted) return;
-        _showGoRequest(doc.id, hostName);
+        _showGoRequest(doc.id, hostName, host.data()?['photoUrl'] as String?);
       }
     }, onError: (e, stack) {
       // 권한/네트워크 문제로 감지가 끊기면 잠시 뒤 재구독하되, 인덱스 누락처럼
@@ -159,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return s.isEmpty ? '친구' : s;
   }
 
-  void _showGoRequest(String sessionId, String hostName) {
+  void _showGoRequest(String sessionId, String hostName, String? hostPhotoUrl) {
     _openSheets++;
     showModalBottomSheet(
       context: context,
@@ -187,6 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
             fontSize: 36,
             fill: GoColors.coral.withOpacity(.12),
             borderColor: GoColors.coralDark,
+            photoUrl: hostPhotoUrl,
           ),
           const SizedBox(height: 16),
           Text('$hostName님이\n같이 달리자고 해요',
@@ -402,6 +403,7 @@ class _HomeScreenState extends State<HomeScreen> {
             fontSize: 17,
             fill: GoColors.coral.withOpacity(.12),
             borderColor: GoColors.coralDark,
+            photoUrl: r.photoUrl,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -550,6 +552,7 @@ class _HomeScreenState extends State<HomeScreen> {
           fill: GoColors.lime.withOpacity(.18),
           borderColor: GoColors.limeDark,
           emptyIcon: Icons.person_outline,
+          photoUrl: _me?['photoUrl'] as String?,
         ),
         const SizedBox(height: 8),
         Text(myName, style: GoTheme.serif(22)),
@@ -613,6 +616,7 @@ class _HomeScreenState extends State<HomeScreen> {
             fontSize: 18,
             borderColor: GoColors.line,
             borderWidth: 1.5,
+            photoUrl: f['photoUrl'] as String?,
           ),
           const SizedBox(width: 12),
           Expanded(

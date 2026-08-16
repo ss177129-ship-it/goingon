@@ -40,6 +40,7 @@ class FriendService {
       uid: uid,
       name: (them.data()?['name'] as String?) ?? '이름 없음',
       username: username,
+      photoUrl: them.data()?['photoUrl'] as String?,
       relation: await _relationWith(myUid, uid),
     );
   }
@@ -95,6 +96,7 @@ class FriendService {
           fromUid: sender.id,
           name: (sender.data()?['name'] as String?) ?? '이름 없음',
           username: (sender.data()?['username'] as String?) ?? '',
+          photoUrl: sender.data()?['photoUrl'] as String?,
           createdAt: (snap.docs[i].data()['createdAt'] as Timestamp?)?.toDate(),
         ));
       }
@@ -230,12 +232,16 @@ class FriendCandidate {
   final String uid;
   final String name;
   final String username;
+
+  /// 프로필 사진(Storage 주소). 없으면 이름 첫 글자로 그림
+  final String? photoUrl;
   final FriendRelation relation;
   const FriendCandidate({
     required this.uid,
     required this.name,
     required this.username,
     required this.relation,
+    this.photoUrl,
   });
 }
 
@@ -244,11 +250,15 @@ class FriendRequest {
   final String fromUid;
   final String name;
   final String username;
+
+  /// 프로필 사진(Storage 주소). 없으면 이름 첫 글자로 그림
+  final String? photoUrl;
   final DateTime? createdAt;
   const FriendRequest({
     required this.fromUid,
     required this.name,
     required this.username,
+    this.photoUrl,
     this.createdAt,
   });
 }
