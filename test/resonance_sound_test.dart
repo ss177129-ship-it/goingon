@@ -102,6 +102,42 @@ void main() {
       expect(sound.loopVolumes[SoundId.padOvertone], greaterThan(0));
     });
 
+    test('수신 신호 3종이 서로 다른 소리로 간다', () async {
+      // 눈 감고 구분되려면 애초에 다른 파일이어야 한다
+      engine.signalReceived(SignalKind.here, at: t0);
+      engine.signalReceived(SignalKind.cheer, at: t0);
+      engine.signalReceived(SignalKind.slow, at: t0);
+      await pumpEventQueue();
+
+      expect(sound.oneShots,
+          [SoundId.sigHere, SoundId.sigCheer, SoundId.sigSlow]);
+    });
+
+    test('내 확인음은 상대의 존재보다 작다', () async {
+      engine.signalSent(SignalKind.here, at: t0);
+      engine.signalReceived(SignalKind.here, at: t0);
+      await pumpEventQueue();
+
+      expect(sound.volumeOf(SoundId.sigSend),
+          lessThan(sound.volumeOf(SoundId.sigHere)));
+    });
+
+    test('브리핑이 말하는 동안 도착한 소리는 버린다', () async {
+      // 큐에 넣으면 2km 안내가 끝난 뒤 1km 시점의 chime이 울린다
+      resonanceSound.setSpeaking(true);
+      engine.signalReceived(SignalKind.cheer, at: t0);
+      engine.addSample(0.95, at: t0);
+      feed(t0, 0.95, seconds: 4);
+      await pumpEventQueue();
+      expect(sound.oneShots, isEmpty);
+
+      // 말이 끝나면 그다음 것부터 다시 들린다
+      resonanceSound.setSpeaking(false);
+      engine.signalReceived(SignalKind.here, at: t0.add(_secs(5)));
+      await pumpEventQueue();
+      expect(sound.oneShots, [SoundId.sigHere]);
+    });
+
     test('세션을 끝내면 엔진도 정리된다', () async {
       await resonanceSound.stop();
       expect(sound.disposed, isTrue);
@@ -130,9 +166,15 @@ class _FakeSoundEngine implements SoundEngine {
   @override
   Future<void> loadAssets() async => loaded = true;
 
+  final volumes = <SoundId, double>{};
+
+  double volumeOf(SoundId id) => volumes[id] ?? 0;
+
   @override
-  Future<void> playOneShot(SoundId id, {double volume = 1}) async =>
-      oneShots.add(id);
+  Future<void> playOneShot(SoundId id, {double volume = 1}) async {
+    oneShots.add(id);
+    volumes[id] = volume;
+  }
 
   @override
   Future<void> setLoopVolume(SoundId id, double volume) async =>

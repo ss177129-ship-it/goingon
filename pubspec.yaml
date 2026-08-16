@@ -47,6 +47,7 @@ dependencies:
   cached_network_image: ^3.4.1
   audio_session: ^0.2.4
   flutter_soloud: ^4.1.7
+  flutter_tts: ^4.2.5
 
 dev_dependencies:
   flutter_test:

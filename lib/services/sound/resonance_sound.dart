@@ -21,7 +21,7 @@ class ResonanceSound {
   })  : _engine = engine,
         _sound = sound {
     _session = session ??
-        AudioSessionController(onAudibleChanged: _onAudibleChanged);
+        AudioSessionController(onAudibleChanged: setAudible);
   }
 
   /// 패드가 들리기 시작하는 지점. 설계서가 정한 값이고, 이벤트 레이어의
@@ -38,6 +38,11 @@ class ResonanceSound {
   static const overtoneCeiling = 0.35;
   static const chimeVolume = 0.9;
 
+  /// 송신 확인음은 작게, 수신음은 크게.
+  /// **내 확인음이 상대의 존재보다 크면 안 된다**(설계서 §2)
+  static const sentVolume = 0.4;
+  static const receivedVolume = 0.8;
+
   final ResonanceEngine _engine;
   final SoundEngine _sound;
   late final AudioSessionController _session;
@@ -45,6 +50,10 @@ class ResonanceSound {
   StreamSubscription<ResonanceEvent>? _events;
   Timer? _timer;
   bool _audible = true;
+
+  /// 브리핑이 말하는 중. 이때 도착한 이벤트 사운드는 **버린다** —
+  /// 큐에 넣었다가 뒤늦게 울리는 chime은 무엇에 대한 소리인지 알 수 없다
+  bool _speaking = false;
   bool _overtone = false;
   double _overtoneLevel = 0;
   bool _started = false;
@@ -80,17 +89,37 @@ class ResonanceSound {
       case ResonanceEntered():
         // 햅틱·골드 링과 같은 이벤트를 같은 순간에 받는다. 여기서 다시
         // 조건을 따지면 셋의 타이밍이 갈라진다
-        if (_audible) _sound.playOneShot(SoundId.chimeMatch, volume: chimeVolume);
+        _playEvent(SoundId.chimeMatch, chimeVolume);
       case ResonanceHeld(:final held):
         // 소리를 하나 더 얹는 게 아니라 같은 소리가 두꺼워지는 것
         if (held >= const Duration(seconds: 30)) _overtone = true;
       case ResonanceStateChanged(:final to):
         // 멀어질 때 나는 소리는 없다. 패드가 잦아드는 것이 전부다
         if (to != SyncState.resonant) _overtone = false;
+      case SignalSent():
+        _playEvent(SoundId.sigSend, sentVolume);
+      case SignalReceived(:final kind):
+        _playEvent(_receivedSound(kind), receivedVolume);
       default:
         break;
     }
   }
+
+  static SoundId _receivedSound(SignalKind kind) => switch (kind) {
+        SignalKind.here => SoundId.sigHere,
+        SignalKind.cheer => SoundId.sigCheer,
+        SignalKind.slow => SoundId.sigSlow,
+      };
+
+  /// 이벤트 사운드 한 발. 들리지 않는 상황이거나 브리핑 중이면 **버린다**
+  void _playEvent(SoundId id, double volume) {
+    if (!_audible || _speaking) return;
+    _sound.playOneShot(id, volume: volume);
+  }
+
+  /// 브리핑이 시작/종료될 때 호출. 패드는 그대로 둔다 — 말 밑에 깔린 드론은
+  /// 방해가 아니라 배경이고, 여기서 끊으면 브리핑마다 소리가 뚝 끊긴다
+  void setSpeaking(bool speaking) => _speaking = speaking;
 
   /// 패드 볼륨 = closeness를 [padFloor]~1.0 구간에서 0~1로 편 값.
   ///
@@ -127,7 +156,7 @@ class ResonanceSound {
   }
 
   /// 전화가 왔거나 이어폰이 빠졌을 때. **소리만** 멈춘다 — 기록은 계속된다
-  void _onAudibleChanged(bool audible) {
+  void setAudible(bool audible) {
     _audible = audible;
     _applyPadVolume();
   }

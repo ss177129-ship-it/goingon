@@ -31,15 +31,29 @@ class AudioSessionController {
 
   bool get isAudible => !_interrupted && !_lostHeadphones;
 
+  /// 평상시 구성 — 유저 음악과 그냥 공존한다
+  static const _mixing = AudioSessionConfiguration(
+    avAudioSessionCategory: AVAudioSessionCategory.playback,
+    // 이것 하나가 "손님" 규칙의 전부다. 빼면 유저 음악이 멈춘다
+    avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.mixWithOthers,
+    avAudioSessionMode: AVAudioSessionMode.defaultMode,
+  );
+
+  /// 브리핑 중 구성 — 음악을 멈추지 않고 낮추기만 한다.
+  /// `|`가 상수식이 아니라 final로 둔다
+  static final _ducking = AudioSessionConfiguration(
+    avAudioSessionCategory: AVAudioSessionCategory.playback,
+    avAudioSessionCategoryOptions:
+        AVAudioSessionCategoryOptions.mixWithOthers |
+            AVAudioSessionCategoryOptions.duckOthers,
+    // 안내 음성이라고 알려주면 iOS가 알아서 적절히 눌러준다
+    avAudioSessionMode: AVAudioSessionMode.voicePrompt,
+  );
+
   Future<void> activate() async {
     final session = await AudioSession.instance;
     _session = session;
-    await session.configure(const AudioSessionConfiguration(
-      avAudioSessionCategory: AVAudioSessionCategory.playback,
-      // 이것 하나가 "손님" 규칙의 전부다. 빼면 유저 음악이 멈춘다
-      avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.mixWithOthers,
-      avAudioSessionMode: AVAudioSessionMode.defaultMode,
-    ));
+    await session.configure(_mixing);
     await session.setActive(true);
 
     // 전화가 오면 우리 소리는 죽어도 된다. 다만 통화가 끝나면 **알아서
@@ -87,6 +101,20 @@ class AudioSessionController {
       if (isAudible != wasAudible) onAudibleChanged(isAudible);
     } catch (e) {
       debugPrint('[sound] 출력 장치 확인 실패: $e');
+    }
+  }
+
+  /// 브리핑이 말하는 **그 순간에만** 유저 음악을 낮춘다.
+  ///
+  /// 상시로 걸어두지 않는 이유: duckOthers가 켜져 있는 동안 유저의 음악은
+  /// 계속 눌려 있다. 우리는 30분 내내 음악을 눌러놓을 자격이 없다
+  Future<void> setDucking(bool ducking) async {
+    final session = _session;
+    if (session == null) return;
+    try {
+      await session.configure(ducking ? _ducking : _mixing);
+    } catch (e) {
+      debugPrint('[sound] 덕킹 전환 실패: $e');
     }
   }
 

@@ -13,7 +13,24 @@ enum SoundId {
   padOvertone('assets/audio/pad_overtone.wav', loop: true),
 
   /// 공명 진입. 이 앱에서 가장 좋은 소리여야 한다
-  chimeMatch('assets/audio/chime_match.wav', loop: false);
+  chimeMatch('assets/audio/chime_match.wav', loop: false),
+
+  /// 내가 신호를 보냈다는 확인. **작게** — 내 확인음은 작고 상대의 존재는 크다
+  sigSend('assets/audio/sig_send.wav', loop: false),
+
+  // ── 수신음 3종 ──
+  // 눈 감고 구분되어야 한다. 그래서 셋의 **음높이·타수·길이가 모두** 다르다:
+  // 낮은 한 타(0.18초) / 밝은 두 타(0.35초) / 부드러운 하강(1초).
+  // 세기만 다르게 하면 주머니 속에서는 구분되지 않는다
+
+  /// "여기 있어" — 낮은 우드블록 한 타
+  sigHere('assets/audio/sig_tap.wav', loop: false),
+
+  /// "힘내" — 밝은 2연타
+  sigCheer('assets/audio/sig_cheer.wav', loop: false),
+
+  /// "천천히 가자" — 부드러운 하강음
+  sigSlow('assets/audio/sig_easy.wav', loop: false);
 
   const SoundId(this.asset, {required this.loop});
 

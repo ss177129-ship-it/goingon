@@ -17,6 +17,8 @@ import '../services/resonance.dart';
 import '../services/run_recovery.dart';
 import '../services/run_service.dart';
 import '../services/sound/resonance_sound.dart';
+import '../services/sound/audio_session_controller.dart';
+import '../services/sound/run_briefing.dart';
 import '../services/sound/soloud_sound_engine.dart';
 import '../services/sound_settings.dart';
 import '../theme.dart';
@@ -99,6 +101,9 @@ class _RunScreenState extends State<RunScreen>
   /// 것 자체가 다른 앱의 재생에 영향을 주기 때문
   ResonanceSound? _sound;
 
+  /// 1km 브리핑. 사운드와 독립된 설정이라 따로 켠다
+  RunBriefing? _briefing;
+
   @override
   void initState() {
     super.initState();
@@ -126,12 +131,32 @@ class _RunScreenState extends State<RunScreen>
   Future<void> _startSoundIfEnabled() async {
     if (!await SoundSettings.load()) return;
     if (!mounted) return;
+    final session = AudioSessionController(
+      onAudibleChanged: (audible) => _sound?.setAudible(audible),
+    );
     final sound = ResonanceSound(
       engine: _resonance,
       sound: SoLoudSoundEngine(),
+      session: session,
     );
     _sound = sound;
     await sound.start();
+
+    if (!await SoundSettings.loadBriefing()) return;
+    if (!mounted) {
+      await sound.stop();
+      return;
+    }
+    // 오디오 세션은 사운드 쪽이 이미 잡았다. 브리핑은 그 위에서 잠깐
+    // 덕킹만 걸었다 푼다
+    final briefing = RunBriefing(
+      engine: _resonance,
+      partnerName: widget.partnerName,
+      session: session,
+      onSpeaking: sound.setSpeaking,
+    );
+    _briefing = briefing;
+    await briefing.start();
   }
 
   /// 상대가 보낸 제스처 신호 감지 — 위치/페이스는 안 보내고 이 필드 하나만 봄
@@ -307,6 +332,7 @@ class _RunScreenState extends State<RunScreen>
     setState(() => _finishing = true);
     _timer?.cancel();
     _demoResonance?.stop();
+    await _briefing?.stop();
     await _sound?.stop();
     _location.stop();
     WakelockPlus.disable();
@@ -342,6 +368,7 @@ class _RunScreenState extends State<RunScreen>
   @override
   void dispose() {
     _demoResonance?.stop();
+    _briefing?.stop();
     _sound?.stop();
     _stopHoldController.dispose();
     _stopHold.dispose();

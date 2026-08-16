@@ -32,9 +32,20 @@ class SoLoudSoundEngine implements SoundEngine {
       // 소리가 안 나는 것은 러닝을 막을 이유가 아니다. 조용히 무음으로 남고
       // 원인만 남긴다 — 실기기에서만 재현되는 종류의 실패가 많다
       _ready = false;
-      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       debugPrint('[sound] 초기화 실패: $e');
+      _report(e, stack);
     }
+  }
+
+  /// 원인 보고가 **원인을 가리지 않게** 한다.
+  ///
+  /// 예전에는 여기서 그냥 Crashlytics를 불렀는데, Firebase가 없는 곳
+  /// (진단용 프로브)에서는 이 호출 자체가 던져서 정작 무엇이 실패했는지가
+  /// 로그에서 사라졌다. 보고는 부수적인 일이고 조용히 실패해도 된다
+  void _report(Object e, StackTrace stack) {
+    try {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+    } catch (_) {}
   }
 
   @override

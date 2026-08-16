@@ -30,6 +30,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _busy = false;
 
   bool _soundOn = SoundSettings.cached;
+  bool _briefingOn = SoundSettings.briefingCached;
 
   bool get _pushRegistered => (_me?['fcmTokens'] as List?)?.isNotEmpty ?? false;
 
@@ -83,11 +84,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     SoundSettings.load().then((on) {
       if (mounted) setState(() => _soundOn = on);
     });
+    SoundSettings.loadBriefing().then((on) {
+      if (mounted) setState(() => _briefingOn = on);
+    });
   }
 
   Future<void> _setSound(bool on) async {
     setState(() => _soundOn = on);
     await SoundSettings.save(on);
+  }
+
+  Future<void> _setBriefing(bool on) async {
+    setState(() => _briefingOn = on);
+    await SoundSettings.saveBriefing(on);
   }
 
   Future<void> _load() async {
@@ -319,6 +328,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onChanged: _setSound,
         ),
         onTap: () => _setSound(!_soundOn),
+      ),
+      _row(
+        icon: _briefingOn ? Icons.record_voice_over_outlined : Icons.voice_over_off_outlined,
+        title: '음성 브리핑',
+        subtitle: _briefingOn ? '1km마다 짧게 알려줘요' : '말로 알려주지 않아요',
+        trailing: Switch(
+          value: _briefingOn,
+          activeThumbColor: GoColors.limeDark,
+          onChanged: _soundOn ? _setBriefing : null,
+        ),
+        onTap: _soundOn ? () => _setBriefing(!_briefingOn) : null,
       ),
       _row(
         icon: Icons.block,
