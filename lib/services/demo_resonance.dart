@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:math' show Random;
 
 import 'resonance.dart';
 
@@ -46,13 +47,16 @@ class DemoResonanceScript {
     (210.0, 0.08), // 루프 지점 — 0초 값과 가깝게 두어 이어붙는 자리가 안 보이게
   ];
 
-  /// 지수가 신호를 보내는 시각. 공명 구간과 겹치지 않게 흩어 두었다 —
-  /// 나중에 소리가 붙으면 공명음과 신호음이 같은 순간에 겹쳐 서로를 먹는다
+  /// 지수가 먼저 보내는 신호. 한 바퀴 안에 **세 종류가 모두 한 번씩** 온다 —
+  /// 데모의 목적이 "이런 게 온다"를 겪게 하는 것이라 하나라도 빠지면 안 된다.
+  ///
+  /// 공명 구간과 겹치지 않게 흩어 두었다: 나중에 소리가 붙으면 공명음과
+  /// 신호음이 같은 순간에 겹쳐 서로를 먹는다
   static const _signals = <(double, SignalKind)>[
-    (24.0, SignalKind.cheer),
-    (48.0, SignalKind.faster),
-    (108.0, SignalKind.heart),
-    (118.0, SignalKind.slower),
+    (24.0, SignalKind.here),
+    (48.0, SignalKind.cheer),
+    (108.0, SignalKind.slow),
+    (150.0, SignalKind.here),
   ];
 
   /// [since] 시점의 발맞춤 원본값(0~1).
@@ -109,25 +113,62 @@ class DemoResonanceScript {
 /// 공명이 실제로 일어나는 곳은 데모뿐이고, 실제 세션에서는 신호·마일스톤
 /// 이벤트만 흐른다.
 class DemoResonanceDriver {
-  DemoResonanceDriver(this._engine, {DateTime Function()? clock})
-      : _clock = clock ?? DateTime.now;
+  DemoResonanceDriver(this._engine, {DateTime Function()? clock, Random? random})
+      : _clock = clock ?? DateTime.now,
+        _random = random ?? Random();
 
   /// 스무딩 시정수(1초)에 비해 충분히 촘촘하면서, 배터리를 축내지 않는 주기
   static const tick = Duration(milliseconds: 100);
 
+  /// 내가 신호를 보냈을 때 지수가 답할 확률.
+  ///
+  /// 1.0이 아닌 이유: 매번 답이 오면 사람이 아니라 자동응답기다.
+  /// 그렇다고 낮으면 안 된다 — **신호를 보냈는데 아무 일도 없으면 다시는
+  /// 안 보낸다.** 그래서 대체로 오되 가끔 안 오는 쪽으로 잡았다
+  static const replyChance = 0.75;
+
+  /// 답이 오기까지의 간격. 즉답은 기계처럼 느껴지고, 너무 늦으면 내가 보낸
+  /// 것과 이어지지 않는다
+  static const replyDelayMin = Duration(seconds: 5);
+  static const replyDelayMax = Duration(seconds: 15);
+
   final ResonanceEngine _engine;
   final DateTime Function() _clock;
+  final Random _random;
   Timer? _timer;
   DateTime? _startedAt;
   Duration _lastElapsed = Duration.zero;
+  StreamSubscription<ResonanceEvent>? _sentSub;
+
+  /// 내가 보낸 신호에 대한 지수의 답 — (보낼 시각, 종류)
+  final _pendingReplies = <(Duration, SignalKind)>[];
 
   void start() {
     if (_timer != null) return;
     _startedAt = _clock();
     _lastElapsed = Duration.zero;
+    _pendingReplies.clear();
+    _sentSub = _engine.events.listen((e) {
+      if (e is SignalSent) _scheduleReply(e.kind);
+    });
     _engine.addSample(DemoResonanceScript.closenessAt(Duration.zero),
         at: _startedAt!);
     _timer = Timer.periodic(tick, (_) => pump());
+  }
+
+  /// 내가 보낸 신호에 지수가 답할지, 답한다면 언제 무엇으로 답할지 정한다.
+  ///
+  /// 답의 종류: 절반은 같은 신호(받았다는 뜻이 가장 분명하다), 나머지는
+  /// 다른 신호. 늘 똑같이 되받으면 메아리처럼 느껴진다
+  void _scheduleReply(SignalKind mine) {
+    if (_random.nextDouble() > replyChance) return;
+    final span = replyDelayMax - replyDelayMin;
+    final delay = replyDelayMin +
+        Duration(milliseconds: _random.nextInt(span.inMilliseconds + 1));
+    final kind = _random.nextBool()
+        ? mine
+        : SignalKind.values[_random.nextInt(SignalKind.values.length)];
+    _pendingReplies.add((_lastElapsed + delay, kind));
   }
 
   /// 한 틱 진행 — 타이머가 부르지만, 테스트에서는 직접 부른다
@@ -140,6 +181,12 @@ class DemoResonanceDriver {
     for (final kind in DemoResonanceScript.signalsBetween(_lastElapsed, elapsed)) {
       _engine.signalReceived(kind, at: now);
     }
+    _pendingReplies.removeWhere((reply) {
+      final (at, kind) = reply;
+      if (at > elapsed) return false;
+      _engine.signalReceived(kind, at: now);
+      return true;
+    });
     _lastElapsed = elapsed;
   }
 
@@ -147,5 +194,8 @@ class DemoResonanceDriver {
     _timer?.cancel();
     _timer = null;
     _startedAt = null;
+    _sentSub?.cancel();
+    _sentSub = null;
+    _pendingReplies.clear();
   }
 }

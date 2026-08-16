@@ -104,30 +104,62 @@ class SyncStateMachine {
   }
 }
 
-/// 서로에게 보내는 신호 — 러닝 화면의 탭/스와이프/길게 누르기
+/// 서로에게 보내는 신호 — 러닝 화면의 탭/스와이프/길게 누르기.
+///
+/// **셋을 넘지 않는다.** 달리면서 네 번째를 기억하지 못한다. 프로토타입
+/// (`prototype_v2.html`)에는 넷이 있지만(파이팅·보고싶어·빨라지자·천천히)
+/// 셋으로 줄이며 '같이 빨라지자'와 '보고싶어'를 뺐다.
+///
+/// 신호에는 **글자가 붙지 않는다.** 화면에 단어를 띄우면 달리는 사람이
+/// 그걸 읽으려 하고, 신호는 언어가 아니라 감각이어야 한다. 여기 적힌 뜻은
+/// 코드를 읽는 사람을 위한 것이지 화면에 나오는 문구가 아니다.
 enum SignalKind {
-  /// 짧게 탭 — 파이팅
+  /// 짧게 탭 — "여기 있어" (가벼운 존재 확인)
+  here('here'),
+
+  /// 스와이프 — "힘내" (응원)
   cheer('enc'),
 
-  /// 위로 스와이프 — 같이 빨라지자
-  faster('up'),
-
-  /// 아래로 스와이프 — 힘들어, 천천히
-  slower('dn'),
-
-  /// 길게 누르기 — 보고싶어
-  heart('heart');
+  /// 길게 누르기 — "천천히 가자" (페이스 조절 제안)
+  slow('dn');
 
   const SignalKind(this.gestureType);
 
-  /// Firestore `sessions/{id}.gesture.type`에 실제로 실려 가는 문자열.
-  /// 이미 배포된 값이라 여기 이름을 바꿔도 이 문자열은 유지해야 한다
+  /// Firestore `sessions/{id}.gesture.type`에 실려 가는 문자열.
+  /// 뜻이 이어지는 것은 예전 값을 그대로 쓴다(응원 `enc`, 천천히 `dn`) —
+  /// 구버전 클라이언트가 보낸 신호도 같은 뜻으로 도착한다
   final String gestureType;
 
+  /// 모르는 값(빠진 신호 `up`·`heart`를 쓰는 구버전 등)은 응원으로 받는다.
+  /// 러닝 중에 "알 수 없는 신호"를 띄우는 것보다 낫다
   static SignalKind fromGestureType(String type) => values.firstWhere(
         (k) => k.gestureType == type,
         orElse: () => SignalKind.cheer,
       );
+}
+
+/// 같은 신호를 연달아 보내는 것을 막는다.
+///
+/// 왜 조용히 막는가: 쿨다운 중이라고 화면에 알리면 그건 러닝 중에 뜨는
+/// 에러 UI가 되고, 에러 UI는 죄책감 장치다. 상대에게 안 갔다는 사실보다
+/// "내가 뭘 잘못했나"가 더 오래 남는다. 그래서 무시하되 아무 말도 안 한다.
+class SignalCooldown {
+  SignalCooldown({this.window = const Duration(seconds: 10)});
+
+  /// 같은 신호를 다시 보낼 수 있게 되기까지
+  final Duration window;
+
+  final _lastSent = <SignalKind, DateTime>{};
+
+  /// 지금 [kind]를 보낼 수 있으면 true, 그리고 보낸 것으로 기록한다.
+  /// **다른 신호는 서로를 막지 않는다** — 탭 직후 길게 누르기는 스팸이
+  /// 아니라 말을 바꾼 것이다
+  bool allow(SignalKind kind, DateTime at) {
+    final last = _lastSent[kind];
+    if (last != null && at.difference(last) < window) return false;
+    _lastSent[kind] = at;
+    return true;
+  }
 }
 
 /// 거리·시간 마일스톤의 종류

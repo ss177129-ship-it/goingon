@@ -1,3 +1,5 @@
+import 'dart:math' show Random;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goingon/services/demo_resonance.dart';
 import 'package:goingon/services/resonance.dart';
@@ -189,23 +191,26 @@ void main() {
       final events = <ResonanceEvent>[];
       e.events.listen(events.add);
 
-      e.signalSent(SignalKind.heart, at: t0);
+      e.signalSent(SignalKind.slow, at: t0);
       e.signalReceived(SignalKind.cheer, at: t0.add(_secs(1)));
       await pumpEventQueue();
 
       expect(events, hasLength(2));
-      expect((events[0] as SignalSent).kind, SignalKind.heart);
+      expect((events[0] as SignalSent).kind, SignalKind.slow);
       expect((events[1] as SignalReceived).kind, SignalKind.cheer);
       e.dispose();
     });
 
-    test('제스처 문자열은 이미 배포된 값 그대로 매핑된다', () {
+    test('제스처 문자열 — 살아남은 뜻은 예전 값을 그대로 쓴다', () {
       // Firestore의 sessions/{id}.gesture.type에 실려 가는 값이라
       // 여기 이름을 바꿔도 문자열은 유지돼야 한다
+      expect(SignalKind.fromGestureType('here'), SignalKind.here);
       expect(SignalKind.fromGestureType('enc'), SignalKind.cheer);
-      expect(SignalKind.fromGestureType('up'), SignalKind.faster);
-      expect(SignalKind.fromGestureType('dn'), SignalKind.slower);
-      expect(SignalKind.fromGestureType('heart'), SignalKind.heart);
+      expect(SignalKind.fromGestureType('dn'), SignalKind.slow);
+      // 신호를 셋으로 줄이며 뺀 값들 — 구버전이 보내와도 터지지 않고
+      // 가장 가까운 뜻(응원)으로 받는다
+      expect(SignalKind.fromGestureType('up'), SignalKind.cheer);
+      expect(SignalKind.fromGestureType('heart'), SignalKind.cheer);
       expect(SignalKind.fromGestureType('알 수 없는 값'), SignalKind.cheer,
           reason: '모르는 신호가 와도 터지지 않아야 한다');
     });
@@ -243,6 +248,35 @@ void main() {
       e.dispose();
       // dispose 이후에 늦게 도착하는 호출도 조용히 무시된다
       expect(() => e.signalSent(SignalKind.cheer, at: t0), returnsNormally);
+    });
+  });
+
+  group('송신 쿨다운', () {
+    test('같은 신호는 10초 안에 다시 못 보낸다', () {
+      final c = SignalCooldown();
+      expect(c.allow(SignalKind.here, t0), isTrue);
+      expect(c.allow(SignalKind.here, t0.add(_secs(3))), isFalse);
+      expect(c.allow(SignalKind.here, t0.add(_secs(9.9))), isFalse);
+      expect(c.allow(SignalKind.here, t0.add(_secs(10))), isTrue);
+    });
+
+    test('다른 신호는 서로를 막지 않는다', () {
+      // 탭 직후의 길게 누르기는 스팸이 아니라 말을 바꾼 것이다
+      final c = SignalCooldown();
+      expect(c.allow(SignalKind.here, t0), isTrue);
+      expect(c.allow(SignalKind.cheer, t0), isTrue);
+      expect(c.allow(SignalKind.slow, t0), isTrue);
+      expect(c.allow(SignalKind.here, t0), isFalse);
+    });
+
+    test('막힌 시도는 쿨다운을 연장하지 않는다', () {
+      // 연타로 막히는 동안 계속 밀리면 영영 못 보내게 된다
+      final c = SignalCooldown();
+      c.allow(SignalKind.cheer, t0);
+      for (var i = 1; i < 10; i++) {
+        c.allow(SignalKind.cheer, t0.add(_secs(i.toDouble())));
+      }
+      expect(c.allow(SignalKind.cheer, t0.add(_secs(10))), isTrue);
     });
   });
 
@@ -298,13 +332,65 @@ void main() {
       await pumpEventQueue();
 
       expect(signals, [
+        SignalKind.here,
         SignalKind.cheer,
-        SignalKind.faster,
-        SignalKind.heart,
-        SignalKind.slower,
-      ]);
+        SignalKind.slow,
+      ], reason: '한 바퀴 안에 세 종류가 모두 한 번씩은 와야 한다');
       driver.stop();
       e.dispose();
+    });
+
+    test('내가 신호를 보내면 5~15초 안에 지수가 답한다', () async {
+      // 신호를 보냈는데 아무 일도 없으면 다시는 안 보낸다 — 데모에서
+      // 송신→응답 루프가 실제로 닫히는지가 이 테스트의 전부다
+      final e = ResonanceEngine();
+      final replies = <Duration>[];
+      _only<SignalReceived>(e)
+          .listen((ev) => replies.add(ev.at.difference(t0)));
+
+      final driver = DemoResonanceDriver(e,
+          clock: _FakeClock(t0).now, random: Random(7));
+      driver.start();
+      for (var i = 0; i < 20; i++) {
+        driver.pump(); // 2초까지 진행 (지수가 먼저 보내는 신호는 24초부터)
+      }
+      e.signalSent(SignalKind.here, at: t0.add(_secs(2)));
+      await pumpEventQueue();
+      for (var i = 0; i < 180; i++) {
+        driver.pump(); // 20초까지
+      }
+      await pumpEventQueue();
+
+      expect(replies, hasLength(1), reason: '스크립트 신호가 오기 전 구간이다');
+      final gap = replies.single - const Duration(seconds: 2);
+      expect(gap, greaterThanOrEqualTo(DemoResonanceDriver.replyDelayMin));
+      expect(gap, lessThanOrEqualTo(DemoResonanceDriver.replyDelayMax));
+      driver.stop();
+      e.dispose();
+    });
+
+    test('답이 늘 오지는 않는다', () async {
+      // 매번 답하면 사람이 아니라 자동응답기다
+      var replied = 0;
+      for (var seed = 0; seed < 40; seed++) {
+        final e = ResonanceEngine();
+        var got = false;
+        _only<SignalReceived>(e).listen((_) => got = true);
+        final driver = DemoResonanceDriver(e,
+            clock: _FakeClock(t0).now, random: Random(seed));
+        driver.start();
+        e.signalSent(SignalKind.cheer, at: t0);
+        await pumpEventQueue();
+        for (var i = 0; i < 200; i++) {
+          driver.pump(); // 20초 — 답이 올 수 있는 구간을 다 지난다
+        }
+        await pumpEventQueue();
+        if (got) replied++;
+        driver.stop();
+        e.dispose();
+      }
+      expect(replied, greaterThan(20), reason: '대체로는 답이 와야 한다');
+      expect(replied, lessThan(40), reason: '늘 오면 기계다');
     });
 
     test('한 바퀴를 넘겨도 이어붙는 자리에서 값이 튀지 않는다', () {

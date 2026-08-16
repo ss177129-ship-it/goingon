@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../services/active_run_guard.dart';
@@ -40,8 +39,7 @@ class RunScreen extends StatefulWidget {
   State<RunScreen> createState() => _RunScreenState();
 }
 
-class _RunScreenState extends State<RunScreen>
-    with TickerProviderStateMixin {
+class _RunScreenState extends State<RunScreen> {
   final _location = LocationService();
   Timer? _timer;
   DateTime? _startedAt;
@@ -59,15 +57,13 @@ class _RunScreenState extends State<RunScreen>
   bool _screenMustStayOn = false;
 
   // ── 제스처 상호작용(탭/스와이프/롱프레스로 상대에게 신호 보내기) ──
-  late final AnimationController _gesturePop;
+  // 연출은 전부 캔버스가 이벤트를 받아서 한다. 여기 남는 것은 손가락을
+  // 읽는 일과, 같은 신호를 연달아 보내지 못하게 막는 일뿐
   StreamSubscription? _sessionSub;
   DateTime? _lastPartnerGestureAt;
-  String? _gestureType;
-  bool _gestureFromPartner = false;
-  int _gestureSeq = 0;
-  Timer? _gestureLabelTimer;
   Offset? _gestureStart;
   Timer? _holdTimer;
+  final _cooldown = SignalCooldown();
 
   // ── 공명 이벤트 레이어 ──
   // 화면·소리·햅틱이 각자 "지금 바뀌었나"를 판정하지 않도록, 판정은 엔진
@@ -95,8 +91,6 @@ class _RunScreenState extends State<RunScreen>
       if (e is! ResonanceStateChanged || !mounted) return;
       setState(() => _syncState = e.to);
     });
-    _gesturePop = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 500));
     WakelockPlus.enable();
     if (!widget.demo) _listenPartnerGesture();
     _start();
@@ -113,7 +107,8 @@ class _RunScreenState extends State<RunScreen>
         return;
       }
       _lastPartnerGestureAt = at;
-      _playGesture(g['type'] as String, fromPartner: true);
+      _resonance.signalReceived(
+          SignalKind.fromGestureType(g['type'] as String), at: at);
     });
   }
 
@@ -223,14 +218,15 @@ class _RunScreenState extends State<RunScreen>
   }
 
   // ── 제스처 상호작용 ──
-  // 짧게 탭 = 파이팅, 위로 스와이프 = 같이 빨라지자, 아래로 스와이프 = 천천히,
-  // 길게 누르기(550ms) = 보고싶어. 프로토타입(design/prototype_v2.html)의
-  // run-canvas-wrap 제스처를 그대로 옮김
+  // 탭 = "여기 있어", 스와이프 = "힘내", 길게 누르기(550ms) = "천천히 가자".
+  // 셋뿐인 이유는 달리면서 넷째를 기억 못 하기 때문이고, 방향을 나누지
+  // 않는(위/아래 구분 없는) 이유도 같다 — 팔에 차고 뛰면서 위로 그었는지
+  // 아래로 그었는지까지 신경 쓰게 하면 아예 안 쓴다
 
   void _onGesturePointerDown(PointerDownEvent e) {
     _gestureStart = e.localPosition;
     _holdTimer = Timer(const Duration(milliseconds: 550), () {
-      _sendGesture('heart');
+      _sendSignal(SignalKind.slow);
       _gestureStart = null; // 롱프레스로 이미 처리됨 — pointerUp에서 또 판정하지 않음
     });
   }
@@ -240,15 +236,8 @@ class _RunScreenState extends State<RunScreen>
     final start = _gestureStart;
     if (start == null) return;
     _gestureStart = null;
-    final dy = e.localPosition.dy - start.dy;
     final dist = (e.localPosition - start).distance;
-    if (dist < 14) {
-      _sendGesture('enc');
-    } else if (dy < -20) {
-      _sendGesture('up');
-    } else if (dy > 20) {
-      _sendGesture('dn');
-    }
+    _sendSignal(dist < 14 ? SignalKind.here : SignalKind.cheer);
   }
 
   void _onGesturePointerCancel(PointerCancelEvent e) {
@@ -256,78 +245,23 @@ class _RunScreenState extends State<RunScreen>
     _gestureStart = null;
   }
 
-  Future<void> _sendGesture(String type) async {
-    _playGesture(type, fromPartner: false);
+  /// 신호를 보낸다. 같은 신호를 연달아 누르면 **조용히 무시된다**
+  /// ([SignalCooldown] 참조 — 러닝 중 에러 UI는 죄책감 장치다)
+  Future<void> _sendSignal(SignalKind kind) async {
+    if (!mounted) return;
+    final now = DateTime.now();
+    if (!_cooldown.allow(kind, now)) return;
+    // 잔상·햅틱은 이벤트를 구독하는 캔버스가 낸다. 여기서 직접 그리면
+    // 보낸 신호와 받은 신호의 연출이 두 곳으로 갈라진다
+    _resonance.signalSent(kind, at: now);
     if (widget.demo) return;
     try {
-      await RunService().sendGesture(widget.sessionId, AuthService().uid, type);
+      await RunService()
+          .sendGesture(widget.sessionId, AuthService().uid, kind.gestureType);
     } catch (e, stack) {
-      // 로컬 애니메이션은 이미 보여줬으니 실패해도 조용히 무시 — 재시도 강요 안 함
+      // 잔상은 이미 보여줬으니 실패해도 조용히 무시 — 재시도 강요 안 함
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
     }
-  }
-
-  void _playGesture(String type, {required bool fromPartner}) {
-    if (!mounted) return;
-    final kind = SignalKind.fromGestureType(type);
-    final now = DateTime.now();
-    if (fromPartner) {
-      _resonance.signalReceived(kind, at: now);
-    } else {
-      _resonance.signalSent(kind, at: now);
-    }
-    if (type == 'heart' && !fromPartner) HapticFeedback.mediumImpact();
-    setState(() {
-      _gestureType = type;
-      _gestureFromPartner = fromPartner;
-      _gestureSeq++;
-    });
-    _gesturePop.forward(from: 0);
-    _gestureLabelTimer?.cancel();
-    _gestureLabelTimer = Timer(const Duration(milliseconds: 1800), () {
-      if (mounted) setState(() => _gestureType = null);
-    });
-  }
-
-  (String, Color) _gestureLabel(String type) {
-    switch (type) {
-      case 'up':
-        return ('같이 빨라지자', GoColors.amber);
-      case 'dn':
-        return ('힘들어, 천천히', GoColors.coralDark);
-      case 'heart':
-        return ('보고싶어', GoColors.coralDark);
-      default:
-        return ('파이팅', GoColors.limeDark);
-    }
-  }
-
-  /// 신호는 순간이므로 자리를 차지하지 않는다 — 원 위에 잠깐 떴다 사라진다.
-  /// 달리면서 곁눈으로 읽히려면 이 글자도 커야 해서 칩 대신 큰 글씨로 둠
-  Widget _gestureLabelWidget() {
-    return IgnorePointer(
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 200),
-        child: _gestureType == null
-            ? const SizedBox.shrink(key: ValueKey('empty'))
-            : ScaleTransition(
-                key: ValueKey(_gestureSeq),
-                scale: CurvedAnimation(
-                    parent: _gesturePop, curve: Curves.easeOutBack),
-                child: _gestureChip(_gestureType!),
-              ),
-      ),
-    );
-  }
-
-  Widget _gestureChip(String type) {
-    final (text, color) = _gestureLabel(type);
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      _caption(_gestureFromPartner ? widget.partnerName : '나',
-          color: color.withValues(alpha: .7)),
-      const SizedBox(height: 2),
-      Text(text, style: GoTheme.serif(34, color: color)),
-    ]);
   }
 
   Future<void> _finish(String? mood) async {
@@ -372,9 +306,7 @@ class _RunScreenState extends State<RunScreen>
     _stateSub?.cancel();
     _resonanceLog?.cancel();
     _resonance.dispose();
-    _gesturePop.dispose();
     _sessionSub?.cancel();
-    _gestureLabelTimer?.cancel();
     _holdTimer?.cancel();
     _timer?.cancel();
     _location.stop();
@@ -546,19 +478,15 @@ class _RunScreenState extends State<RunScreen>
                     .copyWith(height: 1.2)),
           ),
           // ── 겹치는 두 원 (탭·스와이프·길게 누르기로 신호) ──
+          // 신호에는 글자가 붙지 않는다 — 보낸 것은 잔상으로, 받은 것은
+          // 상대 원의 맥동과 햅틱으로만 온다
           Expanded(
             child: Listener(
               behavior: HitTestBehavior.opaque,
               onPointerDown: _onGesturePointerDown,
               onPointerUp: _onGesturePointerUp,
               onPointerCancel: _onGesturePointerCancel,
-              child: Stack(alignment: Alignment.center, children: [
-                Positioned.fill(child: ResonanceCanvas(engine: _resonance)),
-                Align(
-                  alignment: const Alignment(0, -0.72),
-                  child: _gestureLabelWidget(),
-                ),
-              ]),
+              child: ResonanceCanvas(engine: _resonance),
             ),
           ),
           // ── 함께 달린 것 ──

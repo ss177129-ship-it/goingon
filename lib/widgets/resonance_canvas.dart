@@ -38,6 +38,9 @@ class _ResonanceCanvasState extends State<ResonanceCanvas>
   /// 공명 진입 순간마다 쌓이는 링의 시작 시각(초)
   final _bursts = <double>[];
 
+  /// 지금 재생 중인 신호 애니메이션 (보낸 것 + 받은 것)
+  final _signals = <_SignalAnim>[];
+
   /// 공명을 오래(30초 이상) 유지하는 중인가 — 겹침이 아주 느리게 숨 쉰다
   bool _breathing = false;
 
@@ -67,8 +70,35 @@ class _ResonanceCanvasState extends State<ResonanceCanvas>
         if (held >= const Duration(seconds: 30)) _breathing = true;
       case ResonanceStateChanged(:final to):
         if (to != SyncState.resonant) _breathing = false;
+      case SignalSent(:final kind):
+        _addSignal(kind, fromPartner: false);
+      case SignalReceived(:final kind):
+        _addSignal(kind, fromPartner: true);
       default:
         break;
+    }
+  }
+
+  void _addSignal(SignalKind kind, {required bool fromPartner}) {
+    _signals.add(_SignalAnim(kind: kind, start: _frame.value, fromPartner: fromPartner));
+    _signals.removeWhere((s) => _frame.value - s.start > s.duration);
+    fromPartner ? _receivedHaptic(kind) : HapticFeedback.lightImpact();
+  }
+
+  /// 화면을 안 봐도 셋이 구분돼야 한다 — 그게 이 신호들의 설계 기준이다.
+  /// 세기(가벼움 → 무거움)가 아니라 **박자**로 가른다. 주머니 속에서
+  /// 세기 차이는 잘 안 느껴지지만 "한 번 / 두 번 / 길게"는 틀리지 않는다
+  void _receivedHaptic(SignalKind kind) {
+    switch (kind) {
+      case SignalKind.here:
+        HapticFeedback.lightImpact();
+      case SignalKind.cheer:
+        HapticFeedback.mediumImpact();
+        Future.delayed(const Duration(milliseconds: 140), () {
+          if (mounted) HapticFeedback.mediumImpact();
+        });
+      case SignalKind.slow:
+        HapticFeedback.heavyImpact();
     }
   }
 
@@ -106,6 +136,7 @@ class _ResonanceCanvasState extends State<ResonanceCanvas>
           frame: _frame,
           engine: widget.engine,
           bursts: _bursts,
+          signals: _signals,
           isBreathing: () => _breathing,
         ),
       ),
@@ -116,17 +147,46 @@ class _ResonanceCanvasState extends State<ResonanceCanvas>
 /// 링 한 번이 사는 시간(초)
 const _kBurstDuration = 0.7;
 
+/// 재생 중인 신호 하나.
+///
+/// 보낸 신호와 받은 신호는 **생김새가 반대**다. 보낸 것은 내 원에서 상대
+/// 원 쪽으로 흘러가고(내가 무엇을 보냈는지 확인), 받은 것은 상대 원이
+/// 맥동한다(상대가 무엇을 보냈는지 감각). 방향이 곧 누구인지다
+class _SignalAnim {
+  _SignalAnim({
+    required this.kind,
+    required this.start,
+    required this.fromPartner,
+  });
+
+  final SignalKind kind;
+  final double start;
+  final bool fromPartner;
+
+  /// 보낸 잔상은 0.5초. 받은 맥동은 종류마다 다르다 —
+  /// '천천히 가자'가 느리고 긴 것은 그 말의 뜻 자체다
+  double get duration => fromPartner
+      ? switch (kind) {
+          SignalKind.here => 0.45,
+          SignalKind.cheer => 0.9,
+          SignalKind.slow => 1.3,
+        }
+      : 0.5;
+}
+
 class _ResonancePainter extends CustomPainter {
   _ResonancePainter({
     required this.frame,
     required this.engine,
     required this.bursts,
+    required this.signals,
     required this.isBreathing,
   }) : super(repaint: frame);
 
   final ValueListenable<double> frame;
   final ResonanceEngine engine;
   final List<double> bursts;
+  final List<_SignalAnim> signals;
   final bool Function() isBreathing;
 
   @override
@@ -153,6 +213,82 @@ class _ResonancePainter extends CustomPainter {
     _paintCircles(canvas, me, partner, rMe, rFr);
     _paintOverlap(canvas, me, partner, rMe, rFr, closeness, t);
     _paintBursts(canvas, center, r, size, t);
+    _paintSignals(canvas, me, partner, r, t);
+  }
+
+  /// 신호 — 보낸 것은 흘러가고, 받은 것은 상대 원이 맥동한다
+  void _paintSignals(
+      Canvas canvas, Offset me, Offset partner, double r, double t) {
+    for (final s in signals) {
+      final p = (t - s.start) / s.duration;
+      if (p < 0 || p > 1) continue;
+      if (s.fromPartner) {
+        _paintReceived(canvas, partner, r, s.kind, p);
+      } else {
+        _paintSentTrail(canvas, me, partner, r, p);
+      }
+    }
+  }
+
+  /// 보낸 신호 — 내 색(lime) 잔상이 상대 쪽으로 흘러간다.
+  /// 종류를 색이나 모양으로 구분하지 않는 이유: 보낸 사람은 방금 무슨
+  /// 제스처를 했는지 이미 안다. 여기서 확인할 것은 "갔다"뿐이다
+  void _paintSentTrail(
+      Canvas canvas, Offset me, Offset partner, double r, double p) {
+    final eased = Curves.easeOutCubic.transform(p);
+    final pos = Offset.lerp(me, partner, eased)!;
+    final fade = (1 - p) * (p < 0.15 ? p / 0.15 : 1);
+    final radius = r * (0.42 - 0.18 * eased);
+    canvas.drawCircle(
+      pos,
+      radius,
+      Paint()
+        ..shader = RadialGradient(colors: [
+          GoColors.lime.withValues(alpha: 0.55 * fade),
+          GoColors.lime.withValues(alpha: 0),
+        ]).createShader(Rect.fromCircle(center: pos, radius: radius)),
+    );
+  }
+
+  /// 받은 신호 — 상대 원(coral)이 종류마다 다른 박자로 맥동한다.
+  /// 글자는 쓰지 않는다. 박자가 곧 뜻이다
+  void _paintReceived(
+      Canvas canvas, Offset partner, double r, SignalKind kind, double p) {
+    switch (kind) {
+      // "여기 있어" — 한 번 툭
+      case SignalKind.here:
+        _pulseRing(canvas, partner, r * (1 + 0.28 * p), (1 - p) * 0.75, 3.0);
+      // "힘내" — 물결 두 번
+      case SignalKind.cheer:
+        for (final delay in const [0.0, 0.35]) {
+          final q = (p - delay) / (1 - delay);
+          if (q < 0 || q > 1) continue;
+          _pulseRing(canvas, partner, r * (1 + 0.34 * q), (1 - q) * 0.7, 2.6);
+        }
+      // "천천히 가자" — 느리고 크게 한 번. 급할 것 없다는 말이라
+      // 애니메이션도 급하지 않다
+      case SignalKind.slow:
+        final eased = Curves.easeOutQuart.transform(p);
+        _pulseRing(canvas, partner, r * (1 + 0.62 * eased), (1 - p) * 0.6, 3.4);
+        canvas.drawCircle(
+          partner,
+          r,
+          Paint()
+            ..color = GoColors.coral.withValues(alpha: 0.22 * (1 - p)),
+        );
+    }
+  }
+
+  void _pulseRing(
+      Canvas canvas, Offset center, double radius, double alpha, double width) {
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = width
+        ..color = GoColors.coralDark.withValues(alpha: alpha.clamp(0.0, 1.0)),
+    );
   }
 
   /// 지금 터지고 있는 링의 진행도(0~1). 없으면 null.
