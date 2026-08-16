@@ -11,6 +11,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/login_screen.dart';
 import 'screens/nickname_screen.dart';
 import 'screens/root_screen.dart';
+import 'screens/update_required_screen.dart';
+import 'services/app_version_gate.dart';
 import 'services/auth_service.dart';
 import 'theme.dart';
 import 'widgets/brand_mark.dart';
@@ -93,6 +95,14 @@ class _SplashGateState extends State<SplashGate>
     final isFirstLaunch = !(prefs.getBool(_kHasLaunchedBeforeKey) ?? false);
     final minShow =
         Duration(milliseconds: isFirstLaunch ? 2000 : 300);
+
+    // 낡은 빌드는 여기서 멈춘다. 확인에 실패하면 통과시키므로
+    // (AppVersionGate 주석 참조) 오프라인에서 앱이 갇히지 않는다
+    if (await AppVersionGate.shouldBlock()) {
+      if (!mounted) return;
+      setState(() => _destination = UpdateRequiredScreen(onPassed: _resolve));
+      return;
+    }
 
     User? user;
     var hasProfile = false;
