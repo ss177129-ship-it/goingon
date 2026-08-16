@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'session_rules.dart';
 import 'week_key.dart';
 
 /// GO? 요청이 살아 있는 시간. 이보다 오래된 대기 세션은 뒤늦게 수락 시트로
 /// 띄우지 않고 정리하고, 같은 상대에게 다시 보낼 때도 재사용하지 않음
-const kRequestTtl = Duration(minutes: 30);
+/// 값의 출처는 [SessionRules.requestTtl] 하나뿐이다 — 두 곳에 적어두면
+/// 언젠가 한쪽만 바뀐다. 홈 화면이 이 이름으로 쓰고 있어 별칭만 남긴다
+const kRequestTtl = SessionRules.requestTtl;
 
 /// 데모 모드가 쓰는 가짜 세션 id. Firestore에 이런 문서는 존재하지 않으므로,
 /// 이 id로 결과를 제출하거나 복구를 시도하면 반드시 실패함
@@ -50,8 +53,7 @@ class RunService {
           .where('status', whereIn: ['waiting', 'ready']).get();
       for (final doc in snap.docs) {
         final createdAt = doc.data()['createdAt'] as Timestamp?;
-        if (createdAt == null) continue; // 서버 시각 반영 전 — 판단 보류
-        if (DateTime.now().difference(createdAt.toDate()) < kRequestTtl) {
+        if (SessionRules.isRequestAlive(createdAt, DateTime.now())) {
           return doc.id;
         }
       }
@@ -105,11 +107,8 @@ class RunService {
     final ref = _db.collection('sessions').doc(sessionId);
     await _db.runTransaction((tx) async {
       final doc = await tx.get(ref);
-      if (doc.data()?['status'] == 'cancelled') return;
-      tx.update(ref, {
-        'ready.$uid': true,
-        'status': 'ready',
-      });
+      final update = SessionRules.ready(doc.data(), uid);
+      if (update != null) tx.update(ref, update);
     });
   }
 
@@ -128,13 +127,8 @@ class RunService {
     final ref = _db.collection('sessions').doc(sessionId);
     await _db.runTransaction((tx) async {
       final doc = await tx.get(ref);
-      final data = doc.data();
-      if (data?['status'] == 'cancelled') return;
-      final alreadyStarted = data?['startedAt'] != null;
-      tx.update(ref, {
-        'status': 'running',
-        if (!alreadyStarted) 'startedAt': FieldValue.serverTimestamp(),
-      });
+      final update = SessionRules.start(doc.data());
+      if (update != null) tx.update(ref, update);
     });
   }
 
@@ -150,19 +144,10 @@ class RunService {
     final ref = _db.collection('sessions').doc(sessionId);
     final isFirstSubmit = await _db.runTransaction((tx) async {
       final doc = await tx.get(ref);
-      final results = Map<String, dynamic>.from(doc.data()?['results'] ?? {});
-      final alreadySubmitted = results.containsKey(uid);
-      results[uid] = {
-        'seconds': seconds,
-        'km': km,
-        'kcal': kcal,
-        if (mood != null) 'mood': mood,
-      };
-      tx.update(ref, {
-        'results.$uid': results[uid],
-        if (results.length >= 2) 'status': 'finished',
-      });
-      return !alreadySubmitted;
+      final outcome = SessionRules.submit(doc.data(), uid,
+          seconds: seconds, km: km, kcal: kcal, mood: mood);
+      tx.update(ref, outcome.update);
+      return outcome.isFirstSubmit;
     });
     // 재시도로 같은 세션을 두 번 제출해도 이번 달 거리/횟수가 두 번 더해지지
     // 않도록, 이 세션에 내 기록이 처음 올라간 경우에만 집계를 올림
@@ -210,12 +195,9 @@ class RunService {
     final ref = _db.collection('sessions').doc(sessionId);
     await _db.runTransaction((tx) async {
       final doc = await tx.get(ref);
-      final status = doc.data()?['status'];
-      if (status != 'waiting' && status != 'ready') return;
-      tx.update(ref, {
-        'status': 'cancelled',
-        if (declineMessage != null) 'declineMessage': declineMessage,
-      });
+      final update =
+          SessionRules.cancel(doc.data(), declineMessage: declineMessage);
+      if (update != null) tx.update(ref, update);
     });
   }
 
@@ -253,16 +235,8 @@ class RunService {
           .get(),
     ]);
     final finished = [...snaps[0].docs, ...snaps[1].docs];
-    final stuckRunning = [...snaps[2].docs, ...snaps[3].docs].where((d) {
-      final data = d.data();
-      final startedAt = data['startedAt'] as Timestamp?;
-      if (startedAt == null) return false;
-      final results = data['results'];
-      final hasMyResult = results is Map && results.containsKey(myUid);
-      return hasMyResult &&
-          DateTime.now().difference(startedAt.toDate()) >
-              const Duration(hours: 24);
-    });
+    final stuckRunning = [...snaps[2].docs, ...snaps[3].docs]
+        .where((d) => SessionRules.isStaleRunning(d.data(), myUid, DateTime.now()));
     final list = [...finished, ...stuckRunning]
         .map((d) => {'id': d.id, ...d.data()})
         .toList();

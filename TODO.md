@@ -212,7 +212,10 @@ OS가 보장하는 백그라운드 실행을 얻으므로, 위치 권한만으�
       `flutter analyze` 123건 → **50건** (deprecated 73건 전부 소멸). 알파값은 그대로라 화면 변화 없음(브랜드 마크의 반투명 겹침으로 확인)
 - [x] ~~friendsStream 이중 구독 정리~~ — 2026-08-16 완료. RootScreen으로 끌어올리는 대신 **서비스 층에서 원본을 공유**하는 방식(`shared_stream.dart`)을 택함.
       홈의 재시도·마지막 목록 유지 로직을 옮기지 않아도 되고, 순수 Dart라 "구독자 둘 → 원본 하나"를 테스트로 증명할 수 있음(5개)
-- [ ] 세션 상태 전이(waiting→ready→running→finished)에 대한 유닛 테스트 작성
+- [x] ~~세션 상태 전이 유닛 테스트~~ — 2026-08-16 완료. `fake_cloud_firestore`를 들이는 대신 `session_rules.dart`로 **순수 로직을 분리**함(`RunAccumulator`와 같은 방식).
+      트랜잭션 껍데기는 `run_service`에 남고 판정만 떼어냈으므로 동작은 그대로. 테스트 22개.
+      전이 자체보다 **하지 말아야 할 것**을 주로 검증함 — 취소된 세션 부활 금지, `startedAt` 덮어쓰기 금지, 재제출 시 이중 집계 금지.
+      부수 효과로 `kRequestTtl`이 두 곳에 정의돼 갈릴 수 있던 것을 `SessionRules.requestTtl` 하나로 묶음
 
 ## 6. 심사 준비
 
