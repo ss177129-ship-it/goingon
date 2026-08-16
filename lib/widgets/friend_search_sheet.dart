@@ -156,33 +156,46 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
             const Text('아이디로 찾아 요청을 보내면, 상대가 수락했을 때 연결돼요.',
                 style: TextStyle(fontSize: 13, color: GoColors.mid)),
             const SizedBox(height: 20),
-            TextField(
-              controller: _controller,
-              autofocus: true,
-              textAlign: TextAlign.center,
-              autocorrect: false,
-              enableSuggestions: false,
-              textCapitalization: TextCapitalization.none,
-              style: GoTheme.serif(24),
-              decoration: InputDecoration(
-                hintText: '상대방 아이디',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: GoColors.line),
-                ),
+            // @는 **화면에 고정으로 박아둔다.** 앱이 아이디를 어디서나
+            // @ruty로 보여주므로, 검색창만 @를 안 받으면 본 대로 입력한
+            // 사람이 실패한다. 붙여넣기로 @가 또 들어와도 정규화가 떼어낸다
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: GoColors.line),
               ),
-              onChanged: (_) {
-                if (_found != null || _error != null || _notice != null) {
-                  setState(() {
-                    _found = null;
-                    _error = null;
-                    _notice = null;
-                  });
-                }
-              },
-              onSubmitted: (_) => _search(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(children: [
+                Text('@', style: GoTheme.serif(24, color: GoColors.dim)),
+                const SizedBox(width: 2),
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    autofocus: true,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    textCapitalization: TextCapitalization.none,
+                    style: GoTheme.serif(24),
+                    decoration: const InputDecoration(
+                      hintText: '상대방 아이디',
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    onChanged: (_) {
+                      if (_found != null || _error != null || _notice != null) {
+                        setState(() {
+                          _found = null;
+                          _error = null;
+                          _notice = null;
+                        });
+                      }
+                    },
+                    onSubmitted: (_) => _search(),
+                  ),
+                ),
+              ]),
             ),
             if (_error != null) ...[
               const SizedBox(height: 10),

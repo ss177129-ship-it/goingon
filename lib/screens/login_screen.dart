@@ -21,18 +21,23 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
 
-  /// 인증 성공 후 공통 분기 — 예전에 가입한 적 있으면(재로그인) 바로 홈,
-  /// 신규면 닉네임 설정 화면으로 (제공자가 준 이름이 있으면 미리 채워줌)
+  /// 인증 성공 후 공통 분기 — 프로필이 **완성돼 있으면** 홈, 아니면 프로필
+  /// 화면으로.
+  ///
+  /// 문서 존재만 보면 안 된다: 아이디 항목이 생기기 전에 만들어진 계정은
+  /// 문서는 있지만 아이디가 없어서, 그대로 홈에 들어가면 아무도 그 사람을
+  /// 검색으로 찾을 수 없다. 이름은 이미 있는 것을 채워 보내 다시 묻지 않는다
   Future<void> _afterAuth(String? name) async {
     final profile =
         await AuthService().myProfile().timeout(const Duration(seconds: 10));
     if (!mounted) return;
-    if (profile != null) {
+    if (AuthService.isProfileComplete(profile)) {
       Navigator.pushAndRemoveUntil(context,
           MaterialPageRoute(builder: (_) => const RootScreen()), (_) => false);
     } else {
       Navigator.pushReplacement(context, MaterialPageRoute(
-        builder: (_) => NicknameScreen(prefill: name),
+        builder: (_) =>
+            NicknameScreen(prefill: (profile?['name'] as String?) ?? name),
       ));
     }
   }

@@ -96,6 +96,7 @@ class _SplashGateState extends State<SplashGate>
 
     User? user;
     var hasProfile = false;
+    String? existingName;
     try {
       final authFuture = FirebaseAuth.instance
           .authStateChanges()
@@ -107,13 +108,16 @@ class _SplashGateState extends State<SplashGate>
 
       user = await Future.any([gated, skipped]);
 
-      // 로그인은 됐지만(Apple 인증 완료) 프로필(닉네임/초대코드)이 아직
-      // 없는 경우가 있음 — 예: 닉네임 입력 전에 앱이 죽었다가 재실행된 경우.
-      // 그대로 홈으로 보내면 빈 프로필로 갇히므로, 그 경우엔 닉네임 화면으로 보냄
+      // 로그인은 됐지만 프로필이 아직 **완성되지 않은** 경우가 있다:
+      // 닉네임 입력 전에 앱이 죽었거나, 아이디 항목이 생기기 전에 만들어진
+      // 계정이거나. 문서 존재만 보면 아이디 없는 계정이 그대로 홈에 들어가고,
+      // 그 사람은 검색으로 영영 안 찾아진다 — 완성 여부로 판정한다
       if (user != null) {
-        hasProfile =
-            await AuthService().myProfile().timeout(const Duration(seconds: 10)) !=
-                null;
+        final profile = await AuthService()
+            .myProfile()
+            .timeout(const Duration(seconds: 10));
+        hasProfile = AuthService.isProfileComplete(profile);
+        existingName = (profile?['name'] as String?)?.trim();
       }
     } catch (e, stack) {
       // 콜드스타트 중 네트워크/Firestore 문제 — 무한 대기 대신 재시도 화면으로
@@ -131,7 +135,8 @@ class _SplashGateState extends State<SplashGate>
       if (user == null) {
         _destination = const LoginScreen();
       } else if (!hasProfile) {
-        _destination = const NicknameScreen();
+        // 이름이 이미 있으면 다시 묻지 않게 채워서 보낸다
+        _destination = NicknameScreen(prefill: existingName);
       } else {
         _destination = const RootScreen();
       }

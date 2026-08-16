@@ -65,13 +65,43 @@ class AuthService {
     return googleUser.displayName;
   }
 
-  /// 프로필 생성(이름 + 아이디) — 이미 프로필 문서가 있으면(재로그인
-  /// 케이스) 아무것도 하지 않고 true 반환. 아이디가 이미 다른 사람 것이면
-  /// false 반환(호출부에서 다른 아이디로 다시 시도하게 함)
+  /// 프로필이 **쓸 수 있는 상태**인가. 문서가 있는 것만으로는 부족하다 —
+  /// 아이디가 없으면 아무도 그 사람을 검색으로 찾을 수 없고, 이름이 없으면
+  /// 상대 화면에 빈칸이 뜬다.
+  ///
+  /// 예전에는 문서 존재만 확인해서, 아이디 없는 계정이 그대로 홈까지
+  /// 들어갔다. 실제로 7명 중 6명이 아이디 없이 쓰고 있었다(2026-08-16 확인)
+  static bool isProfileComplete(Map<String, dynamic>? profile) {
+    if (profile == null) return false;
+    final name = (profile['name'] as String?)?.trim() ?? '';
+    final username = (profile['username'] as String?)?.trim() ?? '';
+    return name.isNotEmpty && username.isNotEmpty;
+  }
+
+  /// 프로필 생성 또는 **모자란 부분 채우기**.
+  ///
+  /// 문서가 이미 있어도 이름이나 아이디가 비어 있으면 그것만 채운다.
+  /// 예전에는 문서가 있으면 곧바로 true를 돌려줘서, 아이디 없는 기존 계정이
+  /// 이 화면을 지나가도 **아무것도 저장되지 않았다.**
+  ///
+  /// 아이디가 이미 다른 사람 것이면 false(호출부가 다시 묻게 함).
+  /// 이름보다 아이디를 먼저 처리하는 이유: 충돌로 되돌아갈 때 이름만
+  /// 바뀐 어정쩡한 상태가 남지 않게 하기 위해
   Future<bool> ensureProfile(String nickname, String username) async {
     final ref = _db.collection('users').doc(uid);
     final existing = await ref.get();
-    if (existing.exists) return true;
+    if (existing.exists) {
+      final data = existing.data();
+      if (isProfileComplete(data)) return true;
+
+      final hasUsername =
+          ((data?['username'] as String?)?.trim() ?? '').isNotEmpty;
+      if (!hasUsername && !await setUsername(username)) return false;
+
+      final hasName = ((data?['name'] as String?)?.trim() ?? '').isNotEmpty;
+      if (!hasName) await updateName(nickname);
+      return true;
+    }
 
     final usernameRef = _db.collection('usernames').doc(username);
     final usernameDoc = await usernameRef.get();

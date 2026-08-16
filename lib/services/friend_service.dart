@@ -14,7 +14,10 @@ import 'shared_stream.dart';
 /// 차단(`users/{uid}.blocked`)은 요청·수락만으로 못 막는 반복 요청을 끊는 수단.
 /// 차단한 상대에게는 검색에서도 내가 보이지 않음.
 class FriendService {
-  final _db = FirebaseFirestore.instance;
+  /// **late**인 이유: 서비스를 만드는 것만으로 Firebase를 건드리면, 이
+  /// 서비스를 필드로 갖는 위젯은 Firebase 없이는 만들어지지도 않는다.
+  /// 실제로 친구 찾기 시트를 위젯 테스트로 열 수 없었다(2026-08-16)
+  late final _db = FirebaseFirestore.instance;
 
   DocumentReference<Map<String, dynamic>> _req(String from, String to) =>
       _db.collection('friendRequests').doc('${from}_$to');
