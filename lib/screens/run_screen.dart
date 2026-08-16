@@ -11,7 +11,9 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../services/active_run_guard.dart';
 import '../services/auth_service.dart';
+import '../services/cadence_service.dart';
 import '../services/demo_resonance.dart';
+import '../services/live_share.dart';
 import '../services/location_service.dart';
 import '../services/resonance.dart';
 import '../services/run_recovery.dart';
@@ -36,7 +38,8 @@ const _kSnapshotInterval = Duration(seconds: 5);
 /// 멈춤 버튼 지름. 러닝 중 주요 조작의 최소 터치 타겟(72pt)보다 크게 잡는다
 const _kStopButtonSize = 76.0;
 
-/// 러닝 화면 — 각자 GPS로 기록, 끝나면 합산 (MVP: 라이브 동기화 없음)
+/// 러닝 화면 — 각자 GPS로 기록하고, 케이던스·페이스·거리를 실시간으로
+/// 주고받아 공명을 만든다. 합산은 여전히 완료 후에 한다
 class RunScreen extends StatefulWidget {
   final String sessionId;
   final String partnerName;
@@ -78,6 +81,14 @@ class _RunScreenState extends State<RunScreen>
   Timer? _holdTimer;
   final _cooldown = SignalCooldown();
 
+  // ── 라이브 동기화 ──
+  // 내 케이던스를 읽어 세션 문서에 쓰고, 상대 것을 같은 구독에서 받아
+  // 공명 엔진에 흘려 넣는다. 데모는 DemoResonanceDriver가 대신 흘린다
+  StreamSubscription<double>? _cadenceSub;
+  double? _myCadence;
+  LiveState? _partnerLive;
+  final _liveGate = LiveWriteGate();
+
   // ── 멈춤 길게 누르기 진행 링 ──
   // 링이 차는 시간은 [kLongPressTimeout]과 같아야 한다 — 링이 다 찬 순간과
   // onLongPress가 뜨는 순간이 어긋나면 "다 찼는데 왜 안 되지"가 된다
@@ -109,10 +120,15 @@ class _RunScreenState extends State<RunScreen>
     super.initState();
     ActiveRunGuard.active = true;
     if (kDebugMode) _resonanceLog = ResonanceEventLog.attach(_resonance);
-    // 실제 세션에는 발맞춤을 알 방법이 아직 없다(러닝 중 실시간 동기화 없음).
-    // 그래서 연속값을 흘려 넣는 곳은 데모의 가상 파트너뿐이고, 실제 세션에서는
-    // 신호·마일스톤 이벤트만 흐른다
-    if (widget.demo) _demoResonance = DemoResonanceDriver(_resonance)..start();
+    // 데모는 가상 파트너가, 실세션은 상대의 live 데이터가 발맞춤을 만든다.
+    // 둘 다 결국 engine.addSample로 들어가는 같은 경로다
+    if (widget.demo) {
+      _demoResonance = DemoResonanceDriver(_resonance)..start();
+    } else {
+      // 케이던스는 없을 수 있다(시뮬레이터·권한 거부). 그때는 그냥 값이
+      // 안 오고, 공명은 '함께' 고정으로 남는다 — 기능 저하이지 실패가 아니다
+      _cadenceSub = CadenceService().stream().listen((spm) => _myCadence = spm);
+    }
     _stateSub = _resonance.events.listen((e) {
       if (e is! ResonanceStateChanged || !mounted) return;
       setState(() => _syncState = e.to);
@@ -159,9 +175,10 @@ class _RunScreenState extends State<RunScreen>
     await briefing.start();
   }
 
-  /// 상대가 보낸 제스처 신호 감지 — 위치/페이스는 안 보내고 이 필드 하나만 봄
+  /// 세션 문서 하나를 구독해 **제스처와 상대 live를 함께** 받는다
   void _listenPartnerGesture() {
     _sessionSub = RunService().sessionStream(widget.sessionId).listen((doc) {
+      _readPartnerLive(doc.data());
       final g = doc.data()?['gesture'] as Map<String, dynamic>?;
       if (g == null || g['uid'] == AuthService().uid) return;
       final at = (g['at'] as Timestamp?)?.toDate();
@@ -173,6 +190,19 @@ class _RunScreenState extends State<RunScreen>
       _resonance.signalReceived(
           SignalKind.fromGestureType(g['type'] as String), at: at);
     });
+  }
+
+  /// 상대의 실시간 상태 — **제스처와 같은 구독을 쓴다.** 구독을 하나 더
+  /// 만들면 같은 문서를 두 번 듣게 되고 읽기 비용이 두 배가 된다
+  void _readPartnerLive(Map<String, dynamic>? data) {
+    final live = data?['live'] as Map<String, dynamic>?;
+    if (live == null) return;
+    final myUid = AuthService().uid;
+    for (final entry in live.entries) {
+      if (entry.key == myUid) continue;
+      _partnerLive =
+          LiveState.fromMap(Map<String, dynamic>.from(entry.value as Map));
+    }
   }
 
   Future<void> _start() async {
@@ -218,6 +248,10 @@ class _RunScreenState extends State<RunScreen>
         setState(() => _km = km);
         // 위치가 갱신될 때도 스냅샷을 남긴다 — 아래 _saveSnapshot 주석 참조
         _saveSnapshot();
+        // **배경에서는 이쪽이 유일한 경로다.** 화면이 꺼지면 1초 타이머가
+        // 멈추므로(실측 35초까지) 여기서도 부르지 않으면 상대 화면에서
+        // 내가 통째로 사라진다
+        _reportProgress();
       },
       onError: _handleGpsError,
     );
@@ -230,11 +264,48 @@ class _RunScreenState extends State<RunScreen>
 
   /// 1km 통과·10분 경과 같은 지점을 공명 레이어에 알린다. 엔진이 중복을
   /// 걸러주므로 매 틱 불러도 된다
-  void _reportProgress() => _resonance.updateProgress(
-        km: _km,
-        elapsed: Duration(seconds: _elapsedSeconds),
-        at: DateTime.now(),
-      );
+  void _reportProgress() {
+    final now = DateTime.now();
+    _resonance.updateProgress(
+      km: _km,
+      elapsed: Duration(seconds: _elapsedSeconds),
+      at: now,
+    );
+    if (!widget.demo) {
+      _pushLiveIfChanged(now);
+      _feedCloseness(now);
+    }
+  }
+
+  /// 내 상태를 상대에게. [LiveWriteGate]가 3초 간격과 변화량을 함께 보고
+  /// 정한다 — 신호등에 서 있는 동안 초당 한 번씩 쓰지 않기 위해
+  void _pushLiveIfChanged(DateTime now) {
+    final secPerKm = _km < 0.02 ? null : (_elapsedSeconds / _km).round();
+    final state = LiveState(
+      paceSecPerKm: secPerKm,
+      cadenceSpm: _myCadence,
+      km: _km,
+      at: now,
+    );
+    if (!_liveGate.shouldWrite(state)) return;
+    RunService()
+        .pushLive(widget.sessionId, AuthService().uid, state)
+        // 부가 정보라 실패해도 러닝을 멈추지 않는다. 3초 뒤 또 시도한다
+        .catchError((_) {});
+  }
+
+  /// 상대와 내 케이던스로 발맞춤을 만들어 공명 엔진에 넣는다.
+  ///
+  /// **낡은 값으로는 아무 말도 하지 않는다.** 상대 데이터가 6초 이상
+  /// 지났으면 흘려 넣지 않고, 그러면 엔진의 hasCloseness가 false로 남아
+  /// 상태어가 '함께'로 돌아간다 — 모르는 것을 아는 척하지 않는다
+  void _feedCloseness(DateTime now) {
+    final live = _partnerLive;
+    if (live == null || !CadenceCloseness.isFresh(live.at, now)) return;
+    final closeness = CadenceCloseness.of(_myCadence, live.cadenceSpm);
+    if (closeness == null) return;
+    _resonance.addSample(closeness, at: now);
+  }
 
   /// 시작 시각과의 차이로 구한 경과 시간(초).
   ///
@@ -368,6 +439,7 @@ class _RunScreenState extends State<RunScreen>
   @override
   void dispose() {
     _demoResonance?.stop();
+    _cadenceSub?.cancel();
     _briefing?.stop();
     _sound?.stop();
     _stopHoldController.dispose();

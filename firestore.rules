@@ -199,7 +199,7 @@ service cloud.firestore {
       allow update: if isParticipant() &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'status', 'ready', 'late', 'joined', 'gesture', 'results',
-          'startedAt', 'declineMessage'
+          'startedAt', 'declineMessage', 'live'
         ]) &&
         request.resource.data.status in
           ['waiting', 'ready', 'running', 'finished', 'cancelled'] &&
@@ -211,7 +211,11 @@ service cloud.firestore {
           onlyMyKey(resource.data.get('joined', {}), request.resource.data.joined)) &&
         (!touched('results') ||
           onlyMyKey(resource.data.get('results', {}), request.resource.data.results)) &&
-        (!touched('gesture') || request.resource.data.gesture.uid == request.auth.uid);
+        (!touched('gesture') || request.resource.data.gesture.uid == request.auth.uid) &&
+        // 러닝 중 실시간 상태(케이던스·페이스·거리). results와 같은 규칙 —
+        // 남의 칸에 쓰면 상대가 달리지도 않은 것을 달린 것처럼 만들 수 있다
+        (!touched('live') ||
+          onlyMyKey(resource.data.get('live', {}), request.resource.data.live));
     }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'live_share.dart';
 import 'session_rules.dart';
 import 'week_key.dart';
 
@@ -99,6 +100,19 @@ class RunService {
         'type': type,
         'at': FieldValue.serverTimestamp(),
       },
+    });
+  }
+
+  /// 러닝 중 내 상태를 상대에게 보낸다 — `live.{uid}` 한 칸만 덮어쓴다.
+  ///
+  /// 언제 부를지는 [LiveWriteGate]가 정한다(3초 간격 + 유의미한 변화).
+  /// 여기서는 쓰기만 하고 판단하지 않는다.
+  ///
+  /// 실패해도 조용히 넘어간다: 이건 부가 정보라 못 보냈다고 러닝을 멈추거나
+  /// 사용자를 부를 이유가 없다. 다음 갱신이 3초 뒤에 또 온다
+  Future<void> pushLive(String sessionId, String uid, LiveState state) async {
+    await _db.collection('sessions').doc(sessionId).update({
+      'live.$uid': state.toMap(),
     });
   }
 
