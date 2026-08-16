@@ -83,7 +83,10 @@ Flutter + Firebase(Apple 로그인, Firestore, Storage, Cloud Messaging) + Cloud
 완성도 있는 iOS 네이티브 경험이 목표. 검증된 플러그인 우선, 없으면 `ios/Runner`에 Swift + MethodChannel.
 
 - **배포 타깃은 iOS 26.0** (2026-08-16에 13.0에서 올림). 타깃을 얼리어답터로 좁히고 최신 API를 쓰기로 한 결정. `@available` 분기나 버전 체크를 넣지 말 것 — 불필요한 복잡도다
-- **`HKWorkoutSession`을 아이폰 단독으로 쓸 수 있다.** 러닝 중 앱이 죽어 기록이 날아가는 문제의 근본 해법이며 전환 설계가 나와 있다(GPS 감사 I-1). 다만 **HealthKit 권한은 거부될 수 있어 지금의 위치 기반 경로는 폴백으로 영구히 남는다** — 교체가 아니라 이중화다
+- **`HKWorkoutSession`은 아이폰에서 백그라운드 실행을 보장하지 않는다** (2026-08-16 확인). API는 iOS 26부터 아이폰에서 쓸 수 있는 게 맞지만(SDK 헤더에서 `initWithHealthStore:configuration:error:`와 `HKLiveWorkoutBuilder`가 `API_AVAILABLE(ios(26.0))`로 확인됨), **워치와 달리 아이폰 세션은 "시스템의 통상적인 포그라운드/백그라운드 생명주기"를 따른다.** 즉 지금의 위치 배경 모드보다 나은 실행 보장을 주지 않는다
+  - 아이폰 세션이 주는 것은 **잠금 상태에서도 건강 데이터에 접근할 권한**(첫 세션 시작 시 시스템 프롬프트)이지 실행 보장이 아니다. 애플이 잠금화면 대책으로 권하는 것은 **Live Activities**다
+  - 따라서 "러닝 중 앱이 죽어 기록이 날아가는" 문제의 해법으로는 부적절하다. 그 문제는 배경 스냅샷 저장(감사 #15)·GPS 실패 시 기록 보존(#7)으로 훨씬 싸게 다룰 것
+  - HealthKit은 건강 앱 연동·경로 저장·kcal 정확도를 위해서는 여전히 의미가 있으나, 권한이 거부될 수 있어 위치 기반 경로는 어차피 폴백으로 남는다 — 교체가 아니라 이중화다
 - capability/entitlement 추가는 Xcode에서 수행하고, 변경된 파일(Runner.entitlements, RunnerRelease.entitlements, Info.plist, project.pbxproj)을 커밋에 포함할 것
 - **승인된 통합**: 햅틱(HapticFeedback), Live Activities(ActivityKit — 잠금화면/Dynamic Island)
 
