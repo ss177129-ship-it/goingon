@@ -294,6 +294,15 @@ class _RunScreenState extends State<RunScreen>
         .catchError((_) {});
   }
 
+  /// 지금 믿을 수 있는 상대 케이던스. 낡았으면 null
+  double? _freshPartnerCadence() {
+    final live = _partnerLive;
+    if (live == null) return null;
+    return CadenceCloseness.isFresh(live.at, DateTime.now())
+        ? live.cadenceSpm
+        : null;
+  }
+
   /// 상대와 내 케이던스로 발맞춤을 만들어 공명 엔진에 넣는다.
   ///
   /// **낡은 값으로는 아무 말도 하지 않는다.** 상대 데이터가 6초 이상
@@ -629,7 +638,13 @@ class _RunScreenState extends State<RunScreen>
               onPointerDown: _onGesturePointerDown,
               onPointerUp: _onGesturePointerUp,
               onPointerCancel: _onGesturePointerCancel,
-              child: ResonanceCanvas(engine: _resonance),
+              child: ResonanceCanvas(
+                engine: _resonance,
+                myCadence: () => _myCadence,
+                // 낡은 값은 여기서 끊는다. 화면이 옛 발구름을 계속 그리면
+                // 상대가 멈춘 뒤에도 나란히 달리는 것처럼 보인다
+                partnerCadence: _freshPartnerCadence,
+              ),
             ),
           ),
           // ── 함께 달린 것 ──
