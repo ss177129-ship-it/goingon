@@ -44,6 +44,9 @@ class FinishScreen extends StatefulWidget {
 
 class _FinishScreenState extends State<FinishScreen> {
   final _cardKey = GlobalKey();
+
+  /// 공유 시트의 기준점을 잡기 위한 키 — [_shareOrigin] 주석 참조
+  final _shareButtonKey = GlobalKey();
   Map<String, dynamic>? _partnerResult;
   StreamSubscription? _sub;
   bool _longWait = false;
@@ -126,26 +129,63 @@ class _FinishScreenState extends State<FinishScreen> {
   String _fmt(int sec) =>
       "${sec ~/ 60}'${(sec % 60).toString().padLeft(2, '0')}\"";
 
+  /// 공유 카드: 화면 상단부를 그대로 캡처해 공유 시트로 넘긴다.
+  ///
+  /// **`sharePositionOrigin`이 없으면 iOS에서 시트가 아예 안 뜬다.**
+  /// 2026-08-16에 시뮬레이터에서 확인함 — 이 인자 없이 부르면
+  /// `PlatformException(sharePositionOrigin: argument must be set … must be
+  /// non-zero)`로 끝난다. 아이패드 팝오버 기준점으로만 알려져 있어 아이폰에서는
+  /// 생략해도 되는 줄 알았는데 아니었고, 그래서 공유가 한 번도 동작한 적이
+  /// 없었다. 공유 카드는 이 앱의 성장 엔진이라 조용히 죽어 있으면 안 된다.
+  ///
+  /// **어떤 경로로도 조용히 끝나지 않는다.** 예전에는 캡처 대상이나 인코딩
+  /// 결과가 없으면 그냥 `return`했는데, 그러면 눌러도 아무 일이 없는 버튼이
+  /// 되고 그건 앱 전체의 신뢰를 깎는다. 카드를 못 만들면 최소한 글이라도
+  /// 공유하고, 그것마저 실패하면 실패했다고 말한다
   Future<void> _shareCard() async {
+    const text = '멀리 있어도, 함께 달렸어요 🏃 #goingon';
+    final origin = _shareOrigin();
     try {
-      final boundary = _cardKey.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
-      if (boundary == null) return;
-      final image = await boundary.toImage(pixelRatio: 3.0);
-      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (bytes == null) return;
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/goingon_card.png');
-      await file.writeAsBytes(bytes.buffer.asUint8List());
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text: '멀리 있어도, 함께 달렸어요 🏃 #goingon',
-      );
+      final file = await _captureCard();
+      if (file == null) {
+        await Share.share(text, sharePositionOrigin: origin);
+        return;
+      }
+      await Share.shareXFiles([XFile(file.path)],
+          text: text, sharePositionOrigin: origin);
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
-      GoToast.error(context, '공유 카드를 만들지 못했어요. 다시 시도해 주세요.');
+      GoToast.error(context, '공유 시트를 열지 못했어요. 다시 시도해 주세요.');
     }
+  }
+
+  /// 공유 시트가 어디서 나오는지 — 아이패드에서는 팝오버가 이 자리에 붙고,
+  /// 아이폰에서는 보이지 않지만 **값이 없으면 호출 자체가 거부된다.**
+  /// 버튼을 못 찾으면 화면 중앙의 작은 사각형으로 대신한다(0 크기는 거부됨)
+  Rect _shareOrigin() {
+    final box =
+        _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize) {
+      return box.localToGlobal(Offset.zero) & box.size;
+    }
+    final size = MediaQuery.sizeOf(context);
+    return Rect.fromCenter(
+        center: Offset(size.width / 2, size.height / 2), width: 1, height: 1);
+  }
+
+  /// 카드 이미지를 임시 파일로. 만들 수 없으면 null(글만 공유하게 됨)
+  Future<File?> _captureCard() async {
+    final boundary =
+        _cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    if (boundary == null) return null;
+    final image = await boundary.toImage(pixelRatio: 3.0);
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    if (bytes == null) return null;
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/goingon_card.png');
+    await file.writeAsBytes(bytes.buffer.asUint8List());
+    return file;
   }
 
   @override
@@ -267,6 +307,7 @@ class _FinishScreenState extends State<FinishScreen> {
             ),
             const SizedBox(height: 10),
             Pressable(
+              key: _shareButtonKey,
               onTap: _shareCard,
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
