@@ -10,6 +10,7 @@ import '../services/run_service.dart';
 import '../theme.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
+import '../widgets/pressable.dart';
 import 'run_screen.dart';
 
 /// 로비 — 프로토타입 s-lobby 충실 구현
@@ -364,7 +365,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
           // ── 상태 카드 (탭해서 단계 진행) ──
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: GestureDetector(
+            child: Pressable(
               onTap: _advanceStep,
               child: Container(
                 padding: const EdgeInsets.all(20),
@@ -495,15 +496,19 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   Widget _actionButton() {
     if (!_meReady) {
-      return FilledButton(
-        style: FilledButton.styleFrom(
-          backgroundColor: GoColors.ink,
+      return Pressable(
+        onTap: _jumpToReady,
+        child: Container(
           padding: const EdgeInsets.symmetric(vertical: 18),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          decoration: BoxDecoration(
+            color: GoColors.ink,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Center(
+            child:
+                Text('준비완료 →', style: GoTheme.serif(20, color: GoColors.paper)),
+          ),
         ),
-        onPressed: _jumpToReady,
-        child: Text('준비완료 →', style: GoTheme.serif(20, color: GoColors.paper)),
       );
     }
     // 나는 준비됨 → 파트너 대기

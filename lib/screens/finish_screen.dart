@@ -13,6 +13,7 @@ import '../services/run_service.dart';
 import '../theme.dart';
 import '../widgets/brand_mark.dart';
 import '../widgets/go_toast.dart';
+import '../widgets/pressable.dart';
 import 'root_screen.dart';
 
 /// 완료 화면 — 프로토타입 s-finish 충실 구현 (라임 배경)
@@ -246,29 +247,34 @@ class _FinishScreenState extends State<FinishScreen> {
             ],
             const SizedBox(height: 18),
             // ── CTA ──
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: GoColors.ink,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18)),
+            Pressable(
+              onTap: () => Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RootScreen()),
+                  (_) => false),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  color: GoColors.ink,
+                  borderRadius: BorderRadius.circular(18),
                 ),
-                onPressed: () => Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const RootScreen()),
-                    (_) => false),
-                child: Text('다음에 또 함께 달려요',
-                    style: GoTheme.serif(18, color: GoColors.lime)),
+                child: Center(
+                  child: Text('다음에 또 함께 달려요',
+                      style: GoTheme.serif(18, color: GoColors.lime)),
+                ),
               ),
             ),
             const SizedBox(height: 10),
-            TextButton(
-              onPressed: _shareCard,
-              child: Text('오늘의 순간 공유하기',
-                  style: TextStyle(
-                      fontSize: 12, color: GoColors.ink.withValues(alpha: .4))),
+            Pressable(
+              onTap: _shareCard,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                child: Text('오늘의 순간 공유하기',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: GoColors.ink.withValues(alpha: .4))),
+              ),
             ),
           ]),
         ),

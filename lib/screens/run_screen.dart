@@ -19,6 +19,7 @@ import '../services/run_service.dart';
 import '../theme.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
+import '../widgets/pressable.dart';
 import '../widgets/resonance_canvas.dart';
 import 'finish_screen.dart';
 
@@ -368,20 +369,22 @@ class _RunScreenState extends State<RunScreen>
                 spacing: 8,
                 runSpacing: 8,
                 children: moods
-                    .map((m) => OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: GoColors.line, width: 1.5),
+                    .map((m) => Pressable(
+                          onTap: () => Navigator.pop(ctx, m),
+                          child: Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20)),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              border:
+                                  Border.all(color: GoColors.line, width: 1.5),
+                            ),
+                            child: Text(m,
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: GoColors.ink)),
                           ),
-                          onPressed: () => Navigator.pop(ctx, m),
-                          child: Text(m,
-                              style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: GoColors.ink)),
                         ))
                     .toList(),
               ),
