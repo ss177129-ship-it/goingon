@@ -3,11 +3,18 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
 
-/// GPS 트래킹 — 거리 누적 + 페이스 계산
+import 'run_accumulator.dart';
+
+/// GPS 트래킹 — 스트림 구독·권한·백그라운드 관리.
+///
+/// 필터링과 거리 누적은 [RunAccumulator]가 맡는다. 예전에는 [start] 안에
+/// 뒤섞여 있어서 앱을 띄우지 않고는 검증할 수 없었는데, 떼어낸 뒤로는
+/// 합성 fix를 넣어 `test/run_accumulator_test.dart`에서 그대로 재생할 수 있다.
 class LocationService {
   StreamSubscription<Position>? _sub;
-  Position? _last;
-  double totalKm = 0;
+  RunAccumulator? _accumulator;
+
+  double get totalKm => _accumulator?.totalKm ?? 0;
 
   /// Always 권한까지 받았는지 — 이때만 배경 위치 추적을 켬.
   /// When In Use만 있는데 배경 추적을 강제로 켜면 iOS가 앱을 강제 종료시킴
@@ -48,36 +55,25 @@ class LocationService {
   /// onError는 위치 서비스가 꺼지거나 권한이 중간에 취소되는 등
   /// 트래킹이 더 이상 불가능해졌을 때 호출됨
   void start(void Function(double km) onUpdate, {void Function()? onError}) {
-    totalKm = 0;
-    _last = null;
+    _accumulator = RunAccumulator(config: RunFilterConfig.current);
     // iOS 전용 앱 — Always 권한이 있을 때만 배경 위치 업데이트를 허용함
     // (requestPermission에서 미리 확인됨). When In Use만 있으면 폰이 잠기는
     // 순간 GPS가 멈추지만, 최소한 크래시는 나지 않음
     final settings = AppleSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: 5, // 5m 이동마다 갱신 (배터리 절약)
+      // 5m 이동마다 갱신 (배터리 절약) — 값은 RunFilterConfig에 모아둠
+      distanceFilter: RunFilterConfig.current.locationDistanceFilter.toInt(),
       allowBackgroundLocationUpdates: _canRunInBackground,
       showBackgroundLocationIndicator: _canRunInBackground,
       pauseLocationUpdatesAutomatically: false,
     );
     _sub = Geolocator.getPositionStream(locationSettings: settings).listen(
       (pos) {
-        // GPS 튐 방지: 정확도 30m 이상이면 무시
-        if (pos.accuracy > 30) return;
-        if (_last != null) {
-          final meters = Geolocator.distanceBetween(
-              _last!.latitude, _last!.longitude, pos.latitude, pos.longitude);
-          final dtSeconds =
-              pos.timestamp.difference(_last!.timestamp).inMilliseconds / 1000;
-          // 순간이동 무시 — 터널/신호 튐 대응. 두 지점 사이 속도가
-          // 10m/s(약 36km/h, 일반적인 러닝 최고 속도를 넉넉히 웃도는 값)를
-          // 넘으면 무시. 업데이트가 뭉쳐 들어와 dt를 못 믿을 상황(dt<=0)이면
-          // 예전처럼 절대 거리 50m 기준으로 대체
-          final isOutlier =
-              dtSeconds > 0 ? (meters / dtSeconds) > 10 : meters >= 50;
-          if (!isOutlier) totalKm += meters / 1000;
-        }
-        _last = pos;
+        // 필터·누적 판정은 전부 RunAccumulator가 한다. null은 "호출부가
+        // 아무것도 하지 않아야 하는 fix"이고(예전 코드의 이른 return과 동일),
+        // 이상치로 거리에 반영되지 않은 fix는 거리가 그대로인 채 콜백까지
+        // 도달한다 — 이것도 예전 동작 그대로
+        if (_accumulator?.add(pos) == null) return;
         onUpdate(totalKm);
       },
       onError: (_) => onError?.call(),
