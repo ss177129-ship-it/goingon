@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode, ValueListenable;
+import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../services/active_run_guard.dart';
@@ -24,6 +27,9 @@ import 'finish_screen.dart';
 /// 위치 콜백에서도 저장을 부르며, 어느 쪽에서 불리든 이 간격이 지켜진다는 점
 const _kSnapshotInterval = Duration(seconds: 5);
 
+/// 멈춤 버튼 지름. 러닝 중 주요 조작의 최소 터치 타겟(72pt)보다 크게 잡는다
+const _kStopButtonSize = 76.0;
+
 /// 러닝 화면 — 각자 GPS로 기록, 끝나면 합산 (MVP: 라이브 동기화 없음)
 class RunScreen extends StatefulWidget {
   final String sessionId;
@@ -39,7 +45,8 @@ class RunScreen extends StatefulWidget {
   State<RunScreen> createState() => _RunScreenState();
 }
 
-class _RunScreenState extends State<RunScreen> {
+class _RunScreenState extends State<RunScreen>
+    with SingleTickerProviderStateMixin {
   final _location = LocationService();
   Timer? _timer;
   DateTime? _startedAt;
@@ -64,6 +71,12 @@ class _RunScreenState extends State<RunScreen> {
   Offset? _gestureStart;
   Timer? _holdTimer;
   final _cooldown = SignalCooldown();
+
+  // ── 멈춤 길게 누르기 진행 링 ──
+  // 링이 차는 시간은 [kLongPressTimeout]과 같아야 한다 — 링이 다 찬 순간과
+  // onLongPress가 뜨는 순간이 어긋나면 "다 찼는데 왜 안 되지"가 된다
+  late final AnimationController _stopHoldController;
+  final _stopHold = ValueNotifier<double>(0);
 
   // ── 공명 이벤트 레이어 ──
   // 화면·소리·햅틱이 각자 "지금 바뀌었나"를 판정하지 않도록, 판정은 엔진
@@ -91,6 +104,9 @@ class _RunScreenState extends State<RunScreen> {
       if (e is! ResonanceStateChanged || !mounted) return;
       setState(() => _syncState = e.to);
     });
+    _stopHoldController =
+        AnimationController(vsync: this, duration: kLongPressTimeout)
+          ..addListener(() => _stopHold.value = _stopHoldController.value);
     WakelockPlus.enable();
     if (!widget.demo) _listenPartnerGesture();
     _start();
@@ -303,6 +319,8 @@ class _RunScreenState extends State<RunScreen> {
   @override
   void dispose() {
     _demoResonance?.stop();
+    _stopHoldController.dispose();
+    _stopHold.dispose();
     _stateSub?.cancel();
     _resonanceLog?.cancel();
     _resonance.dispose();
@@ -512,19 +530,7 @@ class _RunScreenState extends State<RunScreen> {
             ),
           ),
           const SizedBox(height: 14),
-          // ── 멈춤 ──
-          GestureDetector(
-            onLongPress: _finishing ? null : _confirmFinish,
-            child: Container(
-              width: 52, height: 52,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: GoColors.ink.withValues(alpha: .07),
-                border: Border.all(color: GoColors.ink.withValues(alpha: .1)),
-              ),
-              child: Center(child: _caption('멈춤', color: GoColors.mid)),
-            ),
-          ),
+          _stopButton(),
           const SizedBox(height: 5),
           _caption('길게 누르면 종료'),
           // 위치를 "항상 허용"으로 못 받은 경우에만 — 화면이 꺼지면 거리가
@@ -543,6 +549,67 @@ class _RunScreenState extends State<RunScreen> {
     );
   }
 
+  /// 멈춤 — 러닝 중 유일한 주요 조작이라 터치 타겟을 76pt로 잡았다
+  /// (권장 최소 72pt). 달리면서 흔들리는 손으로 누르는 버튼이다.
+  ///
+  /// 길게 누르는 동안 테두리를 따라 진행 링이 찬다. 링이 없을 때는 얼마나
+  /// 눌러야 하는지 알 수 없어서, 사람들이 중간에 손을 떼고 "왜 안 되지"
+  /// 하다가 결국 짧게 여러 번 누른다
+  Widget _stopButton() {
+    return GestureDetector(
+      onTapDown: _finishing ? null : (_) => _beginStopHold(),
+      onTapUp: (_) => _cancelStopHold(),
+      onTapCancel: _cancelStopHold,
+      onLongPress: _finishing
+          ? null
+          : () {
+              // 링이 다 찼다는 것을 손으로도 알려준다 — 여기서부터는
+              // 손을 떼도 확인 다이얼로그가 뜬다
+              HapticFeedback.mediumImpact();
+              _stopHold.value = 1;
+              _confirmFinish();
+            },
+      child: SizedBox(
+        width: _kStopButtonSize,
+        height: _kStopButtonSize,
+        child: Stack(alignment: Alignment.center, children: [
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: GoColors.ink.withValues(alpha: .07),
+              border: Border.all(color: GoColors.ink.withValues(alpha: .1)),
+            ),
+          ),
+          // 링은 누르는 동안에만 그린다. 색은 ink 계열 — lime(나)도
+          // coral(상대)도 gold(공명)도 아닌, 이 앱에서 색 뜻이 없는 자리
+          RepaintBoundary(
+            child: CustomPaint(
+              size: const Size.square(_kStopButtonSize),
+              painter: _StopHoldPainter(_stopHold),
+            ),
+          ),
+          const Text('멈춤',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: GoColors.mid)),
+        ]),
+      ),
+    );
+  }
+
+  void _beginStopHold() {
+    HapticFeedback.selectionClick();
+    _stopHoldController.forward(from: 0);
+  }
+
+  void _cancelStopHold() {
+    if (_stopHoldController.isAnimating || _stopHold.value > 0) {
+      _stopHoldController.stop();
+      _stopHold.value = 0;
+    }
+  }
+
   Widget _togetherCell(String value, String label) => Expanded(
         child: Column(children: [
           Text(value,
@@ -554,4 +621,36 @@ class _RunScreenState extends State<RunScreen> {
 
   Widget _togetherDivider() =>
       Container(width: 1, height: 44, color: GoColors.line);
+}
+
+/// 멈춤 버튼 테두리를 따라 차오르는 진행 링.
+///
+/// 위젯 트리를 다시 만들지 않고 [ValueNotifier] 하나로만 다시 그린다 —
+/// 러닝 화면은 원 애니메이션이 이미 매 프레임 돌고 있어서, 여기까지
+/// setState로 그리면 화면 전체가 초당 60번 리빌드된다
+class _StopHoldPainter extends CustomPainter {
+  _StopHoldPainter(this.progress) : super(repaint: progress);
+
+  final ValueListenable<double> progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = progress.value;
+    if (p <= 0) return;
+    final rect = Offset.zero & size;
+    canvas.drawArc(
+      rect.deflate(1.5),
+      -math.pi / 2, // 12시에서 시작 — 시계처럼 읽힌다
+      2 * math.pi * p,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round
+        ..color = GoColors.ink.withValues(alpha: .45),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _StopHoldPainter old) => false;
 }
