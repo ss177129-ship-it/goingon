@@ -504,7 +504,7 @@ class _UsScreenState extends State<UsScreen> {
         child: Row(children: [
           _metric('$count', '함께한 런'),
           const SizedBox(width: 10),
-          _metric('${totalKm.toStringAsFixed(0)}km', '함께 거리'),
+          _metric('${totalKm.toStringAsFixed(0)}km', '함께한 거리'),
           const SizedBox(width: 10),
           _metric('D+$daysTogether', '첫 런부터'),
         ]),

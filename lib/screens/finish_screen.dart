@@ -231,7 +231,7 @@ class _FinishScreenState extends State<FinishScreen> {
                             _waiting
                                 ? '${widget.myKm.toStringAsFixed(1)}+'
                                 : '${_togetherKm.toStringAsFixed(1)}km',
-                            '함께 거리'),
+                            '함께한 거리'),
                         _tDivider(),
                         _togetherStat(
                             _waiting
