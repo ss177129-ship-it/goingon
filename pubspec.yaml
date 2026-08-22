@@ -24,6 +24,10 @@ dependencies:
   # GPS 트래킹
   geolocator: ^13.0.1
 
+  # 케이던스 (M0-a 스파이크 — docs/m0_spike.md). 가속도계만으로 걸음을 세므로
+  # 주머니 속·트레드밀에서도 동작. GPS는 선택 부품이라는 새 설계 결정의 구현
+  sensors_plus: ^6.1.1
+
   # 공유 카드 (이미지 생성 + 공유 시트)
   share_plus: ^10.0.0
   path_provider: ^2.1.4
