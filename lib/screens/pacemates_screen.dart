@@ -377,16 +377,22 @@ class _PacematesScreenState extends State<PacematesScreen> {
         child: Container(width: 1, color: GoColors.line),
       );
 
-  /// 페이스메이트 행 — 길게 누르면 연결 끊기 / 차단 메뉴.
+  /// 페이스메이트 행 — 누르면 그 사람의 리듬, 길게 누르면 연결 끊기 / 차단.
   ///
   /// 예전에는 여기 'GO?'(지금 같이 뛰자는 실시간 요청) 버튼이 있었다.
   /// 라이브 합류는 v1.1로 미뤄졌고(D-001·D-005), v1.0에서 '함께'를 담당하는
   /// 것은 고스트런이라 버튼이 가리키는 곳도 바뀌었다 — 상대가 지금
-  /// 자유로운지 묻는 대신, 상대가 남긴 리듬으로 간다
+  /// 자유로운지 묻는 대신, 상대가 남긴 리듬으로 간다.
+  ///
+  /// **그 목적지를 사람으로 좁히는 것을 P5에서 빠뜨렸다.** 빅맨 옆의 버튼이
+  /// 빅맨과 상관없는 후보 목록으로 갔다. 누른 것과 도착한 곳이 다르면 그
+  /// 버튼은 거짓말을 한다. 행 전체도 같은 곳으로 보낸다 — 짧게 눌러
+  /// 아무 일도 안 일어나는 행은 없는 것만 못하다
   Widget _friendRow(Map<String, dynamic> f) {
     final name = _displayName(f['name']);
     final uid = f['uid'] as String;
     return GestureDetector(
+      onTap: () => _openRhythms(uid, name),
       onLongPress: () => _showFriendActions(uid, name),
       child: Container(
         decoration: const BoxDecoration(
@@ -424,16 +430,23 @@ class _PacematesScreenState extends State<PacematesScreen> {
               shape:
                   RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
-            onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const TodayPartnerScreen())),
+            onPressed: () => _openRhythms(uid, name),
             child: Text('리듬', style: GoTheme.serif(18, color: GoColors.ink)),
           ),
         ]),
       ),
     );
   }
+
+  /// 그 사람이 남긴 리듬만 보여준다. 이름을 함께 넘기는 이유는 목록이
+  /// 이미 알고 있는 것을 화면이 다시 조회하지 않게 하려는 것
+  void _openRhythms(String uid, String name) => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              TodayPartnerScreen(pacemateUid: uid, pacemateName: name),
+        ),
+      );
 
   /// 연결 끊기 / 차단 선택. 둘의 차이가 분명해야 해서 설명을 함께 보여줌 —
   /// 끊기는 상대가 다시 요청을 보낼 수 있고, 차단은 그것까지 막음

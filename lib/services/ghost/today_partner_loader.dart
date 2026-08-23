@@ -53,6 +53,29 @@ class TodayPartnerLoader {
     );
   }
 
+  /// **한 사람의 리듬만.** 페이스메이트 목록에서 그 사람을 눌렀을 때 쓴다.
+  ///
+  /// 이 갈래가 없어서 P5에서는 빅맨 옆의 '리듬' 버튼이 빅맨과 아무 상관
+  /// 없는 후보 목록으로 갔다. 누른 사람과 도착지가 다르면 그 버튼은
+  /// 거짓말을 하는 것이다.
+  ///
+  /// 이름표는 여전히 친구 목록에서 가져온다 — 이름은 사람의 성질이지
+  /// 러닝의 성질이 아니라 고스트 문서에 없다
+  Future<TodayPartners> loadFrom(String viewerUid, String ownerUid) async {
+    final friends = await _friends.friendsStream(viewerUid).first;
+    final runs = await _ghosts.recentFrom([ownerUid]);
+    return TodayPartners(
+      // 한 사람뿐이라 층 사이 우선순위는 의미가 없다. 그래도 판정기를
+      // 거치는 이유는 중복 제거·2분 미만 배제·사연 있는 것 먼저가
+      // 여기서도 그대로 맞기 때문이다
+      TodayPartnerPicker.rank(fromPacemates: runs),
+      {
+        for (final f in friends) f['uid'] as String: _name(f['name']),
+        viewerUid: '나',
+      },
+    );
+  }
+
   static String _name(Object? name) {
     final s = name is String ? name.trim() : '';
     return s.isEmpty ? '페이스메이트' : s;
