@@ -38,9 +38,9 @@ class _RootScreenState extends State<RootScreen> {
     _startPush();
   }
 
-  /// 프로필이 준비된 뒤(= 여기까지 왔으면 항상 준비됨)에야 알림 권한을 물음.
-  /// 앱 첫 실행에 맥락 없이 물으면 거절당하기 쉽고, iOS는 한 번 거절당하면
-  /// 다시 물을 수 없어 설정에 들어가야만 되돌릴 수 있음
+  /// 알림 **권한을 묻지 않는다.** 이미 허락받은 기기의 토큰만 등록하고 탭을
+  /// 받는다. 묻는 자리는 첫 완주 직후(FinishScreen)로 옮겼음 — 여기까지 온
+  /// 사람은 아직 이 앱이 무엇인지 모르고, iOS는 한 번 거절당하면 다시 못 물음
   void _startPush() {
     PushService.instance.start(AuthService().uid);
     _pushTapSub = PushService.instance.taps.listen(_onPushTap);

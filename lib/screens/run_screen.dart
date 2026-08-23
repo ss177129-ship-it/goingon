@@ -45,11 +45,24 @@ class RunScreen extends StatefulWidget {
   final String sessionId;
   final String partnerName;
   final bool demo;
+
+  /// 이만큼 달리면 스스로 마친다. **데모 전용이다** — 실제 러닝에 상한을
+  /// 두면 그건 러닝이 아니라 타이머고, 8분 에피소드조차 상한이 아니라
+  /// 완결이다(잔향 뒤 자유런으로 이어진다). 데모에만 두는 이유는 데모가
+  /// 체험이라서다: 끝이 없으면 처음 온 사람은 언제 멈춰야 할지 모른다
+  final Duration? autoFinishAfter;
+
+  /// 완료 화면까지 다 본 뒤 어디로 갈지를 호출부가 정할 때. 온보딩은
+  /// 데모런이 끝나면 홈이 아니라 **다음 온보딩 장**으로 가야 한다
+  final VoidCallback? onFinished;
+
   const RunScreen(
       {super.key,
       required this.sessionId,
       required this.partnerName,
-      this.demo = false});
+      this.demo = false,
+      this.autoFinishAfter,
+      this.onFinished});
 
   @override
   State<RunScreen> createState() => _RunScreenState();
@@ -226,6 +239,7 @@ class _RunScreenState extends State<RunScreen>
           _km = _seconds * 0.003; // 약 5'30"/km 페이스
         });
         _reportProgress();
+        _maybeAutoFinish();
       });
       return;
     }
@@ -267,7 +281,18 @@ class _RunScreenState extends State<RunScreen>
       setState(() => _seconds = _elapsedSeconds);
       _saveSnapshot();
       _reportProgress();
+      _maybeAutoFinish();
     });
+  }
+
+  /// [RunScreen.autoFinishAfter]가 지나면 스스로 마친다. 확인 대화상자를
+  /// 거치지 않는다 — 스스로 끝나기로 한 것에 "정말 끝낼까요?"를 묻는 건
+  /// 화면이 자기 결정을 사용자에게 떠넘기는 것이다
+  void _maybeAutoFinish() {
+    final limit = widget.autoFinishAfter;
+    if (limit == null || _finishing) return;
+    if (_seconds < limit.inSeconds) return;
+    _finish(null);
   }
 
   /// 1km 통과·10분 경과 같은 지점을 공명 레이어에 알린다. 엔진이 중복을
@@ -443,6 +468,7 @@ class _RunScreenState extends State<RunScreen>
         myKcal: kcal,
         myMood: mood,
         demo: widget.demo,
+        onDone: widget.onFinished,
       ),
     ));
   }

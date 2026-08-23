@@ -9,6 +9,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'avatar_service.dart';
+import 'onboarding/runner_level.dart';
 import 'push_service.dart';
 
 /// 인증 전략: Apple 또는 Google 로그인 필수 — 익명 로그인 없음.
@@ -137,6 +138,12 @@ class AuthService {
 
   Future<void> updateName(String name) async {
     await _db.collection('users').doc(uid).update({'name': name});
+  }
+
+  /// 온보딩 질문 하나의 답. 이 값이 정하는 것은 홈의 기본값뿐이고,
+  /// 없으면 아직 온보딩을 안 지난 계정이다(OnboardingProgress 참조)
+  Future<void> setLevel(RunnerLevel level) async {
+    await _db.collection('users').doc(uid).update({'level': level.wire});
   }
 
   /// 아이디(검색용 고유 핸들) 설정/변경. 이미 다른 사람이 쓰고 있으면

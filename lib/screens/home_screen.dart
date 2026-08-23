@@ -14,6 +14,7 @@ import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
 import '../widgets/initial_avatar.dart';
 import 'lobby_screen.dart';
+import 'onboarding/demo_run_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -355,8 +356,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => const LobbyScreen(
-                sessionId: 'demo', partnerName: '지수', demo: true),
+            builder: (_) =>
+                DemoRunScreen(onDone: () => Navigator.of(context).pop()),
           ),
         ),
         child: const Text('혼자서 먼저 체험해보기 →',

@@ -5,7 +5,7 @@ import '../services/auth_service.dart';
 import '../theme.dart';
 import '../widgets/brand_mark.dart';
 import '../widgets/go_toast.dart';
-import 'root_screen.dart';
+import 'onboarding/onboarding_flow.dart';
 
 /// 로그인(Apple 등) 성공 직후 항상 거치는 프로필 설정 화면 — 이름과
 /// 검색용 아이디를 함께 만듦. prefill은 Apple이 최초 인가 시 준 이름
@@ -40,8 +40,10 @@ class _NicknameScreenState extends State<NicknameScreen> {
         GoToast.error(context, '이미 사용 중인 아이디예요. 다른 아이디를 입력해 주세요.');
         return;
       }
+      // 프로필이 만들어진 다음은 홈이 아니라 온보딩의 나머지다 —
+      // 데모런으로 이 앱이 무엇인지 보여준 뒤에 레벨을 묻는다
       Navigator.pushAndRemoveUntil(context,
-          MaterialPageRoute(builder: (_) => const RootScreen()), (_) => false);
+          MaterialPageRoute(builder: (_) => const OnboardingFlow()), (_) => false);
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;

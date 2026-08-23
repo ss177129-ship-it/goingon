@@ -10,10 +10,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'screens/login_screen.dart';
 import 'screens/nickname_screen.dart';
+import 'screens/onboarding/eight_steps_screen.dart';
+import 'screens/onboarding/onboarding_flow.dart';
 import 'screens/root_screen.dart';
 import 'screens/update_required_screen.dart';
 import 'services/app_version_gate.dart';
 import 'services/auth_service.dart';
+import 'services/onboarding/onboarding_progress.dart';
 import 'theme.dart';
 import 'widgets/brand_mark.dart';
 
@@ -105,6 +108,7 @@ class _SplashGateState extends State<SplashGate>
     }
 
     User? user;
+    Map<String, dynamic>? profile;
     var hasProfile = false;
     String? existingName;
     try {
@@ -123,7 +127,7 @@ class _SplashGateState extends State<SplashGate>
       // 계정이거나. 문서 존재만 보면 아이디 없는 계정이 그대로 홈에 들어가고,
       // 그 사람은 검색으로 영영 안 찾아진다 — 완성 여부로 판정한다
       if (user != null) {
-        final profile = await AuthService()
+        profile = await AuthService()
             .myProfile()
             .timeout(const Duration(seconds: 10));
         hasProfile = AuthService.isProfileComplete(profile);
@@ -140,17 +144,34 @@ class _SplashGateState extends State<SplashGate>
     if (isFirstLaunch) {
       await prefs.setBool(_kHasLaunchedBeforeKey, true);
     }
+    // 여덟 걸음은 **가입 전** 화면이라 계정이 아니라 기기에 기록된다.
+    // 로그인한 사람에게는 다시 보여주지 않는다 — 이미 지나온 문이다
+    final eightStepsDone =
+        user != null || await OnboardingProgress.eightStepsDone();
     if (!mounted) return;
     setState(() {
       if (user == null) {
-        _destination = const LoginScreen();
+        _destination = eightStepsDone
+            ? const LoginScreen()
+            : EightStepsScreen(onDone: _afterEightSteps);
       } else if (!hasProfile) {
         // 이름이 이미 있으면 다시 묻지 않게 채워서 보낸다
         _destination = NicknameScreen(prefill: existingName);
+      } else if (OnboardingProgress.needsRunnerLevel(profile)) {
+        // 가입은 했는데 온보딩 도중 나간 계정. 홈의 기본값을 아직 모른다
+        _destination = const OnboardingFlow();
       } else {
         _destination = const RootScreen();
       }
     });
+  }
+
+  /// 여덟 걸음을 마쳤거나 지나갔을 때. 지나간 것도 마친 것으로 기록한다 —
+  /// 이 화면의 목적은 통과가 아니라 첫 인상이고, 두 번 보여줄 인상이 아니다
+  Future<void> _afterEightSteps() async {
+    await OnboardingProgress.markEightStepsDone();
+    if (!mounted) return;
+    setState(() => _destination = const LoginScreen());
   }
 
   @override

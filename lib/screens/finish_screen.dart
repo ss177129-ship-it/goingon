@@ -7,8 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/auth_service.dart';
+import '../services/onboarding/push_permission_gate.dart';
+import '../services/push_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
 import '../widgets/brand_mark.dart';
@@ -27,6 +30,10 @@ class FinishScreen extends StatefulWidget {
   final String? myMood;
   final bool demo;
 
+  /// 닫기를 눌렀을 때 홈 대신 갈 곳. 온보딩 데모런은 여기서 홈으로 빠지면
+  /// 남은 온보딩(레벨·초대)을 통째로 건너뛴다
+  final VoidCallback? onDone;
+
   const FinishScreen({
     super.key,
     required this.sessionId,
@@ -36,6 +43,7 @@ class FinishScreen extends StatefulWidget {
     required this.myKcal,
     this.myMood,
     this.demo = false,
+    this.onDone,
   });
 
   @override
@@ -88,8 +96,34 @@ class _FinishScreenState extends State<FinishScreen> {
         _totalRuns = ((profile['totalRuns'] ?? 0) as num).toInt();
         _weekStreak = ((profile['weekStreak'] ?? 0) as num).toInt();
       });
+      _maybeAskPush(_totalRuns ?? 0);
     });
     _subscribeToResults();
+  }
+
+  /// 알림 권한을 묻는 **유일한 자리**(P5). iOS는 한 번 거절당하면 앱에서
+  /// 다시 물을 수 없어서, 이 질문은 계정당 한 번 쓸 수 있는 카드다.
+  /// 언제 쓸지의 판정은 [PushPermissionGate]가 한 곳에서 하고 여기서는
+  /// 따르기만 한다 — 조건이 화면마다 흩어지면 카드가 엉뚱한 데서 소모된다
+  Future<void> _maybeAskPush(int completedRuns) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!PushPermissionGate.shouldAsk(
+      completedRuns: completedRuns,
+      alreadyAsked: prefs.getBool(PushPermissionGate.prefsKey) ?? false,
+      isDemo: widget.demo,
+    )) {
+      return;
+    }
+    // 완료 화면이 눈에 들어온 **뒤에** 시스템 팝업이 뜨게 한다. 방금 무엇을
+    // 해냈는지 보이는 채로 묻는 것과, 팝업이 화면을 덮은 채 묻는 것은
+    // 같은 질문이 아니다
+    await Future.delayed(const Duration(milliseconds: 1200));
+    if (!mounted) return;
+    // 물었다는 사실을 먼저 남긴다. 요청 도중 앱이 죽어도 시스템은 이미
+    // 물어본 것으로 기억하므로, 여기서 안 남기면 다음 완주 때 아무 일도
+    // 일어나지 않는 팝업을 또 기다리게 된다
+    await prefs.setBool(PushPermissionGate.prefsKey, true);
+    await PushService.instance.requestAndStart(AuthService().uid);
   }
 
   void _subscribeToResults() {
@@ -288,10 +322,11 @@ class _FinishScreenState extends State<FinishScreen> {
             const SizedBox(height: 18),
             // ── CTA ──
             Pressable(
-              onTap: () => Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const RootScreen()),
-                  (_) => false),
+              onTap: widget.onDone ??
+                  () => Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const RootScreen()),
+                      (_) => false),
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 18),

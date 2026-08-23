@@ -44,6 +44,14 @@ service cloud.firestore {
       allow update: if request.auth != null && request.auth.uid == userId &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['username']);
 
+      // 온보딩 레벨 — 홈의 기본값을 정하는 답 하나(RunnerLevel).
+      // 값을 열거로 못박는 이유: 이 필드가 없으면 앱이 "온보딩 미완료"로
+      // 보고 다시 온보딩에 태우므로, 엉뚱한 문자열이 들어가면 계정이
+      // 온보딩과 홈 사이에 갇힌다
+      allow update: if request.auth != null && request.auth.uid == userId &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['level']) &&
+        request.resource.data.level in ['beginner', 'experienced'];
+
       // 프로필 사진 — 실제 이미지는 Storage(avatars/{uid}.jpg)에 있고 여기엔
       // 주소만 들어감. 사진을 지우면 필드 자체가 사라지므로(FieldValue.delete)
       // "photoUrl이 아예 없음"과 "문자열"만 유효한 상태임

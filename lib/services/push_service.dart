@@ -33,11 +33,32 @@ class PushService {
     return tap;
   }
 
-  /// 로그인·프로필 설정이 끝난 뒤 호출. 권한을 아직 안 물었으면 여기서 묻는다.
+  /// 앱 진입(RootScreen)에서 호출. **여기서는 권한을 묻지 않는다.**
   ///
-  /// 앱 첫 실행에 바로 묻지 않는 이유: 왜 알림이 필요한지 모르는 상태에서
-  /// 거절당하면 iOS는 다시 물을 수 없고, 설정에 들어가야만 되돌릴 수 있다
+  /// 예전에는 이 자리에서 물었다. 그 시점의 사용자는 이 앱이 무엇인지 아직
+  /// 모르고, "알림을 보내도 될까요?"에 그렇다고 할 이유가 없다. iOS는 한 번
+  /// 거절당하면 앱에서 다시 물을 수 없으므로 그 한 번이 곧 영영이다.
+  /// 묻는 자리는 **첫 완주 직후**로 옮겼다(P5, [requestAndStart] 참조).
+  ///
+  /// 아직 안 물어본 상태(notDetermined)면 조용히 아무것도 안 한다 —
+  /// getToken()을 부르는 것만으로 시스템 팝업이 뜨는 사고를 막기 위해서다
   Future<void> start(String uid) async {
+    try {
+      final settings = await _messaging.getNotificationSettings();
+      if (settings.authorizationStatus != AuthorizationStatus.authorized &&
+          settings.authorizationStatus != AuthorizationStatus.provisional) {
+        debugPrint('푸시 권한 미확정/거부 — 등록을 건너뜀');
+        return;
+      }
+      await _wire(uid);
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+    }
+  }
+
+  /// 권한을 **묻고** 등록까지 한다. 부르는 곳은 첫 완주 직후 하나뿐이고,
+  /// 언제 부를지의 판정은 PushPermissionGate가 한다
+  Future<void> requestAndStart(String uid) async {
     try {
       final settings = await _messaging.requestPermission(
         alert: true,
@@ -48,7 +69,15 @@ class PushService {
         debugPrint('푸시 권한 거부됨 — 요청은 앱을 열었을 때만 보이게 됨');
         return;
       }
+      await _wire(uid);
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+    }
+  }
 
+  /// 권한이 있다는 전제에서 리스너를 걸고 토큰을 등록한다
+  Future<void> _wire(String uid) async {
+    try {
       // 리스너를 **먼저** 건다. 아래 _registerToken은 iOS에서 실패할 수 있는데,
       // 순서가 반대면 그 예외 때문에 이 안전망이 아예 설치되지 않아 토큰이
       // 영영 저장되지 않는다 (실제로 그랬음 — 2026-08-14)
@@ -100,8 +129,19 @@ class PushService {
     debugPrint('푸시 토큰 등록 실패: $lastRegistrationError');
   }
 
-  /// 설정 화면에서 "지금 다시 시도" 용
-  Future<void> retry(String uid) => _registerToken(uid);
+  /// 설정 화면에서 "지금 다시 시도" 용.
+  ///
+  /// 아직 권한을 물은 적이 없으면 여기서 묻는다 — 첫 완주 전에 설정에
+  /// 들어와 이 줄을 직접 누른 사람은 알림을 **원한다고 말한 것**이라,
+  /// 카드를 아껴 둘 이유가 없다
+  Future<void> retry(String uid) async {
+    final settings = await _messaging.getNotificationSettings();
+    if (settings.authorizationStatus == AuthorizationStatus.notDetermined) {
+      await requestAndStart(uid);
+      return;
+    }
+    await _registerToken(uid);
+  }
 
   Future<void> _saveToken(String uid, String token) async {
     try {
