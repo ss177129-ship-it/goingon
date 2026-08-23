@@ -4,7 +4,12 @@ import { logger } from 'firebase-functions/v2';
 const db = admin.firestore();
 
 /** 알림 탭 시 앱이 어디로 갈지 결정하는 종류 */
-export type PushType = 'friendRequest' | 'friendAccepted' | 'runRequest';
+export type PushType =
+  | 'friendRequest'
+  | 'friendAccepted'
+  | 'runRequest'
+  /** 누군가 내 그날의 리듬과 달렸다 (P4, §3-3 3막) */
+  | 'ghostCompanion';
 
 interface SendOptions {
   /**

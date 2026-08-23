@@ -105,6 +105,55 @@ export const onRunRequest = onDocumentCreated(
   },
 );
 
+// ── 고스트런 3막 — 함께 달렸다는 소식 (P4, §3-3) ──────────────────────
+
+/**
+ * 누군가 내 지난 러닝의 리듬과 함께 달리면 알려준다.
+ *
+ * 이 알림이 고스트런을 **루프**로 만든다. 없으면 고스트는 일방적으로 소비되고
+ * 끝나서, 리듬을 남긴 사람에게는 아무 일도 일어나지 않는다. 도착한 소식에
+ * 원탭으로 응원하면 그 응원이 상대의 다음 러닝 시작에 재생된다(브리지, §5).
+ *
+ * 문구 규칙(§3-1): 승패·순위·추월 언어를 쓰지 않는다. "함께 달렸어요"이지
+ * "당신을 이겼어요"가 아니다. 공명 초는 **둘이 만든 것**이라 자랑이 아니라
+ * 안부에 가깝다.
+ */
+export const onGhostCompanion = onDocumentCreated(
+  'runs/{runId}/companions/{companionUid}',
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+    const ownerUid = data.ghostOwnerUid as string;
+    const companionUid = data.companionUid as string;
+    if (!ownerUid || ownerUid === companionUid) return;
+
+    // 하루에 같은 사람에게서 오는 소식은 3건까지만 개별 알림 (§3-3 빈도 상한).
+    // 넘는 것은 조용히 쌓이고 다이제스트가 가져간다(P7)
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const recent = await db
+      .collectionGroup('companions')
+      .where('ghostOwnerUid', '==', ownerUid)
+      .where('at', '>=', since)
+      .get();
+    if (recent.size > 3) {
+      logger.info(`고스트 알림 묶음 처리 — uid=${ownerUid} 오늘 ${recent.size}건`);
+      return;
+    }
+
+    const name = await displayName(companionUid);
+    const seconds = (data.resonanceSeconds as number) ?? 0;
+    const body =
+      seconds > 0
+        ? `${name}님이 당신의 리듬과 함께 달렸어요 — 시차 공명 ${seconds}초`
+        : `${name}님이 당신의 리듬과 함께 달렸어요`;
+
+    await sendToUser(ownerUid, '함께 달렸어요', body, 'ghostCompanion', {
+      runId: event.params.runId,
+      companionUid,
+    });
+  },
+);
+
 // ── 세션 정리 (예전엔 클라이언트가 억지로 하던 일) ─────────────────────
 
 /**

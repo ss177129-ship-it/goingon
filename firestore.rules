@@ -217,5 +217,60 @@ service cloud.firestore {
         (!touched('live') ||
           onlyMyKey(resource.data.get('live', {}), request.resource.data.live));
     }
+
+    // ── 고스트 (2026-08-23 P4) ──────────────────────────────────────
+    //
+    // 모든 러닝이 고스트가 된다(§3-2). 남의 그날과 달릴 수 있으려면 읽기가
+    // 열려야 하는데, **얼마나 열리는지는 주인이 정한다.** 기본은
+    // 페이스메이트만 — 1차 세그먼트는 기록 공개가 부담스러운 사람들이라
+    // 공개가 기본이면 첫 러닝을 아예 남기지 않는다.
+    match /runs/{runId} {
+      function mine() {
+        return request.auth != null && request.auth.uid == resource.data.uid;
+      }
+      // 서로 친구인가 — 한쪽 목록만 보면 상대가 나를 지운 뒤에도 계속 읽힌다
+      function pacemates() {
+        return request.auth != null &&
+          request.auth.uid in
+            get(/databases/$(database)/documents/users/$(resource.data.uid))
+              .data.get('friends', []);
+      }
+
+      allow get: if mine() ||
+        resource.data.get('visibility', 'pacemates') == 'everyone' ||
+        (resource.data.get('visibility', 'pacemates') == 'pacemates' && pacemates());
+
+      // 목록 조회는 '내 것' 아니면 페이스메이트 것만. 규칙은 쿼리 자체를
+      // 검사하지 못하므로 클라이언트가 uid를 좁혀 던지고, 문서 단위 판정은
+      // 위 get이 한다
+      allow list: if request.auth != null;
+
+      // 남길 때 자기 것으로만. uid를 남의 것으로 적으면 그 사람의 여정에
+      // 내가 달린 기록이 섞인다
+      allow create: if request.auth != null &&
+        request.resource.data.uid == request.auth.uid;
+
+      // 나중에 바꿀 수 있는 것은 공개 범위와 사연 한 마디뿐이다.
+      // 거리·시간·케이던스는 **남긴 뒤 불변** — 고친 기록으로 남과 달리면
+      // 그건 그날의 리듬이 아니다
+      allow update: if mine() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['visibility', 'story']);
+
+      allow delete: if mine();
+
+      // 함께 달렸다는 기록. 서버가 이것을 보고 알림을 보낸다(발송은 서버만).
+      // 쓰는 사람은 '함께 달린 나'이고, 문서 id가 내 uid라 한 사람이 같은
+      // 고스트에 여러 번 쌓을 수 없다
+      match /companions/{companionUid} {
+        allow read: if request.auth != null &&
+          (request.auth.uid == companionUid ||
+            request.auth.uid ==
+              get(/databases/$(database)/documents/runs/$(runId)).data.uid);
+        allow create, update: if request.auth != null &&
+          request.auth.uid == companionUid &&
+          request.resource.data.companionUid == request.auth.uid;
+      }
+    }
   }
 }
