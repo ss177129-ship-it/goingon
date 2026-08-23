@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../services/friend_service.dart';
+import '../services/resonance.dart' show SignalKind;
 import '../theme.dart';
+import 'cheer_sound.dart';
 import 'initial_avatar.dart';
 import 'go_toast.dart';
 
@@ -38,6 +40,9 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
   FriendCandidate? _found;
   String? _error;
   String? _notice;
+
+  /// 요청에 얹을 응원 소리. 자유 텍스트가 없는 자리라 이것이 첫 인사의 전부다
+  SignalKind _cheer = SignalKind.cheer;
 
   Future<void> _search() async {
     final input = _controller.text.trim();
@@ -95,7 +100,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
     try {
       switch (c.relation) {
         case FriendRelation.none:
-          await _friends.sendRequest(_myUid, c.uid);
+          await _friends.sendRequest(_myUid, c.uid, cheer: _cheer);
           _finish('${c.name}님에게 요청을 보냈어요. 수락하면 함께 달릴 수 있어요');
         case FriendRelation.requestSent:
           await _friends.cancelRequest(_myUid, c.uid);
@@ -151,7 +156,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('친구 찾기', style: GoTheme.serif(24)),
+            Text('페이스메이트 찾기', style: GoTheme.serif(24)),
             const SizedBox(height: 6),
             const Text('아이디로 찾아 요청을 보내면, 상대가 수락했을 때 연결돼요.',
                 style: TextStyle(fontSize: 13, color: GoColors.mid)),
@@ -212,6 +217,18 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
             if (c != null) ...[
               const SizedBox(height: 14),
               _foundCard(c),
+            ],
+            // 아직 아무 사이도 아닐 때만 — 이미 맺어졌거나 요청이 오간
+            // 상태에서 소리를 고르게 하면 무엇에 붙는 소리인지 모호해진다
+            if (c != null && c.relation == FriendRelation.none) ...[
+              const SizedBox(height: 14),
+              const Text('요청에 소리 하나를 얹어요',
+                  style: TextStyle(fontSize: 11, color: GoColors.dim)),
+              const SizedBox(height: 8),
+              CheerPicker(
+                selected: _cheer,
+                onChanged: (k) => setState(() => _cheer = k),
+              ),
             ],
             const SizedBox(height: 14),
             SizedBox(width: double.infinity, child: _actionButton(c)),

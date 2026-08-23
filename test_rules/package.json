@@ -4,8 +4,9 @@
   "type": "module",
   "description": "firestore.rules 회귀 테스트. 에뮬레이터에서만 돈다 — 실 프로젝트를 건드리지 않는다.",
   "scripts": {
-    "test": "firebase emulators:exec --only firestore --project goingon-rules-test '/usr/local/bin/node --test'",
-    "//test": "firebase CLI가 자기 번들 node(v20)를 PATH 앞에 놓아서 'node --test'가 --test를 모듈로 읽는다. 시스템 node를 절대경로로 부른다"
+    "test": "firebase emulators:exec --only firestore --project goingon-rules-test '/usr/local/bin/node --test --test-concurrency=1'",
+    "//test": "firebase CLI가 자기 번들 node(v20)를 PATH 앞에 놓아서 'node --test'가 --test를 모듈로 읽는다. 시스템 node를 절대경로로 부른다",
+    "//concurrency": "파일이 병렬로 돌면 clearFirestore가 서로를 지운다. 한 번에 하나씩"
   },
   "dependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",

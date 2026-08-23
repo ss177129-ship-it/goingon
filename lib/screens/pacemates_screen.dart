@@ -8,6 +8,7 @@ import '../services/friend_service.dart';
 import '../theme.dart';
 import '../widgets/friend_search_sheet.dart';
 import '../widgets/go_dialog.dart';
+import '../widgets/cheer_sound.dart';
 import '../widgets/go_toast.dart';
 import '../widgets/initial_avatar.dart';
 import 'today_partner_screen.dart';
@@ -113,7 +114,7 @@ class _PacematesScreenState extends State<PacematesScreen> {
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        // ── 상단 제목 + 친구 찾기 ──
+        // ── 상단 제목 + 페이스메이트 찾기 ──
         Padding(
           padding: const EdgeInsets.fromLTRB(22, 10, 12, 6),
           child: Row(children: [
@@ -122,7 +123,7 @@ class _PacematesScreenState extends State<PacematesScreen> {
             IconButton(
               onPressed: () => showFriendSearchSheet(context),
               icon: const Icon(Icons.search, color: GoColors.dim),
-              tooltip: '친구 찾기',
+              tooltip: '페이스메이트 찾기',
             ),
           ]),
         ),
@@ -132,10 +133,10 @@ class _PacematesScreenState extends State<PacematesScreen> {
         if (_requests.isNotEmpty) ..._requestSection(),
         // ── 내 프로필 카드 ──
         _profileCard(friends.length),
-        // ── 같이 뛰는 사람들 ──
+        // ── 페이스메이트 ──
         const Padding(
           padding: EdgeInsets.fromLTRB(22, 18, 22, 8),
-          child: Text('같이 뛰는 사람들',
+          child: Text('페이스메이트',
               style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -206,10 +207,22 @@ class _PacematesScreenState extends State<PacematesScreen> {
                         style: const TextStyle(
                             fontSize: 11, color: GoColors.mid)),
                   ],
+                  const SizedBox(height: 6),
+                  // 요청에 얹혀 온 소리 — 자유 텍스트가 없는 자리라
+                  // 이것이 상대가 보낸 첫 인사의 전부다
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: CheerReplay(kind: r.cheer),
+                  ),
                 ]),
           ),
         ]),
         const SizedBox(height: 12),
+        // 수락이 무엇을 여는지 먼저 말한다. 맺고 나서 알게 되는 결과는
+        // 동의가 아니다
+        const Text('수락하면 서로의 러닝이 서로의 서랍에 들어와요',
+            style: TextStyle(fontSize: 11, height: 1.4, color: GoColors.mid)),
+        const SizedBox(height: 10),
         Row(children: [
           Expanded(
             child: OutlinedButton(
@@ -238,7 +251,7 @@ class _PacematesScreenState extends State<PacematesScreen> {
                     borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => _respondToRequest(r, accept: true),
-              child: const Text('수락하고 연결',
+              child: const Text('수락하기',
                   style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -573,7 +586,7 @@ class _PacematesScreenState extends State<PacematesScreen> {
         border: Border.all(color: GoColors.line, width: 1.5),
       ),
       child: Column(children: [
-        Text('아직 함께 뛰는 사람이 없어요',
+        Text('아직 페이스메이트가 없어요',
             style: GoTheme.serif(18, color: GoColors.mid)),
         const SizedBox(height: 6),
         const Text('한 명만 있으면 고잉온이 시작돼요.',
@@ -582,7 +595,7 @@ class _PacematesScreenState extends State<PacematesScreen> {
     );
   }
 
-  /// 친구 찾기 히어로 — 프로토타입의 검은 카드
+  /// 페이스메이트 찾기 히어로 — 프로토타입의 검은 카드
   Widget _inviteHero() {
     return GestureDetector(
       onTap: () => showFriendSearchSheet(context),
@@ -615,7 +628,7 @@ class _PacematesScreenState extends State<PacematesScreen> {
                     borderRadius: BorderRadius.circular(14)),
               ),
               onPressed: () => showFriendSearchSheet(context),
-              child: const Text('친구 찾기',
+              child: const Text('페이스메이트 찾기',
                   style: TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w600,
                       color: GoColors.ink)),

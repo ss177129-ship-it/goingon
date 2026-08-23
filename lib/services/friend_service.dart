@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'resonance.dart' show SignalKind;
 import 'shared_stream.dart';
 
 /// 친구 연결 — 아이디로 찾아 **요청을 보내고, 상대가 수락해야** 연결됨
@@ -21,6 +22,20 @@ class FriendService {
 
   DocumentReference<Map<String, dynamic>> _req(String from, String to) =>
       _db.collection('friendRequests').doc('${from}_$to');
+
+  /// 페이스메이트 간선 — **진실의 원천**(P6.5).
+  ///
+  /// `users.friends`(옛 구조)와 `users.following`(새 구조)은 규칙이 쓰려고
+  /// 두는 **투영**이다. 목록 규칙이 `exists(follows/...)`를 쓰면 평가하는
+  /// 문서마다 경로가 달라져 접근 한도(10)를 넘긴다 — 내 문서 하나를 읽는
+  /// 배열 방식은 몇 명이든 한 번으로 끝난다.
+  ///
+  /// 구조가 비대칭인 이유는 v1.1의 게이트형 DM이 '맞팔' 위에 설계돼 있기
+  /// 때문이다. v1.0의 UI는 단일 상태(맺어졌거나 아니거나)라 수락 시 두
+  /// 간선이 함께 생기지만, 나중에 한쪽만 남는 상태를 표현할 수 있어야
+  /// 그때 다시 이관하지 않는다
+  DocumentReference<Map<String, dynamic>> _edge(String follower, String followee) =>
+      _db.collection('follows').doc('${follower}_$followee');
 
   // ── 검색 ────────────────────────────────────────────────────────────
 
@@ -54,10 +69,10 @@ class FriendService {
     if (otherUid == myUid) return FriendRelation.self;
 
     final me = await _db.collection('users').doc(myUid).get();
-    final myFriends = List<String>.from(me.data()?['friends'] ?? const []);
     final myBlocked = List<String>.from(me.data()?['blocked'] ?? const []);
     if (myBlocked.contains(otherUid)) return FriendRelation.blockedByMe;
-    if (myFriends.contains(otherUid)) return FriendRelation.friend;
+    // 이관 중에는 계정마다 어느 배열에 들어 있는지가 다르다. 둘 다 본다
+    if (mateUids(me.data()).contains(otherUid)) return FriendRelation.friend;
 
     final sent = await _req(myUid, otherUid).get();
     if (sent.exists) return FriendRelation.requestSent;
@@ -69,11 +84,21 @@ class FriendService {
 
   // ── 요청 ────────────────────────────────────────────────────────────
 
-  /// 요청 보내기. 문서 id가 고정이라 여러 번 눌러도 요청은 하나만 남음
-  Future<void> sendRequest(String myUid, String toUid) async {
+  /// 요청 보내기. 문서 id가 고정이라 여러 번 눌러도 요청은 하나만 남음.
+  ///
+  /// [cheer]는 요청에 얹는 **응원 사운드 하나**다. 자유 텍스트를 두지 않는
+  /// 이유는 첫 접촉이 곧 자유 입력이 되면 그 순간부터 이 앱이 유해 텍스트를
+  /// 걸러야 하는 제품이 되기 때문이고, 애초에 여기서 필요한 것은 문장이
+  /// 아니라 "반갑다"는 소리 하나다
+  Future<void> sendRequest(
+    String myUid,
+    String toUid, {
+    SignalKind cheer = SignalKind.cheer,
+  }) async {
     await _req(myUid, toUid).set({
       'fromUid': myUid,
       'toUid': toUid,
+      'cheer': cheer.gestureType,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
@@ -103,6 +128,8 @@ class FriendService {
           username: (sender.data()?['username'] as String?) ?? '',
           photoUrl: sender.data()?['photoUrl'] as String?,
           createdAt: (snap.docs[i].data()['createdAt'] as Timestamp?)?.toDate(),
+          cheer: SignalKind.fromGestureType(
+              (snap.docs[i].data()['cheer'] as String?) ?? ''),
         ));
       }
       out.sort((a, b) => (b.createdAt ?? DateTime(0))
@@ -117,6 +144,14 @@ class FriendService {
   Future<void> acceptRequest(String myUid, String fromUid) async {
     final batch = _db.batch();
     batch.delete(_req(fromUid, myUid));
+    // 두 간선을 함께 만든다. v1.0의 UI는 단일 상태라 수락은 곧 맞팔이다 —
+    // 비대칭은 구조가 표현할 수 있을 뿐 아직 일어나지 않는다
+    batch.set(_edge(fromUid, myUid),
+        {'followerUid': fromUid, 'followeeUid': myUid,
+         'createdAt': FieldValue.serverTimestamp()});
+    batch.set(_edge(myUid, fromUid),
+        {'followerUid': myUid, 'followeeUid': fromUid,
+         'createdAt': FieldValue.serverTimestamp()});
     // 서로 요청을 보낸 상태라면 반대쪽도 정리 — 남겨두면 상대 목록에 유령
     // 요청이 남고, 이미 친구라 수락이 규칙에서 거부됨.
     // (존재하지 않는 문서를 지우려 하면 규칙이 resource를 못 읽어 거부되므로
@@ -124,11 +159,14 @@ class FriendService {
     if ((await _req(myUid, fromUid).get()).exists) {
       batch.delete(_req(myUid, fromUid));
     }
+    // 두 배열에 함께 쓴다(expand). friends는 이관이 끝나면 사라진다
     batch.update(_db.collection('users').doc(myUid), {
       'friends': FieldValue.arrayUnion([fromUid]),
+      'following': FieldValue.arrayUnion([fromUid]),
     });
     batch.update(_db.collection('users').doc(fromUid), {
       'friends': FieldValue.arrayUnion([myUid]),
+      'following': FieldValue.arrayUnion([myUid]),
     });
     await batch.commit();
   }
@@ -144,11 +182,18 @@ class FriendService {
   /// 세션 생성 규칙상 상대는 더 이상 GO? 요청을 보낼 수 없게 됨
   Future<void> removeFriend(String myUid, String friendUid) async {
     final batch = _db.batch();
+    // 간선은 있거나 없다 — 없는 것을 지워도 규칙이 resource를 못 읽어
+    // 거부되므로, 존재를 확인한 것만 배치에 넣는다(친구 요청에서 겪은 함정)
+    for (final ref in [_edge(myUid, friendUid), _edge(friendUid, myUid)]) {
+      if ((await ref.get()).exists) batch.delete(ref);
+    }
     batch.update(_db.collection('users').doc(myUid), {
       'friends': FieldValue.arrayRemove([friendUid]),
+      'following': FieldValue.arrayRemove([friendUid]),
     });
     batch.update(_db.collection('users').doc(friendUid), {
       'friends': FieldValue.arrayRemove([myUid]),
+      'following': FieldValue.arrayRemove([myUid]),
     });
     await batch.commit();
   }
@@ -162,12 +207,17 @@ class FriendService {
     final batch = _db.batch();
     if (outgoing.exists) batch.delete(_req(myUid, otherUid));
     if (incoming.exists) batch.delete(_req(otherUid, myUid));
+    for (final ref in [_edge(myUid, otherUid), _edge(otherUid, myUid)]) {
+      if ((await ref.get()).exists) batch.delete(ref);
+    }
     batch.update(_db.collection('users').doc(myUid), {
       'blocked': FieldValue.arrayUnion([otherUid]),
       'friends': FieldValue.arrayRemove([otherUid]),
+      'following': FieldValue.arrayRemove([otherUid]),
     });
     batch.update(_db.collection('users').doc(otherUid), {
       'friends': FieldValue.arrayRemove([myUid]),
+      'following': FieldValue.arrayRemove([myUid]),
     });
     await batch.commit();
   }
@@ -193,7 +243,7 @@ class FriendService {
   /// 그대로 두면 같은 목록을 Firestore에서 두 번 듣게 되므로 [_shared]로
   /// 원본 구독을 하나로 묶는다 — 호출부는 평범한 스트림으로 쓰면 된다
   Stream<List<Map<String, dynamic>>> friendsStream(String myUid) =>
-      _shared.of(myUid, () => _profilesFromField(myUid, 'friends'));
+      _shared.of(myUid, () => _mateProfiles(myUid));
 
   /// 인스턴스가 화면마다 새로 만들어지므로 공유 캐시는 클래스 전체가 나눠 씀
   static final _shared = SharedStream<List<Map<String, dynamic>>>();
@@ -207,6 +257,29 @@ class FriendService {
         .map((doc) => List<String>.from(doc.data()?[field] ?? const []))
         .distinct(_sameIds)
         .asyncMap(_loadProfiles);
+  }
+
+  Stream<List<Map<String, dynamic>>> _mateProfiles(String myUid) {
+    return _db
+        .collection('users')
+        .doc(myUid)
+        .snapshots()
+        .map((doc) => mateUids(doc.data()))
+        .distinct(_sameIds)
+        .asyncMap(_loadProfiles);
+  }
+
+  /// 페이스메이트 uid — **두 구조의 합집합**(expand 단계).
+  ///
+  /// 이관 전 계정은 friends에만, 이관 후 계정은 following에만 들어 있다.
+  /// 둘 다 보면 이관 도중 어느 시점에도 목록이 비지 않는다. contract에서
+  /// following 하나만 남는다
+  static List<String> mateUids(Map<String, dynamic>? user) {
+    final out = <String>{
+      ...List<String>.from(user?['following'] ?? const []),
+      ...List<String>.from(user?['friends'] ?? const []),
+    };
+    return out.toList()..sort();
   }
 
   Future<List<Map<String, dynamic>>> _loadProfiles(List<String> ids) async {
@@ -278,12 +351,18 @@ class FriendRequest {
   /// 프로필 사진(Storage 주소). 없으면 이름 첫 글자로 그림
   final String? photoUrl;
   final DateTime? createdAt;
+
+  /// 요청에 얹혀 온 응원 사운드 하나. 자유 텍스트가 없는 자리라
+  /// **이것이 첫 인사의 전부**다
+  final SignalKind cheer;
+
   const FriendRequest({
     required this.fromUid,
     required this.name,
     required this.username,
     this.photoUrl,
     this.createdAt,
+    this.cheer = SignalKind.cheer,
   });
 }
 
