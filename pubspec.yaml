@@ -71,6 +71,9 @@ flutter:
     # 산출물이 이 저장소에 없어 같은 규격(모노 44.1k, 8초 심리스 루프)으로
     # 만들어 넣었다
     - assets/audio/
+    # 에피소드 채보. 에피소드는 코드가 아니라 데이터다 — 콘텐츠 하나를
+    # 더할 때마다 앱을 다시 심사받지 않기 위해서다 (기술설계서 §3-6)
+    - assets/episodes/
 
   # 패밀리 이름은 lib/theme.dart의 _serifFamily/_sansFamily와 일치해야 함
   fonts:

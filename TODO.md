@@ -17,7 +17,12 @@
   - 정수비 폴리리듬(1:2, 2:3). 러닝 대역 전체를 훑는 테스트가 "정수비가 엉뚱한 짝을 공명시키지 않는다"를 지킨다. 대역 밖 값은 0이 아니라 null
   - 입력 소스 추상화: `PartnerCadenceSource` — `LivePartnerCadence`(벽시계·6초 staleness) / `GhostCadenceTimeline`(세션 경과 시간축·delta 압축) / `FirstAvailableCadence`
   - **케이던스 파라미터는 여전히 실측 미검증** — maxGapSpm 30, resonantGapSpm 3은 설계 초기값이고 CadenceEngine도 합성 검증만 통과했다. P1 실주행 후 재검토
-- [ ] **P3 — 세션 상태머신 + 에피소드 채보** — SessionPhase(intro→build→mission→climax→outro→reverb→freeRun/chain/cooldown). reverb 판정은 GaitState가 결정(running 유지 → freeRun 자동, walking 10초 → cooldown). 채보 JSON + ChartPlayer + 에피소드 '기차' 1종. 전화 수신 자동 일시정지→꼭지 재개, 4분 이상 중단 시 부분 완주. run_recovery 경로 유지
+- [x] **P3 — 세션 상태머신 + 에피소드 채보** (2026-08-23) — SessionPhase(intro→build→mission→climax→outro→reverb→freeRun/chain/cooldown). reverb 판정은 GaitState가 결정(running 유지 → freeRun 자동, walking 10초 → cooldown). 채보 JSON + ChartPlayer + 에피소드 '기차' 1종. 전화 수신 자동 일시정지→꼭지 재개, 4분 이상 중단 시 부분 완주. run_recovery 경로 유지
+  - `SessionController` — 타이머를 갖지 않고 시계를 주입받는다. 8분 시나리오를 밀리초 단위로 시험할 수 있고 백그라운드에서 틱이 밀려도 결과가 같다
+  - 입력은 셋뿐: 발(GaitState) · 꼭지(문맥이 뜻을 정함) · 전화(자동 일시정지). **화면은 입력 목록에 없다**
+  - 채보는 데이터(`assets/episodes/episode_train.chart.json`). 화자 6문장·스퍼트 30초 상한을 `Chart.validate`가 로딩 시점에 거른다
+  - 스템은 기존 pad 에셋 임시 재활용 — 정식 스템 3벌 제작은 M0-b의 귀 판정 후 별도 트랙
+  - **남은 것: run_screen 배선은 P5**(run_screen은 폐기 예정이라 지금 배선하면 두 번 일한다). 전화 인터럽션을 audio_session_controller와 잇는 것도 P5에서
 - [ ] **P4 — 고스트런 3막** — 모든 러닝이 고스트가 되도록 저장 스키마에 케이던스 타임라인(1초, delta 압축)+사연 필드. 공개 기본 '페이스메이트만', GPS 경로 기본 비저장. GhostEngine을 P2 인터페이스의 두 번째 입력으로 → 시차 공명. 종료 알림은 서버 발송(functions/push.ts). 승패 언어 금지
 - [ ] **P5 — 새 홈 2종 + 온보딩 4장** — 온보딩: 여덟 걸음 → 데모런(demo_resonance 재활용, '가상의 페이서' 명시) → 레벨 질문 1개 → 초대 제안. 알림 권한은 첫 완주 직후. 홈은 레벨 분기(입문자=오늘의 8분 / 경험자=자유런). **lobby_screen 삭제 → '오늘의 상대 선택'으로 교체.** 심사관용 데모 모드 진입점은 유지하되 내용물을 데모런과 통합
 - [ ] **P6 — 완주 후 5분** — 아웃트로(귀에서 착륙) → 쿨다운 디브리핑 + 음성 한 마디 채집(20초, 3회 무응답 시 빈도 하향) → 결과 화면 순서 고정(오늘의 트랙 ▶ / 함께 요약 / 여정 / 기록 접힘). 공유 카드는 기존 RepaintBoundary 경로 재활용. 응원 이월(브리지) — cheers 문서에 queued/bridged 상태
