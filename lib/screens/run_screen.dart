@@ -33,7 +33,7 @@ import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
 import '../widgets/resonance_canvas.dart';
 import 'cooldown_screen.dart';
-import 'finish_screen.dart';
+import 'result_screen.dart';
 
 /// 강제 종료 대비 스냅샷을 남기는 최소 간격.
 /// 예전에도 5초 주기였고 그대로 유지한다. 달라진 것은 이제 타이머뿐 아니라
@@ -517,7 +517,7 @@ class _RunScreenState extends State<RunScreen>
 
     // 완주 → **쿨다운** → 결과. 통계 화면이 정점을 곧바로 식히지 않도록
     // 걷는 동안의 디브리핑과 한 마디를 사이에 둔다(§5-2)
-    FinishScreen result() => FinishScreen(
+    ResultScreen result() => ResultScreen(
           sessionId: widget.sessionId,
           partnerName: widget.partnerName,
           mySeconds: _seconds,
@@ -527,6 +527,16 @@ class _RunScreenState extends State<RunScreen>
           demo: widget.demo,
           onDone: widget.onFinished,
           partnerSnapshot: _ghostSnapshot,
+          cadence: _recorder?.cadence ?? const [],
+          journeyKm: journeyKm,
+          resonanceSeconds: _resonanceSeconds,
+          // 응원은 고스트의 주인에게 간다. 내 지난 러닝과 달렸다면 보낼
+          // 곳이 없다 — 나에게 응원을 보낼 수는 없다
+          cheerTo: widget.ghost != null &&
+                  widget.ghost!.uid != AuthService().uid
+              ? widget.ghost!.uid
+              : null,
+          runId: widget.ghost?.id,
         );
 
     final ask = await VoicePrompt.shouldAskNow(

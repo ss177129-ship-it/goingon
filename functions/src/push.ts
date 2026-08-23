@@ -9,7 +9,9 @@ export type PushType =
   | 'friendAccepted'
   | 'runRequest'
   /** 누군가 내 그날의 리듬과 달렸다 (P4, §3-3 3막) */
-  | 'ghostCompanion';
+  | 'ghostCompanion'
+  /** 응원이 도착했다 — **예고만**이고 내용은 다음 러닝 출발선에서 (P6, §5-4) */
+  | 'cheer';
 
 interface SendOptions {
   /**

@@ -11,7 +11,7 @@ import '../services/run_service.dart';
 import '../widgets/bottom_nav.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
-import 'finish_screen.dart';
+import 'result_screen.dart';
 import 'home_screen.dart';
 import 'settings_screen.dart';
 import 'us_screen.dart';
@@ -106,14 +106,18 @@ class _RootScreenState extends State<RootScreen> {
     }
     await RunRecovery.clear();
     if (!mounted) return;
+    // 복구된 기록에는 케이던스 타임라인이 없다 — 스냅샷은 거리와 시간만
+    // 담는다(5초마다 쓰는 값이라 가벼워야 한다). 리듬 자리는 비고,
+    // 화면은 '리듬이 기록되지 않았어요'라고 사실대로 말한다
     Navigator.push(context, MaterialPageRoute(
-      builder: (_) => FinishScreen(
+      builder: (_) => ResultScreen(
         sessionId: snapshot.sessionId,
         partnerName: snapshot.partnerName,
         mySeconds: snapshot.seconds,
         myKm: snapshot.km,
         myKcal: kcal,
-        myMood: null,
+        cadence: const [],
+        journeyKm: snapshot.km,
       ),
     ));
   }

@@ -154,6 +154,33 @@ export const onGhostCompanion = onDocumentCreated(
   },
 );
 
+/**
+ * 응원이 도착했다 — **예고만 보낸다**(§5-4).
+ *
+ * 내용(누가 어떤 응원을)을 푸시에 실으면 그 자리에서 소모되고 끝난다.
+ * 아껴서 다음 러닝의 출발선에 놓아야 여운이 연료가 되고, 세션이 직선이
+ * 아니라 고리가 된다. 그래서 이 알림이 하는 말은 "도착했다"까지다.
+ *
+ * 문법 규칙(§5-5): 기대감이지 죄책감이 아니다. "안 뛰면 스트릭 잃어요"가
+ * 아니라 "기다리고 있어요".
+ */
+export const onCheer = onDocumentCreated('cheers/{cheerId}', async (event) => {
+  const data = event.data?.data();
+  if (!data) return;
+  const fromUid = data.fromUid as string;
+  const toUid = data.toUid as string;
+  if (!fromUid || !toUid || fromUid === toUid) return;
+
+  const name = await displayName(fromUid);
+  await sendToUser(
+    toUid,
+    '응원이 도착했어요',
+    `${name}님이 응원을 남겼어요. 다음 러닝을 시작할 때 들려드릴게요.`,
+    'cheer',
+    { cheerId: event.params.cheerId, fromUid },
+  );
+});
+
 // ── 세션 정리 (예전엔 클라이언트가 억지로 하던 일) ─────────────────────
 
 /**

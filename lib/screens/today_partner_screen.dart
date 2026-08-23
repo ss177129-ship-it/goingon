@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 
@@ -8,6 +6,7 @@ import '../services/ghost/ghost_run.dart';
 import '../services/ghost/today_partner.dart';
 import '../services/ghost/today_partner_loader.dart';
 import '../theme.dart';
+import '../widgets/cadence_wave.dart';
 import '../widgets/pressable.dart';
 import 'run_screen.dart';
 
@@ -205,10 +204,8 @@ class _TodayPartnerScreenState extends State<TodayPartnerScreen> {
             // 나(lime)가 아니라 상대(coral)의 것이므로 코랄
             SizedBox(
               height: 22,
-              child: CustomPaint(
-                painter: _CadenceSpark(g.cadence),
-                size: Size.infinite,
-              ),
+              child: CadenceWave(g.cadence,
+                  color: GoColors.coralDark.withValues(alpha: .55)),
             ),
           ],
         ),
@@ -245,48 +242,4 @@ class _TodayPartnerScreenState extends State<TodayPartnerScreen> {
     if (h < 21) return '저녁';
     return '밤';
   }
-}
-
-/// 케이던스 스파크라인. 값이 없는 초(모름)는 **선을 끊는다** —
-/// 이어 그리면 없는 사실을 그리는 셈이다
-class _CadenceSpark extends CustomPainter {
-  const _CadenceSpark(this.spm);
-
-  final List<double?> spm;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final known = spm.whereType<double>();
-    if (known.length < 2) return;
-    final lo = known.reduce(math.min), hi = known.reduce(math.max);
-    final span = (hi - lo).abs() < 1 ? 1.0 : hi - lo;
-
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
-      ..strokeCap = StrokeCap.round
-      ..color = GoColors.coralDark.withValues(alpha: .55);
-
-    final path = Path();
-    var drawing = false;
-    for (var i = 0; i < spm.length; i++) {
-      final v = spm[i];
-      if (v == null) {
-        drawing = false;
-        continue;
-      }
-      final x = size.width * (i / (spm.length - 1));
-      final y = size.height * (1 - (v - lo) / span);
-      if (drawing) {
-        path.lineTo(x, y);
-      } else {
-        path.moveTo(x, y);
-        drawing = true;
-      }
-    }
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(_CadenceSpark old) => old.spm != spm;
 }
