@@ -11,6 +11,7 @@ import '../widgets/go_dialog.dart';
 import '../widgets/initial_avatar.dart';
 import '../widgets/go_toast.dart';
 import 'onboarding/demo_run_screen.dart';
+import 'pacemates_screen.dart';
 import 'login_screen.dart';
 import 'profile_edit_screen.dart';
 
@@ -351,6 +352,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onChanged: _soundOn ? _setBriefing : null,
         ),
         onTap: _soundOn ? () => _setBriefing(!_briefingOn) : null,
+      ),
+      _row(
+        icon: Icons.people_alt_outlined,
+        title: '페이스메이트',
+        subtitle: '함께 달릴 사람을 찾고, 온 요청에 답해요',
+        onTap: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const PacematesScreen())),
       ),
       _row(
         icon: Icons.block,

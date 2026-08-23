@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 
-/// 하단 탭 — 홈 / 우리 / 설정 (프로토타입 .nav-bar)
+/// 하단 탭 — 홈 / 여정 / 프로필.
+///
+/// 이름이 바뀐 것은 개편(P5)에서 각 탭이 가리키는 것이 달라졌기 때문이다.
+/// '우리'는 여정(누적)을 보여주는 화면이었고, '설정'에는 프로필·페이스메이트가
+/// 함께 있다. 와이어프레임의 네 번째 탭 '서랍'은 화면이 생기는 P7에서 붙는다
 class GoBottomNav extends StatelessWidget {
   final int index;
   final ValueChanged<int> onChanged;
@@ -19,8 +23,8 @@ class GoBottomNav extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(28, 10, 28, 6),
       child: Row(children: [
         _item(0, Icons.home_rounded, '홈'),
-        _item(1, Icons.people_alt_outlined, '우리'),
-        _item(2, Icons.settings_outlined, '설정'),
+        _item(1, Icons.timeline_outlined, '여정'),
+        _item(2, Icons.person_outline, '프로필'),
       ]),
     );
   }

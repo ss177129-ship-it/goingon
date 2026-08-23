@@ -16,7 +16,11 @@ import 'home_screen.dart';
 import 'settings_screen.dart';
 import 'us_screen.dart';
 
-/// 앱의 루트 셸 — 홈 / 우리 / 설정 세 탭을 하단 네비게이션으로 전환.
+/// 앱의 루트 셸 — 홈 / 여정 / 프로필 세 탭을 하단 네비게이션으로 전환.
+///
+/// 와이어프레임의 탭바는 넷(홈·서랍·여정·프로필)이지만 '서랍'(고스트 피드)은
+/// 아직 화면이 없다. 빈 탭을 먼저 세우는 대신, 그 화면이 생기는 트랙(P7)에서
+/// 함께 넣는다 — 눌러도 아무것도 없는 탭은 만들다 만 앱의 냄새다.
 /// 진입 시, 지난번 러닝 중 앱이 강제 종료돼 남은 기록(RunRecovery)이 있으면
 /// 마무리를 제안함 — 이게 없으면 폰이 꺼지거나 앱이 죽는 순간 그날 러닝이
 /// 통째로 사라짐
@@ -71,8 +75,9 @@ class _RootScreenState extends State<RootScreen> {
     final confirmed = await GoDialog.confirm(
       context,
       title: '마치지 못한 러닝이 있어요',
-      body:
-          '${snapshot.partnerName}와 달리던 기록이 남아 있어요.\n${snapshot.km.toStringAsFixed(1)}km · $timeText\n이 기록을 저장할까요?',
+      body: snapshot.partnerName.isEmpty
+          ? '달리던 기록이 남아 있어요.\n${snapshot.km.toStringAsFixed(1)}km · $timeText\n이 기록을 저장할까요?'
+          : '${snapshot.partnerName}와 달리던 기록이 남아 있어요.\n${snapshot.km.toStringAsFixed(1)}km · $timeText\n이 기록을 저장할까요?',
       confirmLabel: '기록 저장',
       cancelLabel: '버리기',
     );
@@ -83,8 +88,15 @@ class _RootScreenState extends State<RootScreen> {
 
     final kcal = LocationService.estimateKcal(snapshot.seconds);
     try {
-      await RunService().submitResult(snapshot.sessionId, AuthService().uid,
-          seconds: snapshot.seconds, km: snapshot.km, kcal: kcal);
+      // 세션이 없던 러닝(자유런·고스트런)은 집계만 올린다. 예전에는 세션
+      // 러닝만 있어서 빈 sessionId가 존재할 수 없었는데, P5에서 세션 없는
+      // 러닝이 생기면서 이 갈래가 필요해졌다 — 없으면 복구가 조용히 실패한다
+      if (snapshot.sessionId.isEmpty) {
+        await RunService().submitSoloResult(AuthService().uid, km: snapshot.km);
+      } else {
+        await RunService().submitResult(snapshot.sessionId, AuthService().uid,
+            seconds: snapshot.seconds, km: snapshot.km, kcal: kcal);
+      }
     } catch (e, stack) {
       // 스냅샷은 지우지 않음 — 다음 실행 때 다시 제안돼 재시도 기회가 남음
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
@@ -114,10 +126,10 @@ class _RootScreenState extends State<RootScreen> {
           Expanded(
             child: IndexedStack(
               index: _index,
-              children: const [
-                HomeScreen(),
-                UsScreen(),
-                SettingsScreen(),
+              children: [
+                HomeScreen(onOpenJourney: () => setState(() => _index = 1)),
+                const UsScreen(),
+                const SettingsScreen(),
               ],
             ),
           ),

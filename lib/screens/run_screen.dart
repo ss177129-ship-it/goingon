@@ -14,6 +14,9 @@ import '../services/auth_service.dart';
 import '../services/cadence_service.dart';
 import '../services/demo_resonance.dart';
 import '../services/cadence/partner_cadence.dart';
+import '../services/ghost/ghost_engine.dart';
+import '../services/ghost/ghost_run.dart';
+import '../services/ghost/ghost_service.dart';
 import '../services/live_share.dart';
 import '../services/location_service.dart';
 import '../services/resonance.dart';
@@ -42,9 +45,18 @@ const _kStopButtonSize = 76.0;
 /// 러닝 화면 — 각자 GPS로 기록하고, 케이던스·페이스·거리를 실시간으로
 /// 주고받아 공명을 만든다. 합산은 여전히 완료 후에 한다
 class RunScreen extends StatefulWidget {
+  /// 세션 문서 id. **빈 문자열이면 세션이 없는 러닝**이다(자유런·고스트런).
+  /// 혼자 달린 러닝에는 세션이 없고, 그래도 고스트는 남는다(§3-2)
   final String sessionId;
+
+  /// 화면과 브리핑이 부르는 이름. 혼자면 빈 문자열
   final String partnerName;
   final bool demo;
+
+  /// 시차 동행 상대. 있으면 이 사람의 그날 리듬이 공명 엔진의 입력이 된다 —
+  /// **라이브와 같은 인터페이스로 꽂힌다**(P2). 시차 공명이 동시 공명과
+  /// 다른 코드를 타지 않는 것이 그 설계의 요점이었다
+  final GhostRun? ghost;
 
   /// 이만큼 달리면 스스로 마친다. **데모 전용이다** — 실제 러닝에 상한을
   /// 두면 그건 러닝이 아니라 타이머고, 8분 에피소드조차 상한이 아니라
@@ -61,6 +73,7 @@ class RunScreen extends StatefulWidget {
       required this.sessionId,
       required this.partnerName,
       this.demo = false,
+      this.ghost,
       this.autoFinishAfter,
       this.onFinished});
 
@@ -101,11 +114,25 @@ class _RunScreenState extends State<RunScreen>
   StreamSubscription<double>? _cadenceSub;
   double? _myCadence;
 
-  /// 상대 케이던스의 출처. 지금은 라이브 하나뿐이지만, 고스트(P4)가 붙으면
-  /// 여기만 바뀌고 아래 발맞춤 경로는 그대로다 — 시차 공명이 라이브 공명과
-  /// 같은 판정을 타게 하는 것이 P2의 목적이었다
-  final PartnerCadenceSource _partnerCadence = LivePartnerCadence();
+  /// 상대 케이던스의 출처. 라이브(세션)와 고스트(시차) 둘 다 여기 꽂히고,
+  /// 아래 발맞춤 경로는 어느 쪽이 꽂혔는지 모른다 — 그것이 P2의 목적이었다
+  final _live = LivePartnerCadence();
+  late final PartnerCadenceSource _partnerCadence;
   final _liveGate = LiveWriteGate();
+
+  /// 시차 동행 재생기. 없으면 상대가 없는 러닝이다
+  GhostEngine? _ghostEngine;
+
+  /// **모든 러닝이 고스트가 된다**(§3-2). 데모만 빼고 늘 돈다 —
+  /// 혼자 달린 오늘이 누군가의 내일 동반자가 되는 것이 이 앱의 루프다
+  GhostRecorder? _recorder;
+
+  /// 공명으로 보낸 시간(초). 엔진은 "지금 얼마나 유지 중인가"만 알고
+  /// 누적은 갖지 않아서(세션의 성질이지 엔진의 성질이 아니다) 여기서 센다
+  int _resonanceSeconds = 0;
+
+  /// 세션이 없는 러닝인가 — 자유런·고스트런
+  bool get _solo => widget.sessionId.isEmpty;
 
   // ── 멈춤 길게 누르기 진행 링 ──
   // 링이 차는 시간은 [kLongPressTimeout]과 같아야 한다 — 링이 다 찬 순간과
@@ -146,7 +173,11 @@ class _RunScreenState extends State<RunScreen>
       // 케이던스는 없을 수 있다(시뮬레이터·권한 거부). 그때는 그냥 값이
       // 안 오고, 공명은 '함께' 고정으로 남는다 — 기능 저하이지 실패가 아니다
       _cadenceSub = CadenceService().stream().listen((spm) => _myCadence = spm);
+      _recorder = GhostRecorder()..start();
     }
+    final ghost = widget.ghost;
+    _ghostEngine = ghost == null ? null : GhostEngine(ghost);
+    _partnerCadence = _ghostEngine ?? _live;
     _stateSub = _resonance.events.listen((e) {
       if (e is! ResonanceStateChanged || !mounted) return;
       setState(() => _syncState = e.to);
@@ -156,7 +187,7 @@ class _RunScreenState extends State<RunScreen>
           ..addListener(() => _stopHold.value = _stopHoldController.value);
     WakelockPlus.enable();
     _startSoundIfEnabled();
-    if (!widget.demo) _listenPartnerGesture();
+    if (!widget.demo && !_solo) _listenPartnerGesture();
     _start();
   }
 
@@ -221,8 +252,7 @@ class _RunScreenState extends State<RunScreen>
       final state =
           LiveState.fromMap(Map<String, dynamic>.from(entry.value as Map));
       if (state == null) continue;
-      (_partnerCadence as LivePartnerCadence)
-          .update(spm: state.cadenceSpm, at: state.at);
+      _live.update(spm: state.cadenceSpm, at: state.at);
     }
   }
 
@@ -281,6 +311,7 @@ class _RunScreenState extends State<RunScreen>
       setState(() => _seconds = _elapsedSeconds);
       _saveSnapshot();
       _reportProgress();
+      _tickGhost();
       _maybeAutoFinish();
     });
   }
@@ -304,10 +335,20 @@ class _RunScreenState extends State<RunScreen>
       elapsed: Duration(seconds: _elapsedSeconds),
       at: now,
     );
-    if (!widget.demo) {
-      _pushLiveIfChanged(now);
-      _feedCloseness(now);
-    }
+    if (widget.demo) return;
+    // 세션이 없으면 쓸 곳도 없다. 고스트는 이미 내 폰에 있으므로
+    // 시차 공명은 네트워크 없이도 성립한다
+    if (!_solo) _pushLiveIfChanged(now);
+    _feedCloseness(now);
+  }
+
+  /// 1초 틱의 고스트 몫 — 재생 시각을 밀고, 내 케이던스를 한 칸 적는다.
+  /// 배경에서 틱이 밀려도 재생 시각은 경과 시간에서 오므로 어긋나지 않는다
+  void _tickGhost() {
+    if (widget.demo) return;
+    _ghostEngine?.update(Duration(seconds: _elapsedSeconds));
+    _recorder?.sample(_myCadence);
+    if (_resonance.state == SyncState.resonant) _resonanceSeconds++;
   }
 
   /// 내 상태를 상대에게. [LiveWriteGate]가 3초 간격과 변화량을 함께 보고
@@ -446,8 +487,12 @@ class _RunScreenState extends State<RunScreen>
     final kcal = LocationService.estimateKcal(_seconds);
     if (!widget.demo) {
       try {
-        await RunService().submitResult(widget.sessionId, AuthService().uid,
-            seconds: _seconds, km: _km, kcal: kcal, mood: mood);
+        if (_solo) {
+          await RunService().submitSoloResult(AuthService().uid, km: _km);
+        } else {
+          await RunService().submitResult(widget.sessionId, AuthService().uid,
+              seconds: _seconds, km: _km, kcal: kcal, mood: mood);
+        }
       } catch (e, stack) {
         FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
         if (!mounted) return;
@@ -457,6 +502,9 @@ class _RunScreenState extends State<RunScreen>
       }
       // 결과가 서버에 안전히 올라갔으니 로컬 복구 스냅샷은 폐기
       await RunRecovery.clear();
+      // 고스트는 **집계 다음**이다. 남기기에 실패해도 오늘 달린 사실은
+      // 이미 안전하고, 반대 순서면 고스트 저장 실패가 기록을 통째로 되돌린다
+      await _leaveGhost(kcal);
     }
     if (!mounted) return;
     Navigator.pushReplacement(context, MaterialPageRoute(
@@ -469,12 +517,60 @@ class _RunScreenState extends State<RunScreen>
         myMood: mood,
         demo: widget.demo,
         onDone: widget.onFinished,
+        partnerSnapshot: _ghostSnapshot,
       ),
     ));
   }
 
+  /// 완료 화면에 넘길 고스트의 그날 기록. 세션 상대와 달리 **기다릴 것이
+  /// 없다** — 이미 끝난 러닝이라 숫자가 전부 여기 있다
+  Map<String, dynamic>? get _ghostSnapshot {
+    final g = widget.ghost;
+    if (g == null) return null;
+    return {
+      'seconds': g.duration.inSeconds,
+      'km': g.km,
+      'kcal': g.kcal,
+      if (g.story != null) 'mood': g.story,
+    };
+  }
+
+  /// 오늘을 고스트로 남기고, 누군가의 그날과 달렸다면 그 사실도 남긴다.
+  ///
+  /// 실패해도 조용하다 — 이미 기록은 저장됐고, 여기서 "고스트 저장 실패"를
+  /// 띄우면 방금 완주한 사람에게 이해할 수 없는 사과를 하는 셈이다
+  Future<void> _leaveGhost(int kcal) async {
+    final recorder = _recorder;
+    if (recorder == null) return;
+    try {
+      final ghosts = GhostService();
+      final mine = recorder.build(
+        id: '',
+        uid: AuthService().uid,
+        km: _km,
+        kcal: kcal,
+        sessionId: _solo ? null : widget.sessionId,
+      );
+      // 2분 미만은 고스트가 되지 않는다 — 동행으로 쓰기에 너무 짧다
+      if (mine.isUsable) await ghosts.save(mine);
+
+      final ghost = widget.ghost;
+      if (ghost == null) return;
+      await ghosts.recordCompanionship(GhostCompanionship(
+        ghostRunId: ghost.id,
+        ghostOwnerUid: ghost.uid,
+        companionUid: AuthService().uid,
+        resonanceSeconds: _resonanceSeconds,
+        at: DateTime.now(),
+      ));
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+    }
+  }
+
   @override
   void dispose() {
+    _ghostEngine?.dispose();
     _demoResonance?.stop();
     _cadenceSub?.cancel();
     _briefing?.stop();

@@ -168,6 +168,15 @@ class RunService {
     if (isFirstSubmit) await _bumpMonthlyStats(uid, km);
   }
 
+  /// 세션이 없는 러닝(자유런·고스트런)의 결과. 남길 것은 집계뿐이다 —
+  /// 상대의 기록을 기다릴 것도, 합산할 것도 없다.
+  ///
+  /// 고스트는 여기서 남기지 않는다. 그건 `runs/{runId}`의 일이고, 집계와
+  /// 고스트는 실패해도 되는 정도가 다르다 — 집계가 틀리면 사용자의 기록이
+  /// 틀리지만, 고스트가 빠지면 내일의 동행 하나가 없을 뿐이다
+  Future<void> submitSoloResult(String uid, {required double km}) =>
+      _bumpMonthlyStats(uid, km);
+
   // 고스트(케이던스 타임라인·사연)는 여기가 아니라 `runs/{runId}`에 남는다 —
   // `lib/services/ghost/ghost_service.dart`. 세션 문서에 넣지 않은 이유는
   // **혼자 달린 러닝에는 세션이 없기 때문**이다. §3-2가 요구하는 것은

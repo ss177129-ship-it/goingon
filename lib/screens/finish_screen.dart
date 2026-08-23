@@ -34,6 +34,13 @@ class FinishScreen extends StatefulWidget {
   /// 남은 온보딩(레벨·초대)을 통째로 건너뛴다
   final VoidCallback? onDone;
 
+  /// 세션 없는 러닝의 '상대' — 함께 달린 고스트의 그날 기록.
+  ///
+  /// 세션이 있으면 상대 결과는 나중에 도착하지만(그래서 구독한다), 고스트는
+  /// **이미 다 끝난 러닝**이라 기다릴 것이 없다. 시차 동행의 합산은
+  /// 동시 동행의 합산과 같은 자리에 같은 문법으로 놓인다
+  final Map<String, dynamic>? partnerSnapshot;
+
   const FinishScreen({
     super.key,
     required this.sessionId,
@@ -44,6 +51,7 @@ class FinishScreen extends StatefulWidget {
     this.myMood,
     this.demo = false,
     this.onDone,
+    this.partnerSnapshot,
   });
 
   @override
@@ -62,8 +70,21 @@ class _FinishScreenState extends State<FinishScreen> {
   int? _totalRuns;
   int? _weekStreak;
 
+  /// 세션이 없는 러닝(자유런·고스트런)인가
+  bool get _solo => widget.sessionId.isEmpty;
+
+  /// 정말 혼자였는가 — 고스트도 없었던 러닝.
+  /// 이때만 화면에서 '함께'라는 말을 빼야 한다. 있지도 않은 상대의 이름이
+  /// 빈칸으로 남는 화면은 완주의 뒷맛을 통째로 망친다
+  bool get _alone => _solo && _partnerResult == null;
+
   /// 상황을 아는 타이틀 — 첫 러닝인지, 스트릭이 이어지고 있는지에 따라 변주
   String get _title {
+    if (_alone) {
+      if (_totalRuns == 1) return '첫 8분을 달렸어요';
+      if ((_weekStreak ?? 0) >= 2) return '$_weekStreak주째 이어지고 있어요';
+      return '오늘도 달렸어요';
+    }
     if (_totalRuns == 1) return '처음으로 함께 달렸어요';
     if ((_weekStreak ?? 0) >= 2) return '$_weekStreak주째, 발이 맞아요';
     return '오늘도 함께 달렸어요';
@@ -90,6 +111,8 @@ class _FinishScreenState extends State<FinishScreen> {
       });
       return;
     }
+    // 고스트는 이미 끝난 러닝이라 기다릴 것이 없다 — 바로 채워둔다
+    if (_solo) _partnerResult = widget.partnerSnapshot;
     AuthService().myProfile().then((profile) {
       if (!mounted || profile == null) return;
       setState(() {
@@ -98,7 +121,8 @@ class _FinishScreenState extends State<FinishScreen> {
       });
       _maybeAskPush(_totalRuns ?? 0);
     });
-    _subscribeToResults();
+    // 세션이 없으면 도착할 결과도 없다
+    if (!_solo) _subscribeToResults();
   }
 
   /// 알림 권한을 묻는 **유일한 자리**(P5). iOS는 한 번 거절당하면 앱에서
@@ -239,7 +263,7 @@ class _FinishScreenState extends State<FinishScreen> {
                 child: Column(children: [
                   BrandMark.compact(),
                   const SizedBox(height: 12),
-                  Text('나 & ${widget.partnerName}\n$_title',
+                  Text(_alone ? _title : '나 & ${widget.partnerName}\n$_title',
                       textAlign: TextAlign.center,
                       style: GoTheme.serif(28, color: GoColors.ink)),
                   const SizedBox(height: 20),
@@ -252,7 +276,7 @@ class _FinishScreenState extends State<FinishScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(children: [
-                      Text('함께 달린 것',
+                      Text(_alone ? '오늘 달린 것' : '함께 달린 것',
                           style: TextStyle(fontSize: 8,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.2,
@@ -262,24 +286,32 @@ class _FinishScreenState extends State<FinishScreen> {
                         _togetherStat(_fmt(widget.mySeconds), '내가 달린 시간'),
                         _tDivider(),
                         _togetherStat(
-                            _waiting
-                                ? '${widget.myKm.toStringAsFixed(1)}+'
-                                : '${_togetherKm.toStringAsFixed(1)}km',
-                            '함께한 거리'),
+                            _alone
+                                ? '${widget.myKm.toStringAsFixed(1)}km'
+                                : _waiting
+                                    ? '${widget.myKm.toStringAsFixed(1)}+'
+                                    : '${_togetherKm.toStringAsFixed(1)}km',
+                            _alone ? '달린 거리' : '함께한 거리'),
                         _tDivider(),
                         _togetherStat(
-                            _waiting
-                                ? '${widget.myKcal}+'
-                                : '$_togetherKcal',
-                            'kcal 합산'),
+                            _alone
+                                ? '${widget.myKcal}'
+                                : _waiting
+                                    ? '${widget.myKcal}+'
+                                    : '$_togetherKcal',
+                            _alone ? 'kcal' : 'kcal 합산'),
                       ]),
                       // 러닝 화면에 있던 '합산은 완료 후 계산돼요'가 온 자리 —
                       // 합산이 실제로 일어나는 곳에서 한 번만 말한다
                       const SizedBox(height: 8),
                       Text(
-                          _waiting
-                              ? '${widget.partnerName}의 기록이 도착하면 합쳐져요'
-                              : '둘의 기록을 합친 값이에요',
+                          _alone
+                              // 혼자 뛴 거리도 여정에 쌓인다(§5) — 혼자
+                              // 달린 날을 '함께'의 바깥에 두지 않는다
+                              ? '혼자 달린 거리도 여정에 쌓여요'
+                              : _waiting
+                                  ? '${widget.partnerName}의 기록이 도착하면 합쳐져요'
+                                  : '둘의 기록을 합친 값이에요',
                           style: TextStyle(
                               fontSize: 11,
                               color: GoColors.ink.withValues(alpha: .4))),
@@ -305,12 +337,13 @@ class _FinishScreenState extends State<FinishScreen> {
             Row(children: [
               _personalCard('나', widget.myKm, GoColors.limeDark,
                   mood: widget.myMood),
-              const SizedBox(width: 10),
-              _personalCard(widget.partnerName,
-                  _waiting ? null : _partnerKm, GoColors.coralDark,
-                  mood: _waiting ? null : _partnerResult?['mood'] as String?),
+              if (!_alone) const SizedBox(width: 10),
+              if (!_alone)
+                _personalCard(widget.partnerName,
+                    _waiting ? null : _partnerKm, GoColors.coralDark,
+                    mood: _waiting ? null : _partnerResult?['mood'] as String?),
             ]),
-            if (_waiting) ...[
+            if (_waiting && !_alone) ...[
               const SizedBox(height: 10),
               Text(
                   _longWait
