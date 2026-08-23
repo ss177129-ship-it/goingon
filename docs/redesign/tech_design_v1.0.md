@@ -44,6 +44,13 @@
 
 ## 3. 클라이언트 모듈 설계
 
+> **⚠️ 스택 번역 주의 (레포 감사 2026-08-21 반영):** 최종 스택은 **Flutter + SoLoud**다(§8 참조). 아래 의사코드는 작성 시점의 Swift/AVAudioEngine 기준이므로 **개념 스펙으로 읽고 Dart/SoLoud로 번역해 구현할 것.** 대응표:
+> - AVAudioPlayerNode(스템) → SoLoud AudioSource + 루프 재생 (기존 soloud_sound_engine 확장)
+> - AVAudioUnitTimePitch.rate → `SoLoud.setRelativePlaySpeed(handle, spm/baseBPM)` (피치 동반 변화 — M0-b 귀 판정 결과에 따름)
+> - CMPedometer/CoreMotion → `sensors_plus` (구현 완료: lib/services/cadence/cadence_engine.dart)
+> - MPRemoteCommandCenter(꼭지) → Flutter 측 remote command 플러그인 또는 플랫폼 채널
+> - 백엔드 Supabase 표기 → **Firebase 유지** (스키마는 §4를 Firestore 컬렉션으로 이식)
+
 ### 3-1. CadenceEngine — 발이 입력이다
 
 ```swift

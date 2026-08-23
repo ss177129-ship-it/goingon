@@ -6,7 +6,11 @@
 건너뛰면 옛 설계 위에 새 코드를 쌓게 된다. 각 프롬프트 끝 = 커밋 하나.
 
 - [x] **P0 — 거버넌스 개정** (2026-08-22, CEO 승인) — CLAUDE.md의 '의도된 설계 결정'을 strategy_memo D-001~006에 맞춰 개정. 사운드 단일 기준을 sound_ux_v1.md → product_design_v1.1.md §1로 승계
-- [ ] **P1 — M0 스파이크 실측·파라미터 확정** — CEO가 실주행 CSV(cadence_probe.csv, tempo_probe.csv)를 가져오면 랩 구간별 수동 카운트 대비 오차 계산. ±3spm 미달이면 `cadence_engine.dart`의 kThresholdK·검출 창 튜닝 후 재실측. 지터 p95>30ms면 SoLoud 오디오 스레드 대안 설계. 통과 시 "실측 확정(날짜)" 주석. **P1 통과 전 P2 금지**
+- [~] **P1 — M0 스파이크 (합성 검증 통과 2026-08-22 · 실측 미완)** — CEO가 실주행 CSV(cadence_probe.csv, tempo_probe.csv)를 가져오면 랩 구간별 수동 카운트 대비 오차 계산. ±3spm 미달이면 `cadence_engine.dart`의 kThresholdK·검출 창 튜닝 후 재실측. 지터 p95>30ms면 SoLoud 오디오 스레드 대안 설계. 통과 시 "실측 확정(날짜)" 주석. **P1 통과 전 P2 금지**
+  - [x] 합성 신호 검증 층 — `test/cadence_engine_test.dart`(17개). 알고리즘 결함 2건을 실주행 전에 잡음: 적응 임계의 절대 바닥 누락(정지 시 139spm), gait hold 10초 이중 계수
+  - [x] CSV 판정기 — `tools/analyze-probe-csv.py` (케이던스 구간별 오차 / 템포 지터 p95)
+  - [ ] **실주행 CSV로 ±3spm 확정** — 주머니·암밴드·손 각 1회, 걷기↔달리기 전환 3회 포함. 이것이 남아 있는 한 파라미터는 가설이다
+  - [ ] **실기에서 지터 p95 측정(M0-b)** — 시뮬레이터 값은 iOS 기기를 대표하지 않는다. 넘으면 SoLoud 오디오 스레드로 이관
 - [ ] **P2 — 공명 엔진 입력 교체: 페이스 → 케이던스** — closeness 입력을 CadenceSample.spm으로. |Δspm|≤3 8초 → 진입, 이탈 10초 → 해제(실패음 없음), 정수비(1:2, 2:3) 폴리리듬 인정. SyncState 4단계·kSharedSmoothingTimeConstant 유지. **입력 소스 추상화** — 라이브(shared_stream)와 고스트 타임라인(P4)이 같은 인터페이스로
 - [ ] **P3 — 세션 상태머신 + 에피소드 채보** — SessionPhase(intro→build→mission→climax→outro→reverb→freeRun/chain/cooldown). reverb 판정은 GaitState가 결정(running 유지 → freeRun 자동, walking 10초 → cooldown). 채보 JSON + ChartPlayer + 에피소드 '기차' 1종. 전화 수신 자동 일시정지→꼭지 재개, 4분 이상 중단 시 부분 완주. run_recovery 경로 유지
 - [ ] **P4 — 고스트런 3막** — 모든 러닝이 고스트가 되도록 저장 스키마에 케이던스 타임라인(1초, delta 압축)+사연 필드. 공개 기본 '페이스메이트만', GPS 경로 기본 비저장. GhostEngine을 P2 인터페이스의 두 번째 입력으로 → 시차 공명. 종료 알림은 서버 발송(functions/push.ts). 승패 언어 금지

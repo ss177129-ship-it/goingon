@@ -29,7 +29,7 @@
 
 ## P3 — 세션 상태머신 + 에피소드 채보
 
-> `docs/redesign/tech_design_v1.0.md` §3-3, §3-6을 읽어라. ① SessionPhase 상태머신(intro→build→mission→climax→outro→reverb→freeRun/chain/cooldown)을 새 서비스로 구현하라. reverb(잔향 30초) 판정: CadenceEngine의 GaitState가 결정한다 — running 유지 시 freeRun 자동 전환(멘트 없음), walking 10초 시 cooldown. 화면 조작 요구 금지. ② 채보 JSON 포맷(§3-6)과 ChartPlayer를 구현하고 에피소드 1종 '기차'를 assets에 추가하라(스템은 임시로 기존 pad 에셋 재활용, 정식 스템은 별도 트랙). ③ 전화 수신 시 자동 일시정지→꼭지 재개, 4분 이상 중단 시 부분 완주 처리. run_recovery 경로는 절대 끊지 말 것(CLAUDE.md).
+> `docs/redesign/tech_design_v1.0.md` §3-2·§3-3·§3-6과 문서 상단의 **스택 번역 주의**를 읽어라(의사코드는 SoLoud로 번역). `docs/redesign/product_design_v1.1.md` §1-1·§1-2도 필독. ⓪ 오디오 엔진(D안): 곡 BPM = 케이던스(140~190 클램프, 걷기는 하프타임), 레이어 게이트(드럼 상시 → 베이스는 stability 임계 → 화성은 공명 시), '내 발소리' 토글은 기본 OFF(CadenceEngine.steps가 트리거), 상대 발소리는 우드 톤 + **좌우 게인 차이만**(풀 3D 금지, 모노 옵션 제공). 기존 SoundEngine 인터페이스 뒤에 구현하라. ① SessionPhase 상태머신(intro→build→mission→climax→outro→reverb→freeRun/chain/cooldown)을 새 서비스로 구현하라. reverb(잔향 30초) 판정: CadenceEngine의 GaitState가 결정한다 — running 유지 시 freeRun 자동 전환(멘트 없음), walking 10초 시 cooldown. 화면 조작 요구 금지. ② 채보 JSON 포맷(§3-6)과 ChartPlayer를 구현하고 에피소드 1종 '기차'를 assets에 추가하라(스템은 임시로 기존 pad 에셋 재활용, 정식 스템은 별도 트랙). ③ 전화 수신 시 자동 일시정지→꼭지 재개, 4분 이상 중단 시 부분 완주 처리. run_recovery 경로는 절대 끊지 말 것(CLAUDE.md).
 
 ## P4 — 고스트런 3막
 
@@ -45,7 +45,7 @@
 
 ## P7 — 첫 러닝 릴레이 + 응원 배선
 
-> `docs/redesign/product_design_v1.1.md` §4-3(릴레이)과 §6(소셜 배선)을 읽어라. ① 신규 유저 첫 세션에 최근 첫 러닝 풀에서 |Δspm|≤10 매칭(2분 미만 제외, 익명) — Cloud Function으로. 완주 시 "당신의 첫 8분이 다음 사람의 동반자가 됩니다" + 이후 알림. ② 응원: 수신음 3종(sigHere/sigCheer/sigSlow)을 응원 시그널로 배선 — 달리는 상대의 리듬에 박자 맞춰 삽입. ③ 알림 다이제스트 규칙(동일인 일 3회 묶음, 죄책감 문법 금지).
+> `docs/redesign/product_design_v1.1.md` §4-3(릴레이), §6(소셜 배선), §1-4(워키토키)를 읽어라. ① 신규 유저 첫 세션에 최근 첫 러닝 풀에서 |Δspm|≤10 매칭(2분 미만 제외, 익명) — Cloud Function으로. 완주 시 "당신의 첫 8분이 다음 사람의 동반자가 됩니다" + 이후 알림. ② 응원: 수신음 3종(sigHere/sigCheer/sigSlow)을 응원 시그널로 배선 — 달리는 상대의 리듬에 박자 맞춰 삽입. ③ 워키토키: 러닝 중 길게 누름 동안만 녹음(15초 상한, 분당 수신 2개 제한), 음성 조각은 run의 타임스탬프에 저장 — 상대가 이 러닝을 고스트런할 때 해당 시점에 재생(시차 배달). 연속 통화 기능은 만들지 말 것. ④ 알림 다이제스트 규칙(동일인 일 3회 묶음, 죄책감 문법 금지).
 
 ## P8 — 계측 + 베타 준비
 
