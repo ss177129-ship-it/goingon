@@ -53,7 +53,10 @@ dependencies:
   # 그 한 마디가 사연 아카이브·카드 캡션·릴레이 문구의 단일 공급원이다.
   # flutter_sound 대신 record를 고른 이유: 우리에게 필요한 건 20초짜리
   # 파일 하나이고, record는 그 일만 한다(파형 시각화·스트리밍 불필요)
-  record: ^5.1.2
+  # 7.x로 간 이유: 5.x가 끌어오는 record_linux 0.7.2가
+  # record_platform_interface 1.6.0과 시그니처가 어긋나 **iOS 빌드까지**
+  # 깨진다(Flutter가 페더레이티드 구현을 전부 컴파일한다)
+  record: ^7.1.1
   audio_session: ^0.2.4
   flutter_soloud: ^4.1.7
   flutter_tts: ^4.2.5

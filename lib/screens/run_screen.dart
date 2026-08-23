@@ -20,6 +20,7 @@ import '../services/ghost/ghost_service.dart';
 import '../services/live_share.dart';
 import '../services/location_service.dart';
 import '../services/resonance.dart';
+import '../services/cooldown/voice_prompt.dart';
 import '../services/run_recovery.dart';
 import '../services/run_service.dart';
 import '../services/sound/resonance_sound.dart';
@@ -30,8 +31,8 @@ import '../services/sound_settings.dart';
 import '../theme.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
-import '../widgets/pressable.dart';
 import '../widgets/resonance_canvas.dart';
+import 'cooldown_screen.dart';
 import 'finish_screen.dart';
 
 /// 강제 종료 대비 스냅샷을 남기는 최소 간격.
@@ -480,11 +481,16 @@ class _RunScreenState extends State<RunScreen>
     setState(() => _finishing = true);
     _timer?.cancel();
     _demoResonance?.stop();
+    // 도착 벨 — 완주는 화면이 아니라 **귀에서 착륙한다**(§5-1).
+    // 벨이 울릴 틈을 주고 나서 엔진을 내린다. 바로 내리면 소리가 잘린다
     await _briefing?.stop();
+    await _sound?.arrival();
+    await Future.delayed(const Duration(milliseconds: 700));
     await _sound?.stop();
     _location.stop();
     WakelockPlus.disable();
     final kcal = LocationService.estimateKcal(_seconds);
+    String? runId;
     if (!widget.demo) {
       try {
         if (_solo) {
@@ -504,22 +510,62 @@ class _RunScreenState extends State<RunScreen>
       await RunRecovery.clear();
       // 고스트는 **집계 다음**이다. 남기기에 실패해도 오늘 달린 사실은
       // 이미 안전하고, 반대 순서면 고스트 저장 실패가 기록을 통째로 되돌린다
-      await _leaveGhost(kcal);
+      runId = await _leaveGhost(kcal);
     }
+    final journeyKm = await _journeyKm();
     if (!mounted) return;
+
+    // 완주 → **쿨다운** → 결과. 통계 화면이 정점을 곧바로 식히지 않도록
+    // 걷는 동안의 디브리핑과 한 마디를 사이에 둔다(§5-2)
+    FinishScreen result() => FinishScreen(
+          sessionId: widget.sessionId,
+          partnerName: widget.partnerName,
+          mySeconds: _seconds,
+          myKm: _km,
+          myKcal: kcal,
+          myMood: mood,
+          demo: widget.demo,
+          onDone: widget.onFinished,
+          partnerSnapshot: _ghostSnapshot,
+        );
+
+    final ask = await VoicePrompt.shouldAskNow(
+      now: DateTime.now(),
+      completed: true,
+      isDemo: widget.demo,
+    );
+    if (!mounted) return;
+    if (!ask || runId == null) {
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (_) => result()));
+      return;
+    }
     Navigator.pushReplacement(context, MaterialPageRoute(
-      builder: (_) => FinishScreen(
-        sessionId: widget.sessionId,
+      builder: (_) => CooldownScreen(
+        km: _km,
+        journeyKm: journeyKm,
         partnerName: widget.partnerName,
-        mySeconds: _seconds,
-        myKm: _km,
-        myKcal: kcal,
-        myMood: mood,
+        resonanceSeconds: _resonanceSeconds,
+        runId: runId,
         demo: widget.demo,
-        onDone: widget.onFinished,
-        partnerSnapshot: _ghostSnapshot,
+        next: (_) => result(),
       ),
     ));
+  }
+
+  /// 오늘까지 쌓인 여정. 집계는 방금 올라갔으므로 여기 읽는 값에 오늘이
+  /// 이미 들어 있다. 못 읽으면 오늘 거리만 말한다 — 없는 숫자를 지어내는
+  /// 것보다 작게 말하는 편이 낫다
+  Future<double> _journeyKm() async {
+    if (widget.demo) return _km;
+    try {
+      final profile = await AuthService().myProfile();
+      final total = ((profile?['totalKm'] ?? 0) as num).toDouble();
+      return total > 0 ? total : _km;
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+      return _km;
+    }
   }
 
   /// 완료 화면에 넘길 고스트의 그날 기록. 세션 상대와 달리 **기다릴 것이
@@ -539,9 +585,9 @@ class _RunScreenState extends State<RunScreen>
   ///
   /// 실패해도 조용하다 — 이미 기록은 저장됐고, 여기서 "고스트 저장 실패"를
   /// 띄우면 방금 완주한 사람에게 이해할 수 없는 사과를 하는 셈이다
-  Future<void> _leaveGhost(int kcal) async {
+  Future<String?> _leaveGhost(int kcal) async {
     final recorder = _recorder;
-    if (recorder == null) return;
+    if (recorder == null) return null;
     try {
       final ghosts = GhostService();
       final mine = recorder.build(
@@ -551,11 +597,12 @@ class _RunScreenState extends State<RunScreen>
         kcal: kcal,
         sessionId: _solo ? null : widget.sessionId,
       );
-      // 2분 미만은 고스트가 되지 않는다 — 동행으로 쓰기에 너무 짧다
-      if (mine.isUsable) await ghosts.save(mine);
+      // 2분 미만은 고스트가 되지 않는다 — 동행으로 쓰기에 너무 짧다.
+      // 남지 않았으면 음성 한 마디를 붙일 곳도 없다
+      final runId = mine.isUsable ? await ghosts.save(mine) : null;
 
       final ghost = widget.ghost;
-      if (ghost == null) return;
+      if (ghost == null) return runId;
       await ghosts.recordCompanionship(GhostCompanionship(
         ghostRunId: ghost.id,
         ghostOwnerUid: ghost.uid,
@@ -563,8 +610,10 @@ class _RunScreenState extends State<RunScreen>
         resonanceSeconds: _resonanceSeconds,
         at: DateTime.now(),
       ));
+      return runId;
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+      return null;
     }
   }
 
@@ -589,7 +638,11 @@ class _RunScreenState extends State<RunScreen>
     super.dispose();
   }
 
-  /// 실수 종료 방지 — 마치기 전 한 번 확인
+  /// 실수 종료 방지 — 마치기 전 한 번 확인.
+  ///
+  /// 예전에는 여기서 기분을 4지선다로 물었다. 그 질문은 쿨다운의 '음성
+  /// 한 마디'로 옮겨졌다(§5-2) — 같은 질문을 두 번 하지 않고, 완주 직후의
+  /// 진심은 버튼 네 개보다 목소리 한 마디에 더 많이 담긴다
   Future<void> _confirmFinish() async {
     final confirmed = await GoDialog.confirm(
       context,
@@ -597,63 +650,8 @@ class _RunScreenState extends State<RunScreen>
       confirmLabel: '마치기',
       cancelLabel: '계속 달리기',
     );
-    if (confirmed != true) return;
-    if (!mounted) return;
-    final mood = await _pickMood();
-    if (!mounted) return;
-    _finish(mood);
-  }
-
-  /// 결과 제출 직전 — 오늘 러닝이 어땠는지 한 탭으로 남김 (건너뛰기 가능)
-  Future<String?> _pickMood() async {
-    const moods = ['상쾌했어요', '죽을 뻔했어요', '네 생각 났어요', '또 하고 싶어요'];
-    return showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: GoColors.paper,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(28, 24, 28, 40),
-        child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('오늘 러닝, 어땠어요?', style: GoTheme.serif(20)),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: moods
-                    .map((m) => Pressable(
-                          onTap: () => Navigator.pop(ctx, m),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              border:
-                                  Border.all(color: GoColors.line, width: 1.5),
-                            ),
-                            child: Text(m,
-                                style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: GoColors.ink)),
-                          ),
-                        ))
-                    .toList(),
-              ),
-              const SizedBox(height: 12),
-              Center(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(ctx, null),
-                  child: const Text('건너뛰기',
-                      style: TextStyle(color: GoColors.dim, fontSize: 13)),
-                ),
-              ),
-            ]),
-      ),
-    );
+    if (confirmed != true || !mounted) return;
+    _finish(null);
   }
 
   String get _timeText {

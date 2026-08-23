@@ -211,6 +211,9 @@ class RunService {
       tx.update(userRef, {
         'monthKey': monthKey,
         'monthKm': prevMonthKm + km,
+        // 달이 바뀌면 monthKm은 0으로 돌아간다. '우리 여정 217km 지점'은
+        // 돌아가면 안 되는 숫자라 따로 센다(§5-2 디브리핑, 결과 화면 ③)
+        'totalKm': FieldValue.increment(km),
         'totalRuns': FieldValue.increment(1),
         'lastRunWeek': weekKey,
         'weekStreak': weekStreak,

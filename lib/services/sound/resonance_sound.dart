@@ -119,6 +119,13 @@ class ResonanceSound {
 
   /// 브리핑이 시작/종료될 때 호출. 패드는 그대로 둔다 — 말 밑에 깔린 드론은
   /// 방해가 아니라 배경이고, 여기서 끊으면 브리핑마다 소리가 뚝 끊긴다
+  /// 완주의 도착 벨(§5-1) — 화면이 아니라 **귀에서 착륙한다**.
+  ///
+  /// 공명 진입음을 그대로 쓴다. 이 앱에서 가장 좋은 소리이고, 8분의 끝에
+  /// 같은 소리가 나면 "그때 그 소리"가 완주의 소리가 된다. 새 소리를
+  /// 만들면 목록이 하나 늘 뿐 뜻은 늘지 않는다(SoundId 주석 참조)
+  Future<void> arrival() => _sound.playOneShot(SoundId.chimeMatch, volume: 1);
+
   void setSpeaking(bool speaking) => _speaking = speaking;
 
   /// 패드 볼륨 = closeness를 [padFloor]~1.0 구간에서 0~1로 편 값.
