@@ -15,6 +15,14 @@ class GhostService {
 
   CollectionReference<Map<String, dynamic>> get _runs => _db.collection('runs');
 
+  /// 남이 볼 수 있는 공개 범위. 목록 쿼리가 이걸로 자기를 좁힌다
+  static const _shared = ['pacemates', 'everyone'];
+
+  /// 한 번에 던지는 uid 수. Firestore는 한 쿼리의 **분기 총량**을 30으로
+  /// 제한하는데, uid 15개 × 공개 범위 2개 = 30이라 여기가 천장이다.
+  /// 예전에는 30개씩 던졌고(분기 30) 공개 범위 조건이 없었다
+  static const kUidChunk = 15;
+
   /// 러닝이 끝나면 고스트로 남긴다. **모든 러닝이 고스트가 된다**(§3-2)
   Future<String> save(GhostRun run) async {
     final ref = _runs.doc();
@@ -35,11 +43,14 @@ class GhostService {
   Future<List<GhostRun>> recentFrom(List<String> uids, {int limit = 20}) async {
     if (uids.isEmpty) return const [];
     final out = <GhostRun>[];
-    // whereIn은 30개까지라 나눠 던진다
-    for (var i = 0; i < uids.length; i += 30) {
-      final chunk = uids.sublist(i, (i + 30).clamp(0, uids.length));
+    for (var i = 0; i < uids.length; i += kUidChunk) {
+      final chunk = uids.sublist(i, (i + kUidChunk).clamp(0, uids.length));
       final q = await _runs
           .where('uid', whereIn: chunk)
+          // **private을 애초에 빼고 던진다.** 규칙은 돌아오는 문서를 하나씩
+          // 판정하고 하나라도 막히면 쿼리 전체를 거부하므로, 페이스메이트의
+          // 비공개 러닝이 한 건만 섞여도 목록이 통째로 비게 된다
+          .where('visibility', whereIn: _shared)
           .orderBy('createdAt', descending: true)
           .limit(limit)
           .get();

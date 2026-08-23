@@ -67,6 +67,8 @@ Flutter + Firebase(Apple 로그인, Firestore, Storage, Cloud Messaging) + Cloud
 - 세션 update는 **필드 허용 목록** 방식이라, 새 필드를 쓰려면 규칙에도 추가해야 한다. hostId/guestId/createdAt은 생성 후 불변이고 ready/late/joined/results 맵은 자기 uid 항목만 쓸 수 있다
 - **친구 추가는 대기 중인 요청이 실제로 존재할 때만 통과한다.** `friends`에 직접 쓰는 코드를 새로 만들지 말 것 — 규칙이 거부한다
 - 프로필 사진은 **Storage** `avatars/{uid}.jpg`에 두고 문서에는 주소(`photoUrl`)만. 이미지를 문서에 넣지 말 것 — 친구 목록이 실시간 스트림이라 매 스냅샷마다 따라온다. 덮어쓸 때마다 다운로드 토큰이 새로 발급돼 주소가 바뀌므로 **업로드 후 `photoUrl` 갱신을 반드시 함께** 할 것
+- **`runs` 목록 쿼리와 규칙은 한 쌍이다.** 목록 규칙은 돌아오는 문서를 하나씩 판정하고 **하나라도 막히면 쿼리 전체가 거부**된다. 그래서 페이스메이트 조회는 클라이언트가 `visibility`로 private을 미리 빼고 던져야 하며(`GhostService.recentFrom`), 규칙만 고치거나 쿼리만 고치면 목록이 통째로 빈다. 분기 총량 30 제한 때문에 uid 청크는 15가 천장이다(15 × 공개범위 2)
+- 목록 규칙이 보는 것은 **내 친구 목록**(`myFriends()`)이지 상대의 것이 아니다 — 상대 문서를 읽으면 사람 수만큼 `get()`이 생겨 한도(10)를 넘긴다. 연결 끊기가 양쪽을 한 배치로 지우므로 둘은 같은 것을 말한다
 - 규칙·인덱스는 소스가 기준: `firebase deploy --only firestore,storage --project goingon-c12f3` (배포 전 `--dry-run`)
 
 ## 기술 원칙
