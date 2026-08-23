@@ -11,7 +11,12 @@
   - [x] CSV 판정기 — `tools/analyze-probe-csv.py` (케이던스 구간별 오차 / 템포 지터 p95)
   - [ ] **실주행 CSV로 ±3spm 확정** — 주머니·암밴드·손 각 1회, 걷기↔달리기 전환 3회 포함. 이것이 남아 있는 한 파라미터는 가설이다
   - [ ] **실기에서 지터 p95 측정(M0-b)** — 시뮬레이터 값은 iOS 기기를 대표하지 않는다. 넘으면 SoLoud 오디오 스레드로 이관
-- [ ] **P2 — 공명 엔진 입력 교체: 페이스 → 케이던스** — closeness 입력을 CadenceSample.spm으로. |Δspm|≤3 8초 → 진입, 이탈 10초 → 해제(실패음 없음), 정수비(1:2, 2:3) 폴리리듬 인정. SyncState 4단계·kSharedSmoothingTimeConstant 유지. **입력 소스 추상화** — 라이브(shared_stream)와 고스트 타임라인(P4)이 같은 인터페이스로
+- [x] **P2 — 공명 엔진 입력 교체: 페이스 → 케이던스** (2026-08-23)
+  - 판정 규칙은 `CadenceMatch`(resonance.dart). 선형 사상 1-Δ/30이 기존 문턱 표와 맞물린다 — Δ3 → 0.90(공명 진입 위) · Δ6 → 0.80(이탈) · Δ9 → 0.70(나란히)
+  - 진입 8초 / 해제 10초 dwell. **무장은 진입 문턱, 유지는 이탈 문턱** — 둘 다 진입 문턱으로 하면 히스테리시스와 dwell이 서로를 무력화한다(실제로 재현됨)
+  - 정수비 폴리리듬(1:2, 2:3). 러닝 대역 전체를 훑는 테스트가 "정수비가 엉뚱한 짝을 공명시키지 않는다"를 지킨다. 대역 밖 값은 0이 아니라 null
+  - 입력 소스 추상화: `PartnerCadenceSource` — `LivePartnerCadence`(벽시계·6초 staleness) / `GhostCadenceTimeline`(세션 경과 시간축·delta 압축) / `FirstAvailableCadence`
+  - **케이던스 파라미터는 여전히 실측 미검증** — maxGapSpm 30, resonantGapSpm 3은 설계 초기값이고 CadenceEngine도 합성 검증만 통과했다. P1 실주행 후 재검토
 - [ ] **P3 — 세션 상태머신 + 에피소드 채보** — SessionPhase(intro→build→mission→climax→outro→reverb→freeRun/chain/cooldown). reverb 판정은 GaitState가 결정(running 유지 → freeRun 자동, walking 10초 → cooldown). 채보 JSON + ChartPlayer + 에피소드 '기차' 1종. 전화 수신 자동 일시정지→꼭지 재개, 4분 이상 중단 시 부분 완주. run_recovery 경로 유지
 - [ ] **P4 — 고스트런 3막** — 모든 러닝이 고스트가 되도록 저장 스키마에 케이던스 타임라인(1초, delta 압축)+사연 필드. 공개 기본 '페이스메이트만', GPS 경로 기본 비저장. GhostEngine을 P2 인터페이스의 두 번째 입력으로 → 시차 공명. 종료 알림은 서버 발송(functions/push.ts). 승패 언어 금지
 - [ ] **P5 — 새 홈 2종 + 온보딩 4장** — 온보딩: 여덟 걸음 → 데모런(demo_resonance 재활용, '가상의 페이서' 명시) → 레벨 질문 1개 → 초대 제안. 알림 권한은 첫 완주 직후. 홈은 레벨 분기(입문자=오늘의 8분 / 경험자=자유런). **lobby_screen 삭제 → '오늘의 상대 선택'으로 교체.** 심사관용 데모 모드 진입점은 유지하되 내용물을 데모런과 통합

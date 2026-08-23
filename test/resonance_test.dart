@@ -104,7 +104,14 @@ void main() {
       e.events.listen(events.add);
 
       e.addSample(0.05, at: t0);
+      // 문턱을 넘은 것만으로는 아직 공명이 아니다 — 8초를 버텨야 한다(§1-3)
       feed(e, t0, 0.95, seconds: 6);
+      await pumpEventQueue();
+      expect(events.whereType<ResonanceEntered>(), isEmpty,
+          reason: '스치듯 겹친 6초를 공명이라 부르면 사건이 우연으로 값싸진다');
+      expect(e.state, SyncState.aligned, reason: '가까운 것은 사실대로 말한다');
+
+      feed(e, t0.add(_secs(6)), 0.95, seconds: 5);
       await pumpEventQueue();
 
       final entered = events.whereType<ResonanceEntered>();
@@ -126,7 +133,10 @@ void main() {
 
       var at = t0;
       e.addSample(0.95, at: at);
-      at = feed(e, at, 0.95, seconds: 3); // 먼저 확실히 공명에 진입
+      at = feed(e, at, 0.95, seconds: 12); // 진입 8초 지속까지 채워 확실히 공명
+      expect(e.state, SyncState.resonant, reason: '흔들기 전에 공명이어야 한다');
+      await pumpEventQueue();
+      events.clear(); // 여기서부터 흔든다 — 흔드는 동안의 전이만 센다
 
       var crossings = 0;
       var above = e.smoothedCloseness > ResonanceThresholds.resonantEnter;
@@ -146,8 +156,8 @@ void main() {
           '${trace.map((v) => v.toStringAsFixed(3)).join(' ')}');
       expect(crossings, greaterThanOrEqualTo(2),
           reason: '문턱이 하나였다면 여기서 상태가 그만큼 튀었을 것');
-      expect(events.whereType<ResonanceStateChanged>(), hasLength(1),
-          reason: '히스테리시스가 있으면 진입 한 번뿐이어야 한다');
+      expect(events.whereType<ResonanceStateChanged>(), isEmpty,
+          reason: '히스테리시스가 있으면 흔드는 동안 전이가 하나도 없어야 한다');
       expect(e.state, SyncState.resonant, reason: '이탈 문턱(0.80) 아래로는 안 내려갔다');
       e.dispose();
     });
@@ -175,9 +185,10 @@ void main() {
       _only<ResonanceHeld>(e).listen((ev) => held.add(ev.held));
 
       e.addSample(0.95, at: t0);
-      var at = feed(e, t0, 0.95, seconds: 15, step: 0.5); // 10초 마일스톤 통과
-      at = feed(e, at, 0.2, seconds: 5, step: 0.5); // 이탈
-      feed(e, at, 0.95, seconds: 15, step: 0.5); // 재진입
+      // 진입 8초 + 유지 10초 = 최소 18초를 흘려야 첫 마일스톤이 온다
+      var at = feed(e, t0, 0.95, seconds: 20, step: 0.5);
+      at = feed(e, at, 0.2, seconds: 12, step: 0.5); // 이탈 10초 지속 → 해제
+      feed(e, at, 0.95, seconds: 25, step: 0.5); // 재진입 + 유지 10초
       await pumpEventQueue();
 
       expect(held, [const Duration(seconds: 10), const Duration(seconds: 10)],

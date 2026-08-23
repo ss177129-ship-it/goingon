@@ -64,6 +64,22 @@ class ResonanceThresholds {
   /// 다가옴 이탈 — 폭 0.08
   static const approachingExit = 0.22;
 
+  /// 공명 **진입에 필요한 지속 시간** (product_design_v1.1.md §1-3:
+  /// "|Δ케이던스| ≤ 3spm 상태가 8초 지속 → 공명 진입").
+  ///
+  /// 문턱(히스테리시스)만으로는 부족한 이유: 두 사람의 케이던스는 걷다가
+  /// 스치듯 한 번 겹칠 수 있다. 그 순간을 공명이라 부르면 이 앱에서 가장
+  /// 중요한 사건이 우연으로 값싸진다. **맞았다가 아니라 맞추고 있다**를
+  /// 재는 것이므로 시간이 조건에 들어간다.
+  static const resonantDwell = Duration(seconds: 8);
+
+  /// 공명 **해제에 필요한 이탈 지속 시간** (동 §1-3: "조건 이탈 10초 지속").
+  ///
+  /// 진입(8초)보다 길다. 어렵게 얻은 것은 쉽게 깨지지 않아야 하고,
+  /// 신호등·오르막처럼 잠깐 벌어지는 일이 러닝에는 늘 있다.
+  /// 해제는 페이드일 뿐 **실패음을 붙이지 않는다**(sound_ux_v1.md 금지 목록).
+  static const resonantRelease = Duration(seconds: 10);
+
   /// 공명을 유지했을 때 알려줄 지점. 자주 울리면 의미가 닳으므로
   /// 10초(우연이 아님) → 30초(맞추고 있음) → 60초(같이 달리고 있음)
   static const holdMilestones = <Duration>[
@@ -71,6 +87,92 @@ class ResonanceThresholds {
     Duration(seconds: 30),
     Duration(seconds: 60),
   ];
+}
+
+/// 케이던스 두 개를 발맞춤 값(0~1)으로 접는 규칙.
+///
+/// **왜 케이던스인가**(2026-08-22 P2, product_design_v1.1.md §1-3): 페이스는
+/// 지형과 체력의 함수라 오르막에서 갈라지고, GPS가 없으면 아예 없다. 발은
+/// 오르막에서도 맞출 수 있고 실내에서도 있다. "같이 달린다"의 신체적 실체는
+/// 속도가 아니라 리듬이다.
+///
+/// 파라미터는 **실측 미검증**이다 — [maxGapSpm]과 [resonantGapSpm]은 설계
+/// 문서의 초기값이고, 케이던스 측정 자체(CadenceEngine)도 아직 합성 검증만
+/// 통과했다. 실주행 데이터가 오면 둘 다 다시 본다.
+class CadenceMatch {
+  const CadenceMatch._();
+
+  /// 이 차이 이상이면 발맞춤 0. 30spm은 §1-3의 3spm 기준과 기존 문턱들이
+  /// 정확히 맞물리도록 고른 값이다 — 선형 사상 `1 - Δ/30`에서
+  /// Δ3 → 0.90(공명 진입 0.88 위) · Δ6 → 0.80(공명 이탈) ·
+  /// Δ9 → 0.70(나란히 진입) · Δ12 → 0.60(나란히 이탈) · Δ21 → 0.30(다가옴).
+  /// 즉 문턱 표를 새로 만들지 않고 케이던스 축으로 그대로 읽을 수 있다.
+  static const maxGapSpm = 30.0;
+
+  /// 공명 조건 (§1-3). 실제 판정은 이 값이 아니라 위 사상을 거친 뒤
+  /// [ResonanceThresholds.resonantEnter] 문턱으로 이뤄진다 — 판정 경로를
+  /// 하나로 두어야 데모(발맞춤 값 직접 주입)와 실세션이 같은 길을 탄다.
+  static const resonantGapSpm = 3.0;
+
+  /// 정수비 폴리리듬 (§1-3: "2:3, 1:2 등 정수비 관계도 폴리리듬 공명으로
+  /// 인정 — 페이스가 달라도 함께라는 약속의 구현").
+  ///
+  /// 상대 케이던스에 곱해 볼 배수들.
+  ///
+  /// 오검출 걱정은 계산해 보면 좁아진다: 러닝 대역(140~190spm)에서 내가
+  /// 180일 때 3:2 **공명**이 성립하려면 상대가 118~122여야 하고 1:2는
+  /// 88~92여야 한다 — 둘 다 걷기 대역이다. 즉 정수비로 공명이 열리는 것은
+  /// 원래 의도한 "한 명이 걷고 한 명이 뛰는" 경우뿐이다(테스트가 러닝 대역
+  /// 전체를 훑어 확인한다).
+  ///
+  /// 다만 **발맞춤 값 자체는 조금 올라갈 수 있다** — 140 대 170이면 170의
+  /// 2/3(113)쪽으로 접혀 차이가 30에서 26.7이 된다. 공명 문턱(3spm)과는
+  /// 아득히 멀어 판정에는 영향이 없고, 화면의 원이 아주 조금 덜 벌어진다.
+  static const ratios = <double>[1.0, 2.0, 0.5, 1.5, 2 / 3];
+
+  /// 사람의 케이던스로 있을 수 있는 범위. 밖의 값은 센서가 헛것을 본
+  /// 것이므로 **0이 아니라 null**(모름)로 다룬다 — 정수비가 우연히 맞아
+  /// 떨어져 공명이 되는 것을 막고, 동시에 "발맞춤 0"이라는 거짓 단정도 피한다.
+  static const minPlausibleSpm = 60.0;
+  static const maxPlausibleSpm = 250.0;
+
+  static bool isPlausible(double? spm) =>
+      spm != null &&
+      !spm.isNaN &&
+      spm >= minPlausibleSpm &&
+      spm <= maxPlausibleSpm;
+
+  /// 정수비를 접은 뒤의 유효 차이(spm). 어느 한쪽이라도 없거나 대역
+  /// 밖이면 null(= 모름).
+  ///
+  /// 차이는 **내 케이던스 축**에서 잰다. 상대를 내 리듬으로 환산해 놓고
+  /// 재야 화면·소리가 쓰는 축과 같아진다.
+  static double? effectiveGap(double? mine, double? theirs) {
+    if (!isPlausible(mine) || !isPlausible(theirs)) return null;
+    final a = mine!;
+    final b = theirs!;
+    var best = double.infinity;
+    for (final r in ratios) {
+      final gap = (a - b * r).abs();
+      if (gap < best) best = gap;
+    }
+    return best;
+  }
+
+  /// 둘의 케이던스로 발맞춤 0~1. 어느 한쪽이라도 없으면 null(= 모름).
+  /// **모르는 것을 아는 척하지 않는다** — null이면 엔진에 넣지 않는다.
+  static double? closeness(double? mine, double? theirs) {
+    final gap = effectiveGap(mine, theirs);
+    if (gap == null) return null;
+    return math.max(0, 1 - gap / maxGapSpm);
+  }
+
+  /// §1-3의 원문 조건(|Δ| ≤ 3spm)을 그대로 묻고 싶을 때. 판정 경로는
+  /// [closeness]를 거치지만, 문서와 코드가 같은 말을 하는지 테스트가 확인한다.
+  static bool isResonantGap(double? mine, double? theirs) {
+    final gap = effectiveGap(mine, theirs);
+    return gap != null && gap <= resonantGapSpm;
+  }
 }
 
 /// 히스테리시스가 들어간 상태 판정 — 엔진과 분리해 두어 앱 없이 시험할 수 있다
@@ -280,6 +382,12 @@ class ResonanceEngine {
   double? _smoothed;
   DateTime? _lastSampleAt;
   SyncState _state = SyncState.drifting;
+
+  /// 공명 문턱 위/아래로 **연속해서** 머문 시각. 스치듯 한 번 겹친 것과
+  /// 8초를 맞추고 있는 것을 가르는 유일한 장치다
+  DateTime? _aboveResonantSince;
+  DateTime? _belowResonantSince;
+
   DateTime? _resonantSince;
   int _heldMilestoneIndex = 0;
   int _lastKmMilestone = 0;
@@ -337,8 +445,25 @@ class ResonanceEngine {
     _evaluate(at);
   }
 
+  /// **케이던스를 직접 넣는 입구** (P2). 어느 한쪽이라도 모르면
+  /// 아무 일도 하지 않는다 — 발맞춤 값을 지어내지 않기 위해서다.
+  /// 상대 케이던스의 출처(라이브 상대 / 고스트 타임라인)는 이 엔진의
+  /// 관심사가 아니다. `PartnerCadenceSource`가 그 차이를 흡수한다.
+  ///
+  /// 반환값은 넣은 발맞춤 값 — 넣지 않았으면 null.
+  double? addCadences({
+    required double? mine,
+    required double? theirs,
+    required DateTime at,
+  }) {
+    final v = CadenceMatch.closeness(mine, theirs);
+    if (v == null) return null;
+    addSample(v, at: at);
+    return v;
+  }
+
   void _evaluate(DateTime at) {
-    final next = SyncStateMachine.resolve(_state, smoothedCloseness);
+    final next = _resolveWithDwell(at);
     if (next != _state) {
       final from = _state;
       _state = next;
@@ -354,6 +479,53 @@ class ResonanceEngine {
       }
     }
     _checkHold(at);
+  }
+
+  /// 문턱 판정([SyncStateMachine])에 **지속 시간 조건**을 겹친다.
+  ///
+  /// 문턱은 "지금 얼마나 가까운가"를 보고, dwell은 "얼마나 오래 그런가"를
+  /// 본다. 공명에만 dwell을 거는 이유: 다가옴·나란히는 상태를 알려주는
+  /// 정보지만 공명은 **사건**이고, 사건은 우연이면 값이 떨어진다.
+  SyncState _resolveWithDwell(DateTime at) {
+    final v = smoothedCloseness;
+    final byThreshold = SyncStateMachine.resolve(_state, v);
+
+    // 진입 시계: **진입 문턱이 무장시키고, 이탈 문턱이 유지시킨다.**
+    //
+    // 진입 문턱(0.88)으로 리셋하면 히스테리시스와 dwell이 서로를 무력화한다 —
+    // 스무딩된 값이 0.88 언저리에서 흔들리기만 해도 8초가 영영 안 쌓여
+    // "잘 맞추고 있는데 공명이 오지 않는" 상태가 된다(실제로 재현됨: 궤적이
+    // 0.826~0.902를 오갔는데 끝내 공명 없음). 두 장치가 같은 방향을 보게 하려면
+    // 무장은 진입 문턱, 유지는 이탈 문턱이어야 한다.
+    if (_aboveResonantSince == null) {
+      if (v > ResonanceThresholds.resonantEnter) _aboveResonantSince = at;
+    } else if (v < ResonanceThresholds.resonantExit) {
+      _aboveResonantSince = null;
+    }
+    if (v < ResonanceThresholds.resonantExit) {
+      _belowResonantSince ??= at;
+    } else {
+      _belowResonantSince = null;
+    }
+
+    if (_state == SyncState.resonant) {
+      // 해제: 이탈 문턱 아래로 10초 지속되어야 한다. 그 전에는 문턱이
+      // 뭐라 하든 공명을 유지한다 — 신호등에서 잠깐 벌어졌다고 깨지지 않게
+      final since = _belowResonantSince;
+      final releasing =
+          since != null && at.difference(since) >= ResonanceThresholds.resonantRelease;
+      return releasing ? byThreshold : SyncState.resonant;
+    }
+
+    // 진입: 문턱을 넘은 채 8초를 버텨야 한다. 그 전까지는 한 단계 아래
+    // (나란히)에 머문다 — 문턱은 넘었으니 '가까움'은 사실대로 말한다
+    if (byThreshold == SyncState.resonant) {
+      final since = _aboveResonantSince;
+      final ready =
+          since != null && at.difference(since) >= ResonanceThresholds.resonantDwell;
+      return ready ? SyncState.resonant : SyncState.aligned;
+    }
+    return byThreshold;
   }
 
   void _checkHold(DateTime at) {

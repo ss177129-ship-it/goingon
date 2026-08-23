@@ -70,19 +70,23 @@ void main() {
 
     test('공명 진입에 chime이 한 번', () async {
       engine.addSample(0.05, at: t0);
+      // 공명 진입에는 문턱 위 8초 지속이 필요하다 (§1-3) — 그전에는 조용하다
       feed(t0, 0.95, seconds: 6);
       await pumpEventQueue();
+      expect(sound.oneShots, isEmpty, reason: '8초를 채우기 전에는 울리지 않는다');
 
+      feed(t0.add(_secs(6)), 0.95, seconds: 5);
+      await pumpEventQueue();
       expect(sound.oneShots, [SoundId.chimeMatch]);
     });
 
     test('멀어질 때는 아무 소리도 내지 않는다', () async {
       // 실패음은 없다 — 패드가 잦아드는 것이 전부다
       engine.addSample(0.95, at: t0);
-      final at = feed(t0, 0.95, seconds: 4);
+      final at = feed(t0, 0.95, seconds: 10); // 진입(8초 지속)까지
       await pumpEventQueue(); // 진입 chime이 도착한 뒤에 지운다
       sound.oneShots.clear();
-      feed(at, 0.05, seconds: 6);
+      feed(at, 0.05, seconds: 14); // 해제(이탈 10초 지속)까지
       await pumpEventQueue();
 
       expect(sound.oneShots, isEmpty);
@@ -90,13 +94,13 @@ void main() {
 
     test('공명을 30초 이상 유지하면 배음이 얹힌다', () async {
       engine.addSample(0.95, at: t0);
-      feed(t0, 0.95, seconds: 4);
+      feed(t0, 0.95, seconds: 10); // 진입(8초 지속)까지
       await pumpEventQueue();
       // 유지 30초 전에는 배음이 없다
       await _pumpTicks();
       expect(sound.loopVolumes[SoundId.padOvertone] ?? 0, 0);
 
-      feed(t0.add(_secs(4)), 0.95, seconds: 32);
+      feed(t0.add(_secs(10)), 0.95, seconds: 34);
       await pumpEventQueue();
       await _pumpTicks(count: 40);
       expect(sound.loopVolumes[SoundId.padOvertone], greaterThan(0));
@@ -127,13 +131,13 @@ void main() {
       resonanceSound.setSpeaking(true);
       engine.signalReceived(SignalKind.cheer, at: t0);
       engine.addSample(0.95, at: t0);
-      feed(t0, 0.95, seconds: 4);
+      feed(t0, 0.95, seconds: 10); // 공명 진입까지 (8초 지속)
       await pumpEventQueue();
       expect(sound.oneShots, isEmpty);
 
       // 말이 끝나면 그다음 것부터 다시 들린다
       resonanceSound.setSpeaking(false);
-      engine.signalReceived(SignalKind.here, at: t0.add(_secs(5)));
+      engine.signalReceived(SignalKind.here, at: t0.add(_secs(11)));
       await pumpEventQueue();
       expect(sound.oneShots, [SoundId.sigHere]);
     });

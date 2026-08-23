@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+import 'resonance.dart';
 
 /// 러닝 중 서로에게 보내는 실시간 상태 한 조각.
 ///
@@ -102,19 +102,20 @@ class LiveWriteGate {
 class CadenceCloseness {
   const CadenceCloseness._();
 
-  /// 이 차이 이상이면 발맞춤 0
-  static const maxGapSpm = 30.0;
+  /// 이 차이 이상이면 발맞춤 0 — 값의 주인은 [CadenceMatch]다
+  static const maxGapSpm = CadenceMatch.maxGapSpm;
 
   /// 상대 값이 이보다 낡으면 **아예 계산하지 않는다.**
   /// 옛 값으로 "나란히 달리는 중"이라고 말하면 그건 거짓말이다
   static const staleAfter = Duration(seconds: 6);
 
-  /// 둘의 케이던스로 0~1. 어느 한쪽이라도 없으면 null(= 모름)
-  static double? of(double? mine, double? theirs) {
-    if (mine == null || theirs == null) return null;
-    final gap = (mine - theirs).abs();
-    return math.max(0, 1 - gap / maxGapSpm);
-  }
+  /// 둘의 케이던스로 0~1. 어느 한쪽이라도 없으면 null(= 모름).
+  ///
+  /// 계산은 [CadenceMatch]가 한다 — 2026-08-22 P2에서 발맞춤 판정이
+  /// resonance.dart로 옮겨갔다. 여기에 같은 식을 한 벌 더 두면 정수비
+  /// 폴리리듬 같은 규칙이 한쪽에만 생겨 두 코드가 조용히 갈라진다.
+  static double? of(double? mine, double? theirs) =>
+      CadenceMatch.closeness(mine, theirs);
 
   /// [at] 시점의 상대 데이터를 [now]에 써도 되는가
   static bool isFresh(DateTime at, DateTime now) =>

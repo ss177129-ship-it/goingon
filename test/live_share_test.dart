@@ -80,7 +80,15 @@ void main() {
 
     test('30spm 이상 벌어지면 0', () {
       expect(CadenceCloseness.of(150, 180), 0.0);
-      expect(CadenceCloseness.of(120, 190), 0.0);
+      expect(CadenceCloseness.of(155, 60), 0.0,
+          reason: '어느 정수비로도 이어지지 않는 짝이어야 0이 된다');
+    });
+
+    test('정수비로 이어지면 0이 아니다 (2026-08-22 P2)', () {
+      // 120(걷기) 대 190(러닝)은 2:3에 가깝다 — §1-3이 폴리리듬 공명으로
+      // 인정하는 관계라 "완전히 남남"이라고 말하지 않는다. 규칙의 주인은
+      // CadenceMatch이고 자세한 검증은 cadence_resonance_test.dart에 있다
+      expect(CadenceCloseness.of(120, 190), greaterThan(0.7));
     });
 
     test('사이는 선형', () {

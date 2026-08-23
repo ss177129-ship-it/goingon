@@ -13,6 +13,7 @@ import '../services/active_run_guard.dart';
 import '../services/auth_service.dart';
 import '../services/cadence_service.dart';
 import '../services/demo_resonance.dart';
+import '../services/cadence/partner_cadence.dart';
 import '../services/live_share.dart';
 import '../services/location_service.dart';
 import '../services/resonance.dart';
@@ -86,7 +87,11 @@ class _RunScreenState extends State<RunScreen>
   // 공명 엔진에 흘려 넣는다. 데모는 DemoResonanceDriver가 대신 흘린다
   StreamSubscription<double>? _cadenceSub;
   double? _myCadence;
-  LiveState? _partnerLive;
+
+  /// 상대 케이던스의 출처. 지금은 라이브 하나뿐이지만, 고스트(P4)가 붙으면
+  /// 여기만 바뀌고 아래 발맞춤 경로는 그대로다 — 시차 공명이 라이브 공명과
+  /// 같은 판정을 타게 하는 것이 P2의 목적이었다
+  final PartnerCadenceSource _partnerCadence = LivePartnerCadence();
   final _liveGate = LiveWriteGate();
 
   // ── 멈춤 길게 누르기 진행 링 ──
@@ -200,8 +205,11 @@ class _RunScreenState extends State<RunScreen>
     final myUid = AuthService().uid;
     for (final entry in live.entries) {
       if (entry.key == myUid) continue;
-      _partnerLive =
+      final state =
           LiveState.fromMap(Map<String, dynamic>.from(entry.value as Map));
+      if (state == null) continue;
+      (_partnerCadence as LivePartnerCadence)
+          .update(spm: state.cadenceSpm, at: state.at);
     }
   }
 
@@ -295,13 +303,9 @@ class _RunScreenState extends State<RunScreen>
   }
 
   /// 지금 믿을 수 있는 상대 케이던스. 낡았으면 null
-  double? _freshPartnerCadence() {
-    final live = _partnerLive;
-    if (live == null) return null;
-    return CadenceCloseness.isFresh(live.at, DateTime.now())
-        ? live.cadenceSpm
-        : null;
-  }
+  double? _freshPartnerCadence() =>
+      _partnerCadence.spmAt(
+        elapsed: Duration(seconds: _elapsedSeconds), now: DateTime.now());
 
   /// 상대와 내 케이던스로 발맞춤을 만들어 공명 엔진에 넣는다.
   ///
@@ -309,11 +313,9 @@ class _RunScreenState extends State<RunScreen>
   /// 지났으면 흘려 넣지 않고, 그러면 엔진의 hasCloseness가 false로 남아
   /// 상태어가 '함께'로 돌아간다 — 모르는 것을 아는 척하지 않는다
   void _feedCloseness(DateTime now) {
-    final live = _partnerLive;
-    if (live == null || !CadenceCloseness.isFresh(live.at, now)) return;
-    final closeness = CadenceCloseness.of(_myCadence, live.cadenceSpm);
-    if (closeness == null) return;
-    _resonance.addSample(closeness, at: now);
+    final theirs = _partnerCadence.spmAt(
+        elapsed: Duration(seconds: _elapsedSeconds), now: now);
+    _resonance.addCadences(mine: _myCadence, theirs: theirs, at: now);
   }
 
   /// 시작 시각과의 차이로 구한 경과 시간(초).
