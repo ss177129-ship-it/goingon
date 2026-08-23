@@ -278,12 +278,15 @@ service cloud.firestore {
       allow create: if request.auth != null &&
         request.resource.data.uid == request.auth.uid;
 
-      // 나중에 바꿀 수 있는 것은 공개 범위와 사연 한 마디뿐이다.
-      // 거리·시간·케이던스는 **남긴 뒤 불변** — 고친 기록으로 남과 달리면
-      // 그건 그날의 리듬이 아니다
+      // 나중에 바꿀 수 있는 것은 공개 범위와 사연뿐이다(글 한 줄, 목소리
+      // 한 마디). 거리·시간·케이던스는 **남긴 뒤 불변** — 고친 기록으로
+      // 남과 달리면 그건 그날의 리듬이 아니다.
+      //
+      // storyClipUrl이 여기 있는 이유: 음성은 러닝이 끝나고 쿨다운에서
+      // 채집되므로 문서가 이미 저장된 뒤에 붙는다(§5-2)
       allow update: if mine() &&
         request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['visibility', 'story']);
+          .hasOnly(['visibility', 'story', 'storyClipUrl']);
 
       allow delete: if mine();
 

@@ -45,6 +45,7 @@ class GhostRun {
     this.kcal = 0,
     this.visibility = GhostVisibility.pacemates,
     this.story,
+    this.storyClipUrl,
     this.episodeId,
     this.sessionId,
     this.slowdownMarkers = const [],
@@ -65,6 +66,10 @@ class GhostRun {
   /// 사연 한 마디 — 쿨다운에서 채집한 음성의 전사(§5). P6에서 채워진다.
   /// **이 한 마디가 사연 아카이브·카드 캡션·릴레이 문구의 단일 공급원이다**
   final String? story;
+
+  /// 쿨다운에서 채집한 '오늘 어땠어요?' 한 마디의 주소(Storage).
+  /// 러닝이 저장된 **뒤에** 붙는다 — 채집이 완주 다음이라서다(§5-2)
+  final String? storyClipUrl;
 
   /// 어느 에피소드였는지 (자유런이면 null)
   final String? episodeId;
@@ -94,6 +99,7 @@ class GhostRun {
         'cadence': timeline.toDeltas(),
         'visibility': visibility.wire,
         if (story != null) 'story': story,
+        if (storyClipUrl != null) 'storyClipUrl': storyClipUrl,
         if (episodeId != null) 'episodeId': episodeId,
         if (sessionId != null) 'sessionId': sessionId,
         if (slowdownMarkers.isNotEmpty) 'slowdownMarkers': slowdownMarkers,
@@ -118,6 +124,7 @@ class GhostRun {
       cadence: GhostCadenceTimeline.fromDeltas(deltas).spmPerSecond,
       visibility: GhostVisibility.fromWire(m['visibility'] as String?),
       story: m['story'] as String?,
+      storyClipUrl: m['storyClipUrl'] as String?,
       episodeId: m['episodeId'] as String?,
       sessionId: m['sessionId'] as String?,
       slowdownMarkers: (m['slowdownMarkers'] as List?)

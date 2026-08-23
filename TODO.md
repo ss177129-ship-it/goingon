@@ -70,7 +70,9 @@
 - [ ] **TestFlight에 업로드** — `./tools/ship-testflight.sh` (빌드 번호 자동 증가 → IPA 빌드 → 검증 → 업로드)
       최초 1회만 App Store Connect API 키 준비 필요 — 스크립트 맨 위 주석 참조.
       키가 준비되기 전까지는 예전 방식(Xcode → Organizer ⌥⌘6 → Distribute App)도 그대로 씀
-- [ ] 폰에 설치 → 앱 실행 → **알림 권한 "허용"**
+- [ ] 폰에 설치 → **8분을 완주** → 그 직후 뜨는 **알림 권한 "허용"**
+      ⚠️ P5에서 묻는 자리가 바뀌었다(RootScreen 진입 → 첫 완주 직후). 앱만 켜서는 팝업이 안 뜬다.
+      계정당 한 번뿐이라, 이미 물어본 계정에서는 다시 안 뜬다 — 기기 prefs `push_permission_asked_v1`
 - [ ] **설정 탭 → "알림" 항목이 뭐라고 쓰여 있는지 확인** ← 진단이 여기 나옴
       `이 기기로 알림을 받아요` = 성공 / `등록 실패 — …(사유)` = 괄호 안이 원인
 - [ ] 토큰 확인: `cd functions && NODE_PATH=./node_modules node ../tools/push-check.js list`

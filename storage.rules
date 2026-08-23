@@ -27,5 +27,27 @@ service firebase.storage {
       // 사진 삭제 / 회원탈퇴 시 정리 (write 규칙은 request.resource가 없어 못 씀)
       allow delete: if mine();
     }
+
+    // 쿨다운의 '음성 한 마디'(§5-2). 경로에 uid가 들어가는 이유는
+    // Storage 규칙이 Firestore를 못 읽어서다 — "이 러닝이 내 것인가"를
+    // 물을 수 없으니 소유자를 경로에 박아야 판정할 수 있다.
+    match /voices/{uid}/{fileName} {
+      function mine() {
+        return request.auth != null && request.auth.uid == uid;
+      }
+
+      // **아바타와 달리 남에게 열지 않는다.** 목소리는 얼굴보다 사적이고,
+      // 남이 이 파일에 닿는 길은 러닝 문서에 실린 다운로드 주소뿐이다.
+      // 그 문서는 Firestore 규칙이 공개 범위대로 지킨다
+      allow read: if mine();
+
+      // 20초 aacLc 모노면 200KB 안쪽이다. 앱을 거치지 않는 호출까지
+      // 감안해 2MB로 막고, 오디오가 아닌 것은 받지 않는다
+      allow write: if mine() &&
+        request.resource.size < 2 * 1024 * 1024 &&
+        request.resource.contentType.matches('audio/.*');
+
+      allow delete: if mine();
+    }
   }
 }
