@@ -287,17 +287,20 @@ service cloud.firestore {
           .data.get('friends', []);
       }
 
-      // 목록 조회도 문서 단위로 판정한다. 예전에는 로그인만 확인하고
-      // "클라이언트가 uid를 좁혀 던진다"를 전제로 뒀는데, 규칙이 강제하지
-      // 않는 전제는 전제일 뿐이라 아무나 runs 전체를 훑을 수 있었다.
+      // 목록 조회에서 `resource.data`는 **문서 내용이 아니라 쿼리 조건**으로
+      // 채워진다(2026-08-23 에뮬레이터로 확인). 즉 여기 쓰는 필드는 전부
+      // 클라이언트가 where로 좁혀야 하고, 안 좁히면 조건이 성립하지 않아
+      // 쿼리 전체가 거부된다.
       //
-      // 돌아오는 문서 중 **하나라도** 이 조건을 못 넘기면 쿼리 전체가
-      // 거부된다. 그래서 클라이언트는 페이스메이트 조회에서 private을
-      // 애초에 빼고 던진다(ghost_service.recentFrom)
+      // **`.get(필드, 기본값)`을 쓰면 안 된다.** 기본값이 있으면 클라이언트가
+      // 그 필드를 안 좁혔을 때 기본값으로 판정이 통과해 버린다. 실제로
+      // `.get('visibility','pacemates')`로 뒀다가, 공개 범위를 안 걸고 던진
+      // 쿼리에서 **페이스메이트의 private 런이 그대로 나왔다.**
+      // 그래서 여기서는 필드를 직접 읽는다 — 안 좁히면 거부가 정답이다.
       allow list: if request.auth != null && (
         resource.data.uid == request.auth.uid ||
-        resource.data.get('visibility', 'pacemates') == 'everyone' ||
-        (resource.data.get('visibility', 'pacemates') == 'pacemates' &&
+        resource.data.visibility == 'everyone' ||
+        (resource.data.visibility == 'pacemates' &&
           resource.data.uid in myFriends())
       );
 

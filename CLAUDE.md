@@ -67,6 +67,8 @@ Flutter + Firebase(Apple 로그인, Firestore, Storage, Cloud Messaging) + Cloud
 - 세션 update는 **필드 허용 목록** 방식이라, 새 필드를 쓰려면 규칙에도 추가해야 한다. hostId/guestId/createdAt은 생성 후 불변이고 ready/late/joined/results 맵은 자기 uid 항목만 쓸 수 있다
 - **친구 추가는 대기 중인 요청이 실제로 존재할 때만 통과한다.** `friends`에 직접 쓰는 코드를 새로 만들지 말 것 — 규칙이 거부한다
 - 프로필 사진은 **Storage** `avatars/{uid}.jpg`에 두고 문서에는 주소(`photoUrl`)만. 이미지를 문서에 넣지 말 것 — 친구 목록이 실시간 스트림이라 매 스냅샷마다 따라온다. 덮어쓸 때마다 다운로드 토큰이 새로 발급돼 주소가 바뀌므로 **업로드 후 `photoUrl` 갱신을 반드시 함께** 할 것
+- **목록(list) 규칙에서 `resource.data`는 문서 내용이 아니라 쿼리 조건으로 채워진다** (2026-08-23 에뮬레이터로 확인). 그래서 목록 규칙이 참조하는 필드는 클라이언트가 `where`로 좁혀야 하고, 안 좁히면 조건이 성립하지 않아 쿼리가 거부된다. **`.get(필드, 기본값)`을 목록 규칙에 쓰지 말 것** — 기본값이 있으면 안 좁힌 쿼리가 기본값으로 통과한다. 실제로 `runs`의 `.get('visibility','pacemates')` 때문에 **페이스메이트의 private 런이 목록으로 새어 나왔다.** 단일 문서(get)는 문서 내용을 보므로 같은 규칙이라도 거부됐고, 그래서 눈으로는 안 보이는 구멍이었다
+- **규칙을 바꾸면 `test_rules/`를 돌릴 것**: `cd test_rules && npm test` (에뮬레이터 필요 — `brew install openjdk` 후 `PATH=/usr/local/opt/openjdk/bin:$PATH`). 실기기로는 페이스메이트 갈래를 밟으려면 상대 계정에 실제 러닝이 있어야 해서 검증이 사실상 불가능하다
 - **`runs` 목록 쿼리와 규칙은 한 쌍이다.** 목록 규칙은 돌아오는 문서를 하나씩 판정하고 **하나라도 막히면 쿼리 전체가 거부**된다. 그래서 페이스메이트 조회는 클라이언트가 `visibility`로 private을 미리 빼고 던져야 하며(`GhostService.recentFrom`), 규칙만 고치거나 쿼리만 고치면 목록이 통째로 빈다. 분기 총량 30 제한 때문에 uid 청크는 15가 천장이다(15 × 공개범위 2)
 - 목록 규칙이 보는 것은 **내 친구 목록**(`myFriends()`)이지 상대의 것이 아니다 — 상대 문서를 읽으면 사람 수만큼 `get()`이 생겨 한도(10)를 넘긴다. 연결 끊기가 양쪽을 한 배치로 지우므로 둘은 같은 것을 말한다
 - 규칙·인덱스는 소스가 기준: `firebase deploy --only firestore,storage --project goingon-c12f3` (배포 전 `--dry-run`)

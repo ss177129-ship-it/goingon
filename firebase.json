@@ -10,7 +10,11 @@
     {
       "source": "functions",
       "codebase": "default",
-      "ignore": ["node_modules", ".git", "*.log"],
+      "ignore": [
+        "node_modules",
+        ".git",
+        "*.log"
+      ],
       "predeploy": [
         "\"$RESOURCE_DIR/node_modules/.bin/tsc\" --project \"$RESOURCE_DIR\""
       ]
@@ -35,5 +39,14 @@
         }
       }
     }
+  },
+  "emulators": {
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "enabled": false
+    },
+    "singleProjectMode": true
   }
 }
