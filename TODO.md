@@ -395,10 +395,13 @@ CLAUDE.md의 "러닝 중 실시간 동기화 없음"을 폐기하고 당긴 작�
       - [ ] **호스팅** — App Store Connect의 개인정보처리방침 URL이 필수다
       - [ ] 로그인 화면에 **누를 수 있는 링크**로 다시 넣기(2026-09-01에 링크 없는 고지를 뺐다)
       - [ ] 기능이 바뀌면 문서도 같이 — 특히 **음성 한 마디를 되살리면 마이크를 §2에 추가**
-- [ ] **⛔ `PrivacyInfo.xcprivacy` 작성** (위치·유저 데이터 수집 명시)
-      **모션 사유를 반드시 포함할 것** — 2026-08-17에 케이던스(CMPedometer)를 붙이며
-      `NSMotionUsageDescription`은 넣었지만 xcprivacy는 아직 없다. 작성 시
-      사진 접근·사용자 콘텐츠와 함께 **모션/피트니스**를 한 번에 적는다
+- [x] **⛔ `PrivacyInfo.xcprivacy`** — 2026-09-01 작성 완료. `ios/Runner/PrivacyInfo.xcprivacy`
+      - 신고한 것: UserID · Name · EmailAddress · PhotosorVideos · **Fitness**(케이던스 포함) · DeviceID(푸시 토큰) · CrashData(Linked=false). 전부 `AppFunctionality`, 추적 없음
+      - **위치는 신고하지 않았다.** Apple의 '수집'은 기기 밖으로 내보내 남기는 것을 말하는데, 좌표는 기기 안에서 거리 계산에만 쓰이고 서버에는 거리만 올라간다(코드로 확인). **경로 저장을 도입하면 `PreciseLocation`을 반드시 추가할 것**
+      - 오디오도 없다(마이크 미사용). 음성 한 마디를 되살리면 `AudioData` 추가
+      - `NSPrivacyAccessedAPITypes`는 비었다 — 우리 네이티브 코드(AppDelegate·SceneDelegate·CadencePlugin)가 사유 필수 API를 쓰지 않는다. 플러그인은 각자 매니페스트를 들고 온다
+      - **파일만 두면 안 된다.** `project.pbxproj`의 PBXBuildFile·PBXFileReference·Runner 그룹·Resources 빌드 단계 네 곳에 등록해야 번들에 들어간다(`GO0PRV…` id). 빌드 후 `Runner.app/PrivacyInfo.xcprivacy` 존재를 확인했다
+      - 판단 근거는 `docs/legal/privacy_policy.md`와 같다 — **기능이 바뀌면 둘 다 고칠 것**
 - [ ] **⛔ 위치정보사업(위치기반서비스사업) 신고** — 국내 규제. 신청서 Q4-2 ③의 멘토링 항목이기도
       하다(스트라바가 한국에서 철수한 원인이 이 규제 대응이었다). 신고 전 출시는 불가
 

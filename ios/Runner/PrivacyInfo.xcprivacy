@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  고잉온 개인정보 매니페스트 (2026-09-01 최초 작성)
+
+  판단 근거는 `docs/legal/privacy_policy.md`와 같고, 그 문서는 코드에서
+  직접 확인해 썼다. 기능이 바뀌면 **둘 다** 같이 고칠 것.
+
+  Apple의 "수집(collect)"은 **기기 밖으로 내보내 세션 이후까지 남기는 것**을
+  말한다. 기기 안에서만 쓰고 버리는 값은 수집이 아니다. 아래 판정은 그 기준을
+  따랐다.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+
+	<!--
+	  추적하지 않는다. 광고 식별자(IDFA)를 읽지 않고, 다른 회사의 데이터와
+	  연결하지 않는다. 그래서 추적 도메인도 없다.
+	-->
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array>
+		<!--
+		  ⚠️ 위치는 여기 없다.
+		  러닝 중 좌표는 **기기 안에서 거리(km) 계산에만** 쓰이고, 서버로
+		  올라가는 것은 계산된 거리뿐이다. 경로·좌표를 저장하는 코드가
+		  없다(run_service·run_recovery 확인). 그래서 Apple 기준으로
+		  '수집'에 해당하지 않는다.
+		  **경로 저장을 도입하면 PreciseLocation을 반드시 추가할 것.**
+
+		  ⚠️ 오디오도 없다. 마이크를 쓰지 않는다(2026-09-01에 record
+		  의존성과 권한 문구를 제거). 음성 한 마디 기능을 되살리면
+		  AudioData를 추가할 것.
+		-->
+
+		<dict>
+			<!-- Firebase uid. 계정 유지와 관계 연결에 쓴다 -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeUserID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<dict>
+			<!-- 이용자가 직접 입력한 이름. 페이스메이트 목록에 표시된다 -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeName</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<dict>
+			<!--
+			  Apple/Google 로그인이 넘겨주는 이메일. 인증 시스템이 보관한다.
+			  Apple의 '이메일 가리기'를 쓰면 중계 주소가 온다.
+			-->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeEmailAddress</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<dict>
+			<!-- 프로필 사진(선택). 등록한 경우에만 저장된다 -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhotosorVideos</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<dict>
+			<!--
+			  러닝 기록: 시간·거리·소모 칼로리(추정치)·걸음 리듬(케이던스).
+			  케이던스는 함께 달리는 세션에서 상대에게 실시간 전달된다.
+			  HealthKit은 쓰지 않으므로 Health가 아니라 Fitness다.
+			-->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeFitness</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<dict>
+			<!-- 푸시 알림 토큰. 알림을 허용한 기기에만 생긴다 -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeDeviceID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<dict>
+			<!--
+			  크래시 로그(Crashlytics). 계정에 연결하지 않으므로 Linked=false.
+			  장애 원인 파악에만 쓴다.
+			-->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeCrashData</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+	</array>
+
+	<!--
+	  '사유 필수 API'는 **우리 코드가 쓰는 것만** 적는다. 확인 결과
+	  AppDelegate·SceneDelegate·CadencePlugin 어디에도 해당 API가 없다
+	  (UserDefaults·부팅 시각·파일 타임스탬프·디스크 용량·활성 코어 수).
+	  플러그인은 각자 자기 매니페스트를 들고 온다 —
+	  빌드 로그에 `*_privacy` 번들이 찍히는 것이 그것이다.
+	-->
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>
