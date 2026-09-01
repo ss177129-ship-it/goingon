@@ -60,8 +60,7 @@ class RunScreen extends StatefulWidget {
   final GhostRun? ghost;
 
   /// 이만큼 달리면 스스로 마친다. **데모 전용이다** — 실제 러닝에 상한을
-  /// 두면 그건 러닝이 아니라 타이머고, 8분 에피소드조차 상한이 아니라
-  /// 완결이다(잔향 뒤 자유런으로 이어진다). 데모에만 두는 이유는 데모가
+  /// 두면 그건 러닝이 아니라 타이머다. 데모에만 두는 이유는 데모가
   /// 체험이라서다: 끝이 없으면 처음 온 사람은 언제 멈춰야 할지 모른다
   final Duration? autoFinishAfter;
 

@@ -7,10 +7,10 @@
 // 연결 레이어(공명·고스트·응원·여정)는 길이를 가리지 않으므로 제품 하나로
 // 두 결핍을 다 다룬다. 갈라지는 것은 홈의 첫 화면뿐이다.
 enum RunnerLevel {
-  /// 오늘의 8분이 전면
+  /// 이제 시작하거나 가끔 달리는 사람
   beginner('beginner'),
 
-  /// 자유런이 전면, 에피소드는 마디(오프닝·앙코르)
+  /// 꾸준히 달리는 사람
   experienced('experienced');
 
   const RunnerLevel(this.wire);

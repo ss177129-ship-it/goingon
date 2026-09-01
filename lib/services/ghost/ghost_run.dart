@@ -46,7 +46,6 @@ class GhostRun {
     this.visibility = GhostVisibility.pacemates,
     this.story,
     this.storyClipUrl,
-    this.episodeId,
     this.sessionId,
     this.slowdownMarkers = const [],
   });
@@ -70,9 +69,6 @@ class GhostRun {
   /// 쿨다운에서 채집한 '오늘 어땠어요?' 한 마디의 주소(Storage).
   /// 러닝이 저장된 **뒤에** 붙는다 — 채집이 완주 다음이라서다(§5-2)
   final String? storyClipUrl;
-
-  /// 어느 에피소드였는지 (자유런이면 null)
-  final String? episodeId;
 
   /// 라이브 세션이었으면 그 id
   final String? sessionId;
@@ -100,7 +96,6 @@ class GhostRun {
         'visibility': visibility.wire,
         if (story != null) 'story': story,
         if (storyClipUrl != null) 'storyClipUrl': storyClipUrl,
-        if (episodeId != null) 'episodeId': episodeId,
         if (sessionId != null) 'sessionId': sessionId,
         if (slowdownMarkers.isNotEmpty) 'slowdownMarkers': slowdownMarkers,
         // route는 넣지 않는다 — 기본 비저장(§3-2)
@@ -125,7 +120,6 @@ class GhostRun {
       visibility: GhostVisibility.fromWire(m['visibility'] as String?),
       story: m['story'] as String?,
       storyClipUrl: m['storyClipUrl'] as String?,
-      episodeId: m['episodeId'] as String?,
       sessionId: m['sessionId'] as String?,
       slowdownMarkers: (m['slowdownMarkers'] as List?)
               ?.map((e) => (e as num).toInt())
@@ -192,7 +186,6 @@ class GhostRecorder {
     required String uid,
     required double km,
     int kcal = 0,
-    String? episodeId,
     String? sessionId,
     GhostVisibility visibility = GhostVisibility.pacemates,
   }) =>
@@ -205,7 +198,6 @@ class GhostRecorder {
         kcal: kcal,
         cadence: cadence,
         visibility: visibility,
-        episodeId: episodeId,
         sessionId: sessionId,
         slowdownMarkers: slowdownMarkers,
       );

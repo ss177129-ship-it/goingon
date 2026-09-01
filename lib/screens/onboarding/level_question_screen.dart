@@ -10,9 +10,12 @@ import 'onboarding_scaffold.dart';
 /// 온보딩 03 — 질문 하나.
 ///
 /// **온보딩에서 묻는 것은 이것 하나뿐이다.** 물을수록 이탈하고, 우리가 정말
-/// 알아야 하는 것은 "이 사람의 결핍이 무엇인가" 하나다(§2-3). 입문자의
-/// 결핍은 러닝이 부담이라는 것, 경험자의 결핍은 함께가 없다는 것 —
-/// 갈라지는 것은 홈의 첫 화면뿐이고 연결 레이어는 둘 다 같다.
+/// 알아야 하는 것은 "이 사람의 결핍이 무엇인가" 하나다(§2-3).
+///
+/// 이 답이 예전에는 홈을 갈랐는데, 에피소드런이 내려가면서 **지금은 화면을
+/// 바꾸지 않는다**(2026-09-01). 그래도 계속 묻는 이유는 답이 쌓여야 나중에
+/// 쓸 수 있어서다 — 질문을 뺐다가 다시 넣으면 그 사이 가입한 사람들의
+/// 답만 비게 된다. 그래서 카피에서 "홈이 바뀐다"는 약속을 걷어냈다.
 ///
 /// 선택지에 숫자가 없다. "주 몇 회"는 기록이 부끄러운 사람에게 첫 질문부터
 /// 시험이 된다.
@@ -51,12 +54,12 @@ class _LevelQuestionScreenState extends State<LevelQuestionScreen> {
       content: [
         Text('달리기, 어느 정도 하세요?', style: GoTheme.serif(24)),
         const SizedBox(height: 8),
-        const Text('답에 따라 홈의 기본 모드가 정해져요',
+        const Text('기억해 뒀다가, 맞는 리듬을 권할 때 써요',
             style: TextStyle(fontSize: 13, color: GoColors.mid)),
         OnboardingScaffold.gap,
-        _option(RunnerLevel.beginner, '8분 에피소드가 앞에 놓여요'),
+        _option(RunnerLevel.beginner, '아직 10분도 길게 느껴져요'),
         OnboardingScaffold.gap,
-        _option(RunnerLevel.experienced, '자유런이 앞에, 에피소드는 마디로'),
+        _option(RunnerLevel.experienced, '한 번 나가면 30분은 달려요'),
         const Spacer(),
       ],
       action: OnboardingButton(

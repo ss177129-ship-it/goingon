@@ -2,26 +2,24 @@ import 'dart:async';
 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
-
 import '../services/auth_service.dart';
 import '../services/friend_service.dart';
 import '../services/ghost/today_partner.dart';
 import '../services/ghost/today_partner_loader.dart';
-import '../services/onboarding/onboarding_progress.dart';
-import '../services/onboarding/runner_level.dart';
-import '../services/session/chart.dart';
 import '../theme.dart';
 import '../widgets/pressable.dart';
 import 'pacemates_screen.dart';
 import 'today_partner_screen.dart';
 
-/// 홈 — 와이어프레임 05(입문자) / 06(경험자).
+/// 홈 — 한 화면.
 ///
-/// **한 화면의 두 얼굴이다.** 온보딩 질문 하나의 답이 정하는 것은 이것뿐이고
-/// (§2-3), 그 아래 연결 레이어(공명·고스트·여정)는 둘이 똑같다. 갈리는 이유는
-/// 결핍이 달라서다 — 입문자에게는 러닝 자체가 부담이라 8분 완결이 앞에
-/// 놓이고, 경험자에게는 함께가 부재라 자유런이 앞에 놓인다.
+/// 원래는 레벨에 따라 두 얼굴이었다(입문자=8분 에피소드 전면 / 경험자=자유런
+/// 전면). 그 분기의 근거가 에피소드였는데 **에피소드런을 내리면서 근거가
+/// 사라져** 하나로 합쳤다(2026-09-01 결정).
+///
+/// `users.level`과 온보딩의 레벨 질문은 그대로 둔다 — 데이터는 계속 쌓이고,
+/// 나중에 분기할 근거가 생기면 그때 다시 갈라진다. 지금 지우면 그 사이에
+/// 가입한 사람들의 답만 비게 된다.
 ///
 /// 로비는 없다(P5에서 삭제). 상대를 고르는 일은 [TodayPartnerScreen]이 맡고,
 /// 그 화면은 서로 기다리지 않는다.
@@ -41,7 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final _loader = TodayPartnerLoader();
 
   Map<String, dynamic>? _me;
-  Chart? _episode;
   TodayPartners _partners = TodayPartners.empty;
 
   /// 나에게 온 페이스메이트 요청. 놓치면 상대는 무한정 기다리므로 홈 맨 위에
@@ -49,13 +46,10 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription? _requestsSub;
   int _requestCount = 0;
 
-  RunnerLevel get _level => OnboardingProgress.levelOf(_me);
-
   @override
   void initState() {
     super.initState();
     _load();
-    _loadEpisode();
     _listenRequests();
   }
 
@@ -86,19 +80,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// 에피소드는 코드가 아니라 데이터다(§3-6) — 앱 번들의 채보를 읽는다.
-  /// 지금은 한 편뿐이라 '오늘의'는 고정이고, 편성이 생기면 여기만 바뀐다
-  Future<void> _loadEpisode() async {
-    try {
-      final json =
-          await rootBundle.loadString('assets/episodes/episode_train.chart.json');
-      final chart = Chart.parse(json);
-      if (mounted) setState(() => _episode = chart);
-    } catch (e, stack) {
-      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
-    }
-  }
-
   void _openPartners() => Navigator.push(context,
       MaterialPageRoute(builder: (_) => const TodayPartnerScreen()));
 
@@ -107,7 +88,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final beginner = _level == RunnerLevel.beginner;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
       child: Column(
@@ -122,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
-              children: beginner ? _beginnerCards() : _experiencedCards(),
+              children: _cards(),
             ),
           ),
           const SizedBox(height: 14),
@@ -135,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(26),
               ),
               alignment: Alignment.center,
-              child: Text(beginner ? '오늘의 8분 시작' : '자유런 시작',
+              child: Text('오늘의 러닝 시작',
                   style: GoTheme.serif(18, color: GoColors.paper)),
             ),
           ),
@@ -144,49 +124,23 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── 입문자: 8분 에피소드가 전면 ──
-  List<Widget> _beginnerCards() => [
-        _card(
-          height: 160,
-          onTap: _openPartners,
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            _label('오늘의 에피소드'),
-            const SizedBox(height: 10),
-            Text(_episodeTitle, style: GoTheme.serif(24)),
-            const SizedBox(height: 8),
-            Text(_partnerLine,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 12, height: 1.5, color: GoColors.mid)),
-          ]),
-        ),
-        const SizedBox(height: 14),
-        _journeyCard(),
-      ];
-
-  // ── 경험자: 자유런이 전면, 에피소드는 마디로 ──
-  List<Widget> _experiencedCards() => [
+  /// 카드 두 장. 에피소드가 내려가면서 히어로 자리는 **오늘 누구와 달리는가**가
+  /// 가져갔다 — 이 앱이 파는 것이 8분이라는 형식이 아니라 함께라는 사실이라면,
+  /// 형식이 빠진 자리에 남는 것이 그것이다
+  List<Widget> _cards() => [
         _card(
           height: 160,
           onTap: _openPartners,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             _label('오늘'),
             const SizedBox(height: 10),
-            Text('자유런', style: GoTheme.serif(24)),
+            Text(_heroTitle, style: GoTheme.serif(24)),
             const SizedBox(height: 8),
-            const Text('오늘의 사운드트랙과 함께 — 고스트 동행을 골라도 돼요',
+            Text(_partnerLine,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                     fontSize: 12, height: 1.5, color: GoColors.mid)),
           ]),
-        ),
-        const SizedBox(height: 14),
-        _card(
-          height: 84,
-          onTap: _openPartners,
-          child: Text('$_episodeTitle · 8분 — 오프닝으로 몸 올리기',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, color: GoColors.ink)),
         ),
         const SizedBox(height: 14),
         _journeyCard(),
@@ -200,13 +154,14 @@ class _HomeScreenState extends State<HomeScreen> {
             style: const TextStyle(fontSize: 13, color: GoColors.ink)),
       );
 
-  String get _episodeTitle => _episode?.title ?? '오늘의 8분';
+  /// 함께 달릴 리듬이 있으면 그것이, 없으면 자유런이 히어로다
+  String get _heroTitle => _partners.first == null ? '자유런' : '오늘의 상대';
 
   /// 오늘의 상대 한 줄. 못 불러왔거나 아직 없으면 **없다고 말하지 않는다** —
   /// 고르러 가는 문을 열어둘 뿐이다
   String get _partnerLine {
     final p = _partners.first;
-    if (p == null) return '8분 · 함께 달릴 리듬 고르기';
+    if (p == null) return '오늘의 사운드트랙과 함께 — 고스트 동행을 골라도 돼요';
     final name = _partners.names[p.ghost.uid] ?? '페이스메이트';
     final who = switch (p.reason) {
       PartnerReason.pacemate => '$name의 지난 리듬',
@@ -214,9 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
       PartnerReason.seed => '어느 러너의 리듬',
     };
     final story = p.ghost.story;
-    return story == null || story.isEmpty
-        ? '8분 · 오늘의 상대: $who'
-        : '8분 · 오늘의 상대: $who\n"$story"';
+    return story == null || story.isEmpty ? who : '$who\n"$story"';
   }
 
   String get _journeyLine {
