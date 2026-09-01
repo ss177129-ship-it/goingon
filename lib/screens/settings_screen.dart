@@ -10,8 +10,7 @@ import '../theme.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/initial_avatar.dart';
 import '../widgets/go_toast.dart';
-import 'onboarding/demo_run_screen.dart';
-import 'pacemates_screen.dart';
+import 'lobby_screen.dart';
 import 'login_screen.dart';
 import 'profile_edit_screen.dart';
 
@@ -54,7 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String get _profileSummary {
     final username = (_me?['username'] as String?) ?? '';
-    if (username.isEmpty) return '아이디를 설정하면 페이스메이트가 검색으로 찾을 수 있어요';
+    if (username.isEmpty) return '아이디를 설정하면 친구가 검색으로 찾을 수 있어요';
     return _myName.isEmpty ? '@$username' : '$_myName · @$username';
   }
 
@@ -240,7 +239,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await friends.unblockUser(_auth.uid, uid);
       if (!mounted) return;
-      GoToast.show(context, '$name님의 차단을 해제했어요. 다시 맺으려면 요청이 필요해요.');
+      GoToast.show(context, '$name님의 차단을 해제했어요. 다시 친구가 되려면 요청이 필요해요.');
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
@@ -274,7 +273,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirmed = await GoDialog.confirm(
       context,
       title: '정말 탈퇴할까요?',
-      body: '내 기록과 페이스메이트 연결이 모두 사라져요.\n이 작업은 되돌릴 수 없어요.',
+      body: '내 기록과 친구 연결이 모두 사라져요.\n이 작업은 되돌릴 수 없어요.',
       confirmLabel: '탈퇴하기',
       destructive: true,
     );
@@ -354,32 +353,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onTap: _soundOn ? () => _setBriefing(!_briefingOn) : null,
       ),
       _row(
-        icon: Icons.people_alt_outlined,
-        title: '페이스메이트',
-        subtitle: '함께 달릴 사람을 찾고, 온 요청에 답해요',
-        onTap: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const PacematesScreen())),
-      ),
-      _row(
         icon: Icons.block,
         title: '차단 목록',
         subtitle: '차단한 사람을 확인하고 해제해요',
         onTap: _showBlockedList,
       ),
-      // 심사관용 진입점 — **항상 여기 있어야 한다**(CLAUDE.md). 친구 0명·
-      // 기기 1대·권한 없음에서도 이 앱의 핵심(둘이 발을 맞추는 것)을
-      // 혼자 겪을 수 있는 유일한 길이다.
-      // 도는 내용물은 온보딩의 데모런과 **같은 것**이다(P5) — 심사관이 본
-      // 것과 처음 온 사람이 본 것이 다르면 심사관이 본 것은 이 앱이 아니다
+      // 친구가 없어도 로비 → 러닝 → 완료 전체를 볼 수 있는 통로.
+      // 홈의 링크는 친구가 생기면 사라지므로, 항상 찾을 수 있는 자리에도 둠
       _row(
         icon: Icons.play_circle_outline,
         title: '혼자 미리 체험하기',
-        subtitle: '가상의 페이서와 60초 데모런을 둘러봐요',
+        subtitle: '가상의 친구와 전체 흐름을 둘러봐요',
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) =>
-                DemoRunScreen(onDone: () => Navigator.of(context).pop()),
+            builder: (_) => const LobbyScreen(
+                sessionId: 'demo', partnerName: '지수', demo: true),
           ),
         ),
       ),

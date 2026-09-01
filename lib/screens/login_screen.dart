@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../services/auth_service.dart';
-import '../services/onboarding/onboarding_progress.dart';
 import '../theme.dart';
 import '../widgets/brand_mark.dart';
 import '../widgets/go_toast.dart';
 import 'nickname_screen.dart';
-import 'onboarding/onboarding_flow.dart';
 import 'root_screen.dart';
 
 /// 온보딩: 로그인 방법을 고르는 화면. 인증에 성공하면 항상 닉네임 설정
@@ -34,13 +32,8 @@ class _LoginScreenState extends State<LoginScreen> {
         await AuthService().myProfile().timeout(const Duration(seconds: 10));
     if (!mounted) return;
     if (AuthService.isProfileComplete(profile)) {
-      // 프로필은 있는데 레벨이 없으면 온보딩 도중 나간 계정이다 —
-      // 홈의 기본값을 모르는 채로 홈에 들여보내지 않는다
-      final next = OnboardingProgress.needsRunnerLevel(profile)
-          ? const OnboardingFlow()
-          : const RootScreen();
-      Navigator.pushAndRemoveUntil(
-          context, MaterialPageRoute(builder: (_) => next), (_) => false);
+      Navigator.pushAndRemoveUntil(context,
+          MaterialPageRoute(builder: (_) => const RootScreen()), (_) => false);
     } else {
       Navigator.pushReplacement(context, MaterialPageRoute(
         builder: (_) =>

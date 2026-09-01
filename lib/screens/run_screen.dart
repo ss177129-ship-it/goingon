@@ -14,13 +14,9 @@ import '../services/auth_service.dart';
 import '../services/cadence_service.dart';
 import '../services/demo_resonance.dart';
 import '../services/cadence/partner_cadence.dart';
-import '../services/ghost/ghost_engine.dart';
-import '../services/ghost/ghost_run.dart';
-import '../services/ghost/ghost_service.dart';
 import '../services/live_share.dart';
 import '../services/location_service.dart';
 import '../services/resonance.dart';
-import '../services/cooldown/voice_prompt.dart';
 import '../services/run_recovery.dart';
 import '../services/run_service.dart';
 import '../services/sound/resonance_sound.dart';
@@ -31,9 +27,9 @@ import '../services/sound_settings.dart';
 import '../theme.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
+import '../widgets/pressable.dart';
 import '../widgets/resonance_canvas.dart';
-import 'cooldown_screen.dart';
-import 'result_screen.dart';
+import 'finish_screen.dart';
 
 /// 강제 종료 대비 스냅샷을 남기는 최소 간격.
 /// 예전에도 5초 주기였고 그대로 유지한다. 달라진 것은 이제 타이머뿐 아니라
@@ -46,36 +42,14 @@ const _kStopButtonSize = 76.0;
 /// 러닝 화면 — 각자 GPS로 기록하고, 케이던스·페이스·거리를 실시간으로
 /// 주고받아 공명을 만든다. 합산은 여전히 완료 후에 한다
 class RunScreen extends StatefulWidget {
-  /// 세션 문서 id. **빈 문자열이면 세션이 없는 러닝**이다(자유런·고스트런).
-  /// 혼자 달린 러닝에는 세션이 없고, 그래도 고스트는 남는다(§3-2)
   final String sessionId;
-
-  /// 화면과 브리핑이 부르는 이름. 혼자면 빈 문자열
   final String partnerName;
   final bool demo;
-
-  /// 시차 동행 상대. 있으면 이 사람의 그날 리듬이 공명 엔진의 입력이 된다 —
-  /// **라이브와 같은 인터페이스로 꽂힌다**(P2). 시차 공명이 동시 공명과
-  /// 다른 코드를 타지 않는 것이 그 설계의 요점이었다
-  final GhostRun? ghost;
-
-  /// 이만큼 달리면 스스로 마친다. **데모 전용이다** — 실제 러닝에 상한을
-  /// 두면 그건 러닝이 아니라 타이머다. 데모에만 두는 이유는 데모가
-  /// 체험이라서다: 끝이 없으면 처음 온 사람은 언제 멈춰야 할지 모른다
-  final Duration? autoFinishAfter;
-
-  /// 완료 화면까지 다 본 뒤 어디로 갈지를 호출부가 정할 때. 온보딩은
-  /// 데모런이 끝나면 홈이 아니라 **다음 온보딩 장**으로 가야 한다
-  final VoidCallback? onFinished;
-
   const RunScreen(
       {super.key,
       required this.sessionId,
       required this.partnerName,
-      this.demo = false,
-      this.ghost,
-      this.autoFinishAfter,
-      this.onFinished});
+      this.demo = false});
 
   @override
   State<RunScreen> createState() => _RunScreenState();
@@ -114,25 +88,11 @@ class _RunScreenState extends State<RunScreen>
   StreamSubscription<double>? _cadenceSub;
   double? _myCadence;
 
-  /// 상대 케이던스의 출처. 라이브(세션)와 고스트(시차) 둘 다 여기 꽂히고,
-  /// 아래 발맞춤 경로는 어느 쪽이 꽂혔는지 모른다 — 그것이 P2의 목적이었다
-  final _live = LivePartnerCadence();
-  late final PartnerCadenceSource _partnerCadence;
+  /// 상대 케이던스의 출처. 지금은 라이브 하나뿐이지만, 고스트(P4)가 붙으면
+  /// 여기만 바뀌고 아래 발맞춤 경로는 그대로다 — 시차 공명이 라이브 공명과
+  /// 같은 판정을 타게 하는 것이 P2의 목적이었다
+  final PartnerCadenceSource _partnerCadence = LivePartnerCadence();
   final _liveGate = LiveWriteGate();
-
-  /// 시차 동행 재생기. 없으면 상대가 없는 러닝이다
-  GhostEngine? _ghostEngine;
-
-  /// **모든 러닝이 고스트가 된다**(§3-2). 데모만 빼고 늘 돈다 —
-  /// 혼자 달린 오늘이 누군가의 내일 동반자가 되는 것이 이 앱의 루프다
-  GhostRecorder? _recorder;
-
-  /// 공명으로 보낸 시간(초). 엔진은 "지금 얼마나 유지 중인가"만 알고
-  /// 누적은 갖지 않아서(세션의 성질이지 엔진의 성질이 아니다) 여기서 센다
-  int _resonanceSeconds = 0;
-
-  /// 세션이 없는 러닝인가 — 자유런·고스트런
-  bool get _solo => widget.sessionId.isEmpty;
 
   // ── 멈춤 길게 누르기 진행 링 ──
   // 링이 차는 시간은 [kLongPressTimeout]과 같아야 한다 — 링이 다 찬 순간과
@@ -173,11 +133,7 @@ class _RunScreenState extends State<RunScreen>
       // 케이던스는 없을 수 있다(시뮬레이터·권한 거부). 그때는 그냥 값이
       // 안 오고, 공명은 '함께' 고정으로 남는다 — 기능 저하이지 실패가 아니다
       _cadenceSub = CadenceService().stream().listen((spm) => _myCadence = spm);
-      _recorder = GhostRecorder()..start();
     }
-    final ghost = widget.ghost;
-    _ghostEngine = ghost == null ? null : GhostEngine(ghost);
-    _partnerCadence = _ghostEngine ?? _live;
     _stateSub = _resonance.events.listen((e) {
       if (e is! ResonanceStateChanged || !mounted) return;
       setState(() => _syncState = e.to);
@@ -187,7 +143,7 @@ class _RunScreenState extends State<RunScreen>
           ..addListener(() => _stopHold.value = _stopHoldController.value);
     WakelockPlus.enable();
     _startSoundIfEnabled();
-    if (!widget.demo && !_solo) _listenPartnerGesture();
+    if (!widget.demo) _listenPartnerGesture();
     _start();
   }
 
@@ -252,7 +208,8 @@ class _RunScreenState extends State<RunScreen>
       final state =
           LiveState.fromMap(Map<String, dynamic>.from(entry.value as Map));
       if (state == null) continue;
-      _live.update(spm: state.cadenceSpm, at: state.at);
+      (_partnerCadence as LivePartnerCadence)
+          .update(spm: state.cadenceSpm, at: state.at);
     }
   }
 
@@ -269,7 +226,6 @@ class _RunScreenState extends State<RunScreen>
           _km = _seconds * 0.003; // 약 5'30"/km 페이스
         });
         _reportProgress();
-        _maybeAutoFinish();
       });
       return;
     }
@@ -311,19 +267,7 @@ class _RunScreenState extends State<RunScreen>
       setState(() => _seconds = _elapsedSeconds);
       _saveSnapshot();
       _reportProgress();
-      _tickGhost();
-      _maybeAutoFinish();
     });
-  }
-
-  /// [RunScreen.autoFinishAfter]가 지나면 스스로 마친다. 확인 대화상자를
-  /// 거치지 않는다 — 스스로 끝나기로 한 것에 "정말 끝낼까요?"를 묻는 건
-  /// 화면이 자기 결정을 사용자에게 떠넘기는 것이다
-  void _maybeAutoFinish() {
-    final limit = widget.autoFinishAfter;
-    if (limit == null || _finishing) return;
-    if (_seconds < limit.inSeconds) return;
-    _finish(null);
   }
 
   /// 1km 통과·10분 경과 같은 지점을 공명 레이어에 알린다. 엔진이 중복을
@@ -335,20 +279,10 @@ class _RunScreenState extends State<RunScreen>
       elapsed: Duration(seconds: _elapsedSeconds),
       at: now,
     );
-    if (widget.demo) return;
-    // 세션이 없으면 쓸 곳도 없다. 고스트는 이미 내 폰에 있으므로
-    // 시차 공명은 네트워크 없이도 성립한다
-    if (!_solo) _pushLiveIfChanged(now);
-    _feedCloseness(now);
-  }
-
-  /// 1초 틱의 고스트 몫 — 재생 시각을 밀고, 내 케이던스를 한 칸 적는다.
-  /// 배경에서 틱이 밀려도 재생 시각은 경과 시간에서 오므로 어긋나지 않는다
-  void _tickGhost() {
-    if (widget.demo) return;
-    _ghostEngine?.update(Duration(seconds: _elapsedSeconds));
-    _recorder?.sample(_myCadence);
-    if (_resonance.state == SyncState.resonant) _resonanceSeconds++;
+    if (!widget.demo) {
+      _pushLiveIfChanged(now);
+      _feedCloseness(now);
+    }
   }
 
   /// 내 상태를 상대에게. [LiveWriteGate]가 3초 간격과 변화량을 함께 보고
@@ -480,24 +414,15 @@ class _RunScreenState extends State<RunScreen>
     setState(() => _finishing = true);
     _timer?.cancel();
     _demoResonance?.stop();
-    // 도착 벨 — 완주는 화면이 아니라 **귀에서 착륙한다**(§5-1).
-    // 벨이 울릴 틈을 주고 나서 엔진을 내린다. 바로 내리면 소리가 잘린다
     await _briefing?.stop();
-    await _sound?.arrival();
-    await Future.delayed(const Duration(milliseconds: 700));
     await _sound?.stop();
     _location.stop();
     WakelockPlus.disable();
     final kcal = LocationService.estimateKcal(_seconds);
-    String? runId;
     if (!widget.demo) {
       try {
-        if (_solo) {
-          await RunService().submitSoloResult(AuthService().uid, km: _km);
-        } else {
-          await RunService().submitResult(widget.sessionId, AuthService().uid,
-              seconds: _seconds, km: _km, kcal: kcal, mood: mood);
-        }
+        await RunService().submitResult(widget.sessionId, AuthService().uid,
+            seconds: _seconds, km: _km, kcal: kcal, mood: mood);
       } catch (e, stack) {
         FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
         if (!mounted) return;
@@ -507,128 +432,23 @@ class _RunScreenState extends State<RunScreen>
       }
       // 결과가 서버에 안전히 올라갔으니 로컬 복구 스냅샷은 폐기
       await RunRecovery.clear();
-      // 고스트는 **집계 다음**이다. 남기기에 실패해도 오늘 달린 사실은
-      // 이미 안전하고, 반대 순서면 고스트 저장 실패가 기록을 통째로 되돌린다
-      runId = await _leaveGhost(kcal);
     }
-    final journeyKm = await _journeyKm();
     if (!mounted) return;
-
-    // 완주 → **쿨다운** → 결과. 통계 화면이 정점을 곧바로 식히지 않도록
-    // 걷는 동안의 디브리핑과 한 마디를 사이에 둔다(§5-2)
-    ResultScreen result() => ResultScreen(
-          sessionId: widget.sessionId,
-          partnerName: widget.partnerName,
-          mySeconds: _seconds,
-          myKm: _km,
-          myKcal: kcal,
-          myMood: mood,
-          demo: widget.demo,
-          onDone: widget.onFinished,
-          partnerSnapshot: _ghostSnapshot,
-          cadence: _recorder?.cadence ?? const [],
-          journeyKm: journeyKm,
-          resonanceSeconds: _resonanceSeconds,
-          // 응원은 고스트의 주인에게 간다. 내 지난 러닝과 달렸다면 보낼
-          // 곳이 없다 — 나에게 응원을 보낼 수는 없다
-          cheerTo: widget.ghost != null &&
-                  widget.ghost!.uid != AuthService().uid
-              ? widget.ghost!.uid
-              : null,
-          runId: widget.ghost?.id,
-        );
-
-    final ask = await VoicePrompt.shouldAskNow(
-      now: DateTime.now(),
-      completed: true,
-      isDemo: widget.demo,
-    );
-    if (!mounted) return;
-    if (!ask || runId == null) {
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => result()));
-      return;
-    }
     Navigator.pushReplacement(context, MaterialPageRoute(
-      builder: (_) => CooldownScreen(
-        km: _km,
-        journeyKm: journeyKm,
+      builder: (_) => FinishScreen(
+        sessionId: widget.sessionId,
         partnerName: widget.partnerName,
-        resonanceSeconds: _resonanceSeconds,
-        runId: runId,
+        mySeconds: _seconds,
+        myKm: _km,
+        myKcal: kcal,
+        myMood: mood,
         demo: widget.demo,
-        next: (_) => result(),
       ),
     ));
   }
 
-  /// 오늘까지 쌓인 여정. 집계는 방금 올라갔으므로 여기 읽는 값에 오늘이
-  /// 이미 들어 있다. 못 읽으면 오늘 거리만 말한다 — 없는 숫자를 지어내는
-  /// 것보다 작게 말하는 편이 낫다
-  Future<double> _journeyKm() async {
-    if (widget.demo) return _km;
-    try {
-      final profile = await AuthService().myProfile();
-      final total = ((profile?['totalKm'] ?? 0) as num).toDouble();
-      return total > 0 ? total : _km;
-    } catch (e, stack) {
-      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
-      return _km;
-    }
-  }
-
-  /// 완료 화면에 넘길 고스트의 그날 기록. 세션 상대와 달리 **기다릴 것이
-  /// 없다** — 이미 끝난 러닝이라 숫자가 전부 여기 있다
-  Map<String, dynamic>? get _ghostSnapshot {
-    final g = widget.ghost;
-    if (g == null) return null;
-    return {
-      'seconds': g.duration.inSeconds,
-      'km': g.km,
-      'kcal': g.kcal,
-      if (g.story != null) 'mood': g.story,
-    };
-  }
-
-  /// 오늘을 고스트로 남기고, 누군가의 그날과 달렸다면 그 사실도 남긴다.
-  ///
-  /// 실패해도 조용하다 — 이미 기록은 저장됐고, 여기서 "고스트 저장 실패"를
-  /// 띄우면 방금 완주한 사람에게 이해할 수 없는 사과를 하는 셈이다
-  Future<String?> _leaveGhost(int kcal) async {
-    final recorder = _recorder;
-    if (recorder == null) return null;
-    try {
-      final ghosts = GhostService();
-      final mine = recorder.build(
-        id: '',
-        uid: AuthService().uid,
-        km: _km,
-        kcal: kcal,
-        sessionId: _solo ? null : widget.sessionId,
-      );
-      // 2분 미만은 고스트가 되지 않는다 — 동행으로 쓰기에 너무 짧다.
-      // 남지 않았으면 음성 한 마디를 붙일 곳도 없다
-      final runId = mine.isUsable ? await ghosts.save(mine) : null;
-
-      final ghost = widget.ghost;
-      if (ghost == null) return runId;
-      await ghosts.recordCompanionship(GhostCompanionship(
-        ghostRunId: ghost.id,
-        ghostOwnerUid: ghost.uid,
-        companionUid: AuthService().uid,
-        resonanceSeconds: _resonanceSeconds,
-        at: DateTime.now(),
-      ));
-      return runId;
-    } catch (e, stack) {
-      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
-      return null;
-    }
-  }
-
   @override
   void dispose() {
-    _ghostEngine?.dispose();
     _demoResonance?.stop();
     _cadenceSub?.cancel();
     _briefing?.stop();
@@ -647,11 +467,7 @@ class _RunScreenState extends State<RunScreen>
     super.dispose();
   }
 
-  /// 실수 종료 방지 — 마치기 전 한 번 확인.
-  ///
-  /// 예전에는 여기서 기분을 4지선다로 물었다. 그 질문은 쿨다운의 '음성
-  /// 한 마디'로 옮겨졌다(§5-2) — 같은 질문을 두 번 하지 않고, 완주 직후의
-  /// 진심은 버튼 네 개보다 목소리 한 마디에 더 많이 담긴다
+  /// 실수 종료 방지 — 마치기 전 한 번 확인
   Future<void> _confirmFinish() async {
     final confirmed = await GoDialog.confirm(
       context,
@@ -659,8 +475,63 @@ class _RunScreenState extends State<RunScreen>
       confirmLabel: '마치기',
       cancelLabel: '계속 달리기',
     );
-    if (confirmed != true || !mounted) return;
-    _finish(null);
+    if (confirmed != true) return;
+    if (!mounted) return;
+    final mood = await _pickMood();
+    if (!mounted) return;
+    _finish(mood);
+  }
+
+  /// 결과 제출 직전 — 오늘 러닝이 어땠는지 한 탭으로 남김 (건너뛰기 가능)
+  Future<String?> _pickMood() async {
+    const moods = ['상쾌했어요', '죽을 뻔했어요', '네 생각 났어요', '또 하고 싶어요'];
+    return showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: GoColors.paper,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(28, 24, 28, 40),
+        child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('오늘 러닝, 어땠어요?', style: GoTheme.serif(20)),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: moods
+                    .map((m) => Pressable(
+                          onTap: () => Navigator.pop(ctx, m),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              border:
+                                  Border.all(color: GoColors.line, width: 1.5),
+                            ),
+                            child: Text(m,
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: GoColors.ink)),
+                          ),
+                        ))
+                    .toList(),
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx, null),
+                  child: const Text('건너뛰기',
+                      style: TextStyle(color: GoColors.dim, fontSize: 13)),
+                ),
+              ),
+            ]),
+      ),
+    );
   }
 
   String get _timeText {

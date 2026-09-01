@@ -11,16 +11,12 @@ import '../services/run_service.dart';
 import '../widgets/bottom_nav.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
-import 'result_screen.dart';
+import 'finish_screen.dart';
 import 'home_screen.dart';
 import 'settings_screen.dart';
 import 'us_screen.dart';
 
-/// 앱의 루트 셸 — 홈 / 여정 / 프로필 세 탭을 하단 네비게이션으로 전환.
-///
-/// 와이어프레임의 탭바는 넷(홈·서랍·여정·프로필)이지만 '서랍'(고스트 피드)은
-/// 아직 화면이 없다. 빈 탭을 먼저 세우는 대신, 그 화면이 생기는 트랙(P7)에서
-/// 함께 넣는다 — 눌러도 아무것도 없는 탭은 만들다 만 앱의 냄새다.
+/// 앱의 루트 셸 — 홈 / 우리 / 설정 세 탭을 하단 네비게이션으로 전환.
 /// 진입 시, 지난번 러닝 중 앱이 강제 종료돼 남은 기록(RunRecovery)이 있으면
 /// 마무리를 제안함 — 이게 없으면 폰이 꺼지거나 앱이 죽는 순간 그날 러닝이
 /// 통째로 사라짐
@@ -42,11 +38,15 @@ class _RootScreenState extends State<RootScreen> {
     _startPush();
   }
 
-  /// 알림 **권한을 묻지 않는다.** 이미 허락받은 기기의 토큰만 등록하고 탭을
-  /// 받는다. 묻는 자리는 첫 완주 직후(FinishScreen)로 옮겼음 — 여기까지 온
-  /// 사람은 아직 이 앱이 무엇인지 모르고, iOS는 한 번 거절당하면 다시 못 물음
+  /// 프로필이 준비된 뒤(= 여기까지 왔으면 항상 준비됨)에야 알림 권한을 물음.
+  /// 앱 첫 실행에 맥락 없이 물으면 거절당하기 쉽고, iOS는 한 번 거절당하면
+  /// 다시 물을 수 없어 설정에 들어가야만 되돌릴 수 있음
   void _startPush() {
-    PushService.instance.start(AuthService().uid);
+    // **requestAndStart**여야 한다. `start()`는 이미 허락받은 기기의 토큰만
+    // 등록하고 권한은 묻지 않는다 — 묻는 자리를 첫 완주 직후로 옮기면서
+    // 그렇게 갈라놨는데(P5), UI 롤백으로 그 화면이 사라져 **아무도 묻지 않는
+    // 상태**가 됐다. 여기서 묻는 것이 P5 이전의 동작이다
+    PushService.instance.requestAndStart(AuthService().uid);
     _pushTapSub = PushService.instance.taps.listen(_onPushTap);
     final pending = PushService.instance.takePendingTap();
     if (pending != null) _onPushTap(pending);
@@ -75,9 +75,8 @@ class _RootScreenState extends State<RootScreen> {
     final confirmed = await GoDialog.confirm(
       context,
       title: '마치지 못한 러닝이 있어요',
-      body: snapshot.partnerName.isEmpty
-          ? '달리던 기록이 남아 있어요.\n${snapshot.km.toStringAsFixed(1)}km · $timeText\n이 기록을 저장할까요?'
-          : '${snapshot.partnerName}와 달리던 기록이 남아 있어요.\n${snapshot.km.toStringAsFixed(1)}km · $timeText\n이 기록을 저장할까요?',
+      body:
+          '${snapshot.partnerName}와 달리던 기록이 남아 있어요.\n${snapshot.km.toStringAsFixed(1)}km · $timeText\n이 기록을 저장할까요?',
       confirmLabel: '기록 저장',
       cancelLabel: '버리기',
     );
@@ -88,15 +87,8 @@ class _RootScreenState extends State<RootScreen> {
 
     final kcal = LocationService.estimateKcal(snapshot.seconds);
     try {
-      // 세션이 없던 러닝(자유런·고스트런)은 집계만 올린다. 예전에는 세션
-      // 러닝만 있어서 빈 sessionId가 존재할 수 없었는데, P5에서 세션 없는
-      // 러닝이 생기면서 이 갈래가 필요해졌다 — 없으면 복구가 조용히 실패한다
-      if (snapshot.sessionId.isEmpty) {
-        await RunService().submitSoloResult(AuthService().uid, km: snapshot.km);
-      } else {
-        await RunService().submitResult(snapshot.sessionId, AuthService().uid,
-            seconds: snapshot.seconds, km: snapshot.km, kcal: kcal);
-      }
+      await RunService().submitResult(snapshot.sessionId, AuthService().uid,
+          seconds: snapshot.seconds, km: snapshot.km, kcal: kcal);
     } catch (e, stack) {
       // 스냅샷은 지우지 않음 — 다음 실행 때 다시 제안돼 재시도 기회가 남음
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
@@ -106,18 +98,14 @@ class _RootScreenState extends State<RootScreen> {
     }
     await RunRecovery.clear();
     if (!mounted) return;
-    // 복구된 기록에는 케이던스 타임라인이 없다 — 스냅샷은 거리와 시간만
-    // 담는다(5초마다 쓰는 값이라 가벼워야 한다). 리듬 자리는 비고,
-    // 화면은 '리듬이 기록되지 않았어요'라고 사실대로 말한다
     Navigator.push(context, MaterialPageRoute(
-      builder: (_) => ResultScreen(
+      builder: (_) => FinishScreen(
         sessionId: snapshot.sessionId,
         partnerName: snapshot.partnerName,
         mySeconds: snapshot.seconds,
         myKm: snapshot.km,
         myKcal: kcal,
-        cadence: const [],
-        journeyKm: snapshot.km,
+        myMood: null,
       ),
     ));
   }
@@ -130,10 +118,10 @@ class _RootScreenState extends State<RootScreen> {
           Expanded(
             child: IndexedStack(
               index: _index,
-              children: [
-                HomeScreen(onOpenJourney: () => setState(() => _index = 1)),
-                const UsScreen(),
-                const SettingsScreen(),
+              children: const [
+                HomeScreen(),
+                UsScreen(),
+                SettingsScreen(),
               ],
             ),
           ),

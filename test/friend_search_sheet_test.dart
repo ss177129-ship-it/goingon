@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goingon/widgets/friend_search_sheet.dart';
 
-/// 페이스메이트 찾기 시트의 입력 모양.
+/// 친구 찾기 시트의 입력 모양.
 ///
 /// 이 시트는 홈에서 버튼을 눌러야 열려서 스크린샷 검증이 어렵다(이 환경은
 /// 시뮬레이터 합성 입력이 막혀 있다). 대신 "@가 화면에 실제로 붙어 있는가"를
@@ -30,9 +30,9 @@ void main() {
     await openSheet(tester);
 
     expect(find.text('@'), findsOneWidget);
-    expect(find.widgetWithText(Scaffold, '페이스메이트 찾기'), findsNothing,
+    expect(find.widgetWithText(Scaffold, '친구 찾기'), findsNothing,
         reason: '시트 안에서만 쓰는 제목이라 Scaffold 타이틀이 아니다');
-    expect(find.text('페이스메이트 찾기'), findsOneWidget);
+    expect(find.text('친구 찾기'), findsOneWidget);
   });
 
   testWidgets('아무것도 입력하지 않아도 @는 사라지지 않는다', (tester) async {
