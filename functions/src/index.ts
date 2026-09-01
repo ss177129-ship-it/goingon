@@ -63,9 +63,13 @@ export const onFriendRequestResolved = onDocumentDeleted(
     const fromUid = data.fromUid as string;
     const toUid = data.toUid as string;
 
+    // 수락이면 상대가 나를 following에 넣었고, 거절·취소면 안 넣었다.
+    // 요청 문서는 어느 쪽이든 지워지므로 관계 쪽을 봐야 구분이 된다.
+    // (P6.5 이전에는 `friends`를 봤다 — 그 필드를 지운 뒤로 이 판정이
+    //  항상 거짓이 되어 '연결됐어요' 알림이 영영 안 갔다)
     const accepter = await db.collection('users').doc(toUid).get();
-    const friends: string[] = accepter.get('friends') ?? [];
-    if (!friends.includes(fromUid)) return; // 거절 또는 취소 — 조용히 끝
+    const following: string[] = accepter.get('following') ?? [];
+    if (!following.includes(fromUid)) return; // 거절 또는 취소 — 조용히 끝
 
     const name = await displayName(toUid);
     await sendToUser(

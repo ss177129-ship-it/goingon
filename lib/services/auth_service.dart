@@ -112,7 +112,9 @@ class AuthService {
     batch.set(ref, {
       'name': nickname,
       'username': username,
-      'friends': <String>[],
+      // 페이스메이트는 `following`에 쌓인다. 옛 `friends`는 P6.5에서
+      // 폐기됐으므로 새 계정에 다시 만들지 않는다
+      'following': <String>[],
       'createdAt': FieldValue.serverTimestamp(),
     });
     batch.set(usernameRef, {'uid': uid});
@@ -176,19 +178,33 @@ class AuthService {
     await _auth.signOut();
   }
 
-  /// 회원탈퇴 — 친구들의 목록에서 나를 지우고 내 계정/아이디를 삭제
+  /// 회원탈퇴 — 페이스메이트 목록에서 나를 지우고 내 계정/아이디를 삭제.
+  ///
+  /// 관계는 `following` 배열과 `follows` 간선 두 곳에 있으므로 둘 다 걷어야
+  /// 한다. 배열만 지우면 아무도 못 읽는 간선이 남고, 간선만 지우면 상대
+  /// 목록에 유령이 남는다.
+  /// (P6.5 이전에는 `friends`를 지웠다 — 그 필드가 사라진 뒤로 이 경로는
+  ///  아무것도 정리하지 못했고, 규칙이 friends 쓰기를 막아 **탈퇴 자체가
+  ///  거부**됐다)
   Future<void> deleteAccount() async {
     final myUid = uid;
     final doc = await _db.collection('users').doc(myUid).get();
     final data = doc.data();
     final username = data?['username'] as String?;
-    final friends = List<String>.from(data?['friends'] ?? []);
+    final mates = List<String>.from(data?['following'] ?? []);
 
     final batch = _db.batch();
-    for (final f in friends) {
+    for (final f in mates) {
       batch.update(_db.collection('users').doc(f), {
-        'friends': FieldValue.arrayRemove([myUid]),
+        'following': FieldValue.arrayRemove([myUid]),
       });
+      // 없는 문서를 지우면 규칙이 resource를 못 읽어 거부되므로 확인 후에만
+      for (final ref in [
+        _db.collection('follows').doc('${myUid}_$f'),
+        _db.collection('follows').doc('${f}_$myUid'),
+      ]) {
+        if ((await ref.get()).exists) batch.delete(ref);
+      }
     }
     batch.delete(_db.collection('users').doc(myUid));
     if (username != null) {
