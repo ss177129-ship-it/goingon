@@ -7,6 +7,8 @@ import '../services/friend_service.dart';
 import '../services/ghost/today_partner.dart';
 import '../services/ghost/today_partner_loader.dart';
 import '../theme.dart';
+import '../widgets/friend_search_sheet.dart';
+import '../widgets/initial_avatar.dart';
 import '../widgets/pressable.dart';
 import 'pacemates_screen.dart';
 import 'today_partner_screen.dart';
@@ -41,6 +43,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _me;
   TodayPartners _partners = TodayPartners.empty;
 
+  /// 페이스메이트 프로필. 홈에 **명단**을 두려는 게 아니라 **문**을 두려는
+  /// 것이다(§6 원칙 3: 그 자체로 소비되고 끝나는 소셜은 만들지 않는다) —
+  /// 아바타를 누르면 그 사람의 리듬으로 바로 들어간다
+  StreamSubscription? _matesSub;
+  List<Map<String, dynamic>> _mates = const [];
+
+  /// 지금 함께 달릴 리듬을 가진 사람. 있는 사람만 라임 링이 붙는다.
+  /// **숫자는 쓰지 않는다** — 몇 개인지가 아니라 있는지 없는지만 말한다
+  Set<String> _withRhythm = const {};
+
   /// 나에게 온 페이스메이트 요청. 놓치면 상대는 무한정 기다리므로 홈 맨 위에
   /// 한 줄로 남긴다 — 목록 자체는 페이스메이트 화면의 일이다
   StreamSubscription? _requestsSub;
@@ -51,11 +63,13 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _load();
     _listenRequests();
+    _listenMates();
   }
 
   @override
   void dispose() {
     _requestsSub?.cancel();
+    _matesSub?.cancel();
     super.dispose();
   }
 
@@ -67,12 +81,27 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _listenMates() {
+    _matesSub = _friends.friendsStream(_auth.uid).listen((list) {
+      if (mounted) setState(() => _mates = list);
+    }, onError: (Object e, StackTrace s) {
+      FirebaseCrashlytics.instance.recordError(e, s, fatal: false);
+    });
+  }
+
   Future<void> _load() async {
     try {
       final me = await _auth.myProfile();
       if (mounted) setState(() => _me = me);
-      final partners = await _loader.load(_auth.uid, max: 1);
-      if (mounted) setState(() => _partners = partners);
+      final partners = await _loader.load(_auth.uid);
+      if (!mounted) return;
+      setState(() {
+        _partners = partners;
+        _withRhythm = {
+          for (final p in partners.list)
+            if (p.reason == PartnerReason.pacemate) p.ghost.uid,
+        };
+      });
     } catch (e, stack) {
       // 홈은 실패해도 서 있어야 한다. 상대를 못 불러오면 카드가 한 줄
       // 덜 말할 뿐이고, 시작 버튼은 그대로 눌린다
@@ -143,8 +172,124 @@ class _HomeScreenState extends State<HomeScreen> {
           ]),
         ),
         const SizedBox(height: 14),
+        _pacematesCard(),
+        const SizedBox(height: 14),
         _journeyCard(),
       ];
+
+  /// 페이스메이트 — 명단이 아니라 문이다.
+  ///
+  /// 에피소드런이 내려가면서 홈 아래쪽이 통째로 비었고, "기록이 아니라
+  /// 관계"를 파는 앱의 홈에서 관계가 안 보이는 것은 이상하다(2026-09-01).
+  /// 그래서 이 줄을 세우되 §6의 원칙을 지킨다 — 누르면 그 사람의 리듬으로
+  /// 들어가고, 거기서 함께 달리기로 이어진다.
+  ///
+  /// **숫자를 쓰지 않는다.** 팔로워·팔로잉 수를 노출하지 않기로 했고(P6.5),
+  /// 1차 세그먼트는 기록이 부끄러운 사람들이라 남의 성과를 늘어놓을 자리도
+  /// 아니다. 말하는 것은 "함께 달릴 리듬이 있는가" 하나뿐이다
+  // 높이 계산: 여백 28 + 라벨 17 + 간격 12 + 아바타 44 + 5 + 이름 14 = 120.
+  // 118로 뒀다가 7px 넘쳤다 — 이름이 잘려 나갔다
+  Widget _pacematesCard() => _card(
+        height: 132,
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Column(children: [
+          Row(children: [
+            _label('페이스메이트'),
+            const Spacer(),
+            Pressable(
+              onTap: _openPacemates,
+              child: const Icon(Icons.chevron_right,
+                  size: 18, color: GoColors.dim),
+            ),
+          ]),
+          const SizedBox(height: 12),
+          Expanded(
+            child: _mates.isEmpty ? _noMatesYet() : _mateStrip(),
+          ),
+        ]),
+      );
+
+  Widget _noMatesYet() => Pressable(
+        onTap: () => showFriendSearchSheet(context),
+        child: const Row(children: [
+          Icon(Icons.person_add_alt, size: 20, color: GoColors.limeDark),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text('함께 달릴 사람을 찾아요 — 아이디 하나면 돼요',
+                style: TextStyle(fontSize: 13, color: GoColors.mid)),
+          ),
+        ]),
+      );
+
+  Widget _mateStrip() => ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.zero,
+        itemCount: _mates.length + 1,
+        separatorBuilder: (_, __) => const SizedBox(width: 14),
+        itemBuilder: (_, i) =>
+            i == _mates.length ? _findMore() : _mateAvatar(_mates[i]),
+      );
+
+  Widget _mateAvatar(Map<String, dynamic> mate) {
+    final uid = mate['uid'] as String;
+    final name = _displayName(mate['name']);
+    final ready = _withRhythm.contains(uid);
+    return Pressable(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              TodayPartnerScreen(pacemateUid: uid, pacemateName: name),
+        ),
+      ),
+      child: SizedBox(
+        width: 52,
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          InitialAvatar(
+            letter: name[0],
+            size: 44,
+            fontSize: 18,
+            // 리듬이 있으면 라임 — '나'의 색이 아니라 '지금 함께 달릴 수
+            // 있다'는 신호로 쓴다. 상대의 성과가 아니라 가능성의 표시다
+            borderColor: ready ? GoColors.limeDark : GoColors.line,
+            borderWidth: ready ? 2 : 1.5,
+            photoUrl: mate['photoUrl'] as String?,
+          ),
+          const SizedBox(height: 5),
+          Text(name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 11, color: GoColors.mid)),
+        ]),
+      ),
+    );
+  }
+
+  Widget _findMore() => Pressable(
+        onTap: () => showFriendSearchSheet(context),
+        child: SizedBox(
+          width: 52,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: GoColors.line, width: 1.5),
+              ),
+              child: const Icon(Icons.add, size: 20, color: GoColors.dim),
+            ),
+            const SizedBox(height: 5),
+            const Text('찾기',
+                style: TextStyle(fontSize: 11, color: GoColors.dim)),
+          ]),
+        ),
+      );
+
+  static String _displayName(Object? name) {
+    final s = name is String ? name.trim() : '';
+    return s.isEmpty ? '페이스메이트' : s;
+  }
 
   Widget _journeyCard() => _card(
         height: 84,
@@ -213,10 +358,11 @@ class _HomeScreenState extends State<HomeScreen> {
     required Widget child,
     required double height,
     VoidCallback? onTap,
+    EdgeInsets padding = const EdgeInsets.symmetric(horizontal: 16),
   }) {
     final card = Container(
       height: height,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: padding,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
