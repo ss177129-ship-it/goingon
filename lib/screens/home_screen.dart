@@ -156,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 이름이 비어 있거나 없는 계정 때문에 첫 글자 접근이 터지지 않도록
   static String _displayName(Object? name) {
     final s = name is String ? name.trim() : '';
-    return s.isEmpty ? '친구' : s;
+    return s.isEmpty ? '페이스메이트' : s;
   }
 
   void _showGoRequest(String sessionId, String hostName, String? hostPhotoUrl) {
@@ -315,7 +315,7 @@ class _HomeScreenState extends State<HomeScreen> {
             IconButton(
               onPressed: () => showFriendSearchSheet(context),
               icon: const Icon(Icons.search, color: GoColors.dim),
-              tooltip: '친구 찾기',
+              tooltip: '페이스메이트 찾기',
             ),
           ]),
         ),
@@ -328,7 +328,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // ── 같이 뛰는 사람들 ──
         const Padding(
           padding: EdgeInsets.fromLTRB(22, 18, 22, 8),
-          child: Text('같이 뛰는 사람들',
+          child: Text('페이스메이트',
               style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -500,7 +500,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Text(
             _incomingBroken
                 ? '지금은 함께 달리기 요청을 받지 못하고 있어요.'
-                : '친구 목록을 불러오지 못했어요.',
+                : '페이스메이트 목록을 불러오지 못했어요.',
             style: TextStyle(
                 fontSize: 12, height: 1.4, color: GoColors.ink.withValues(alpha: .7)),
           ),
@@ -773,7 +773,7 @@ class _HomeScreenState extends State<HomeScreen> {
         border: Border.all(color: GoColors.line, width: 1.5),
       ),
       child: Column(children: [
-        Text('아직 함께 뛰는 사람이 없어요',
+        Text('아직 페이스메이트가 없어요',
             style: GoTheme.serif(18, color: GoColors.mid)),
         const SizedBox(height: 6),
         const Text('한 명만 있으면 고잉온이 시작돼요.',
@@ -815,7 +815,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(14)),
               ),
               onPressed: () => showFriendSearchSheet(context),
-              child: const Text('친구 찾기',
+              child: const Text('페이스메이트 찾기',
                   style: TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w600,
                       color: GoColors.ink)),

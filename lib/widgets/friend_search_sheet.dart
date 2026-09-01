@@ -151,7 +151,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('친구 찾기', style: GoTheme.serif(24)),
+            Text('페이스메이트 찾기', style: GoTheme.serif(24)),
             const SizedBox(height: 6),
             const Text('아이디로 찾아 요청을 보내면, 상대가 수락했을 때 연결돼요.',
                 style: TextStyle(fontSize: 13, color: GoColors.mid)),

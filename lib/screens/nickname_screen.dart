@@ -95,7 +95,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
                 textAlign: TextAlign.center,
                 maxLength: 20,
                 decoration: InputDecoration(
-                  hintText: '아이디 (친구가 검색으로 찾아요)',
+                  hintText: '아이디 (페이스메이트가 찾아요)',
                   counterText: '',
                   filled: true,
                   fillColor: Colors.white,

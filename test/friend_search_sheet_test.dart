@@ -30,9 +30,9 @@ void main() {
     await openSheet(tester);
 
     expect(find.text('@'), findsOneWidget);
-    expect(find.widgetWithText(Scaffold, '친구 찾기'), findsNothing,
+    expect(find.widgetWithText(Scaffold, '페이스메이트 찾기'), findsNothing,
         reason: '시트 안에서만 쓰는 제목이라 Scaffold 타이틀이 아니다');
-    expect(find.text('친구 찾기'), findsOneWidget);
+    expect(find.text('페이스메이트 찾기'), findsOneWidget);
   });
 
   testWidgets('아무것도 입력하지 않아도 @는 사라지지 않는다', (tester) async {

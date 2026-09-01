@@ -53,7 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String get _profileSummary {
     final username = (_me?['username'] as String?) ?? '';
-    if (username.isEmpty) return '아이디를 설정하면 친구가 검색으로 찾을 수 있어요';
+    if (username.isEmpty) return '아이디를 설정하면 페이스메이트가 검색으로 찾을 수 있어요';
     return _myName.isEmpty ? '@$username' : '$_myName · @$username';
   }
 
@@ -239,7 +239,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await friends.unblockUser(_auth.uid, uid);
       if (!mounted) return;
-      GoToast.show(context, '$name님의 차단을 해제했어요. 다시 친구가 되려면 요청이 필요해요.');
+      GoToast.show(context, '$name님의 차단을 해제했어요. 다시 페이스메이트가 되려면 요청이 필요해요.');
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
@@ -273,7 +273,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirmed = await GoDialog.confirm(
       context,
       title: '정말 탈퇴할까요?',
-      body: '내 기록과 친구 연결이 모두 사라져요.\n이 작업은 되돌릴 수 없어요.',
+      body: '내 기록과 페이스메이트 연결이 모두 사라져요.\n이 작업은 되돌릴 수 없어요.',
       confirmLabel: '탈퇴하기',
       destructive: true,
     );
@@ -363,7 +363,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _row(
         icon: Icons.play_circle_outline,
         title: '혼자 미리 체험하기',
-        subtitle: '가상의 친구와 전체 흐름을 둘러봐요',
+        subtitle: '가상의 페이스메이트와 전체 흐름을 둘러봐요',
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(

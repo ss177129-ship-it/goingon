@@ -298,7 +298,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           const SizedBox(height: 24),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 24),
-            child: Text('이름과 사진은 친구와 나에게 온 요청 목록에 보여요.',
+            child: Text('이름과 사진은 페이스메이트와 나에게 온 요청 목록에 보여요.',
                 style: TextStyle(fontSize: 11, color: GoColors.dim, height: 1.6)),
           ),
           const SizedBox(height: 40),
