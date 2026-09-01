@@ -401,6 +401,18 @@ CLAUDE.md의 "러닝 중 실시간 동기화 없음"을 폐기하고 당긴 작�
 - [ ] **⛔ 위치정보사업(위치기반서비스사업) 신고** — 국내 규제. 신청서 Q4-2 ③의 멘토링 항목이기도
       하다(스트라바가 한국에서 철수한 원인이 이 규제 대응이었다). 신고 전 출시는 불가
 
+### 마이크 권한·`record` 제거 (2026-09-01) — 되살릴 때 함께 되돌릴 것
+
+음성 한 마디가 롤백되면서 **마이크를 쓰는 코드가 없는데 `NSMicrophoneUsageDescription`만 남아** 있었다. 쓰지 않는 권한 선언은 심사에서 설명이 안 되고, 곧 쓸 `PrivacyInfo.xcprivacy`에 마이크를 적을지 말지가 여기서 갈린다. 그래서 함께 걷어냈다:
+
+- `ios/Runner/Info.plist`의 `NSMicrophoneUsageDescription`
+- `pubspec.yaml`의 `record: ^7.1.1`
+- `lib/services/cooldown/voice_note_service.dart`
+
+**남겨둔 것**: `voice_prompt.dart`(묻는 빈도 판정 — 순수 로직이라 의존성이 없고 테스트가 붙어 있다). 오디오 세션은 `playback` 전용이라 마이크 없이 정상 동작한다(확인함).
+
+되살릴 때 순서: `record` 의존성 추가 → `redesign-p5-p6.5` 브랜치에서 `voice_note_service.dart`·`cooldown_screen.dart` 가져오기 → Info.plist 문구 복원 → xcprivacy에 마이크 추가. **Storage의 `voices/` 규칙은 지우지 않았다**(소유자 전용이라 위험이 없고, 되살릴 때 그대로 쓴다).
+
 ### 프라이버시에 대해 과장하지 말 것 (2026-09-01)
 
 신청서·홍보 문구에 "프라이버시를 처음부터 설계했다"고 쓸 근거가 **지금은 약하다.** 사실은 이렇다:

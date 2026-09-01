@@ -47,8 +47,6 @@
 		<string>프로필 사진으로 쓸 사진 한 장을 고르기 위해 사진첩이 필요해요. 고른 사진만 앱으로 전달되고, 나머지 사진은 앱이 볼 수 없어요.</string>
 		<key>NSMotionUsageDescription</key>
 	<string>발걸음 리듬(케이던스)을 읽어 함께 달리는 상대와 발이 맞는 순간을 알려드려요. 거부해도 러닝 기록에는 영향이 없어요.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>러닝을 마친 뒤 "오늘 어땠어요?"에 한 마디(최대 20초) 남길 때만 마이크를 써요. 녹음은 직접 누를 때만 시작되고, 달리는 동안에는 마이크를 켜지 않아요.</string>
 	<key>UIBackgroundModes</key>
 		<array>
 			<string>location</string>
