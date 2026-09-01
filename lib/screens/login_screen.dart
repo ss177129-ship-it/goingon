@@ -128,10 +128,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   ]),
                 ),
               ),
-              const SizedBox(height: 12),
-              const Text('계속하면 이용약관과 개인정보처리방침에 동의하는 것으로 간주돼요.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 10, color: GoColors.dim)),
+              // **이용약관·개인정보처리방침 고지를 뺐다**(2026-09-01).
+              //
+              // 예전에는 "계속하면 이용약관과 개인정보처리방침에 동의하는
+              // 것으로 간주돼요"라고 적혀 있었는데, **그 두 문서가 존재하지
+              // 않는다.** 링크도 없었다. 없는 문서에 동의를 받는 것은 누락이
+              // 아니라 사실과 다른 고지이고, 그대로 심사에 내면 리젝 사유다.
+              //
+              // 문서를 만들고 링크를 붙일 때 이 자리에 다시 넣는다 —
+              // 그때는 **누를 수 있는 링크**여야 한다(TODO 심사 준비).
               const SizedBox(height: 24),
             ],
           ),
