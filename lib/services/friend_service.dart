@@ -3,9 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'resonance.dart' show SignalKind;
 import 'shared_stream.dart';
 
-/// 친구 연결 — 아이디로 찾아 **요청을 보내고, 상대가 수락해야** 연결됨
-/// (인스타 팔로우 요청 방식). 아이디를 아는 사람이 곧 연결 권한이 되는
-/// 카톡 방식은 폐기함 — 동의 없는 연락을 막는 게 목적.
+/// 페이스메이트 연결 — 아이디로 찾아 **요청을 보내고, 상대가 수락해야**
+/// 연결됨. 아이디를 아는 사람이 곧 연결 권한이 되는 카톡 방식은 폐기함 —
+/// 동의 없는 연락을 막는 게 목적.
+///
+/// 관계는 `follows/{팔로워}_{팔로위}` 간선이 진실의 원천이고,
+/// `users.following`은 규칙이 쓰려고 두는 투영이다(P6.5). 옛 `friends`
+/// 배열은 이관 후 폐기됐다 — 읽지도 쓰지도 않는다.
 ///
 /// `friendRequests/{보낸사람uid}_{받는사람uid}`
 ///   문서의 **존재 자체가 "대기 중"**이고, 수락·거절·취소는 전부 삭제로 처리함.
@@ -159,13 +163,10 @@ class FriendService {
     if ((await _req(myUid, fromUid).get()).exists) {
       batch.delete(_req(myUid, fromUid));
     }
-    // 두 배열에 함께 쓴다(expand). friends는 이관이 끝나면 사라진다
     batch.update(_db.collection('users').doc(myUid), {
-      'friends': FieldValue.arrayUnion([fromUid]),
       'following': FieldValue.arrayUnion([fromUid]),
     });
     batch.update(_db.collection('users').doc(fromUid), {
-      'friends': FieldValue.arrayUnion([myUid]),
       'following': FieldValue.arrayUnion([myUid]),
     });
     await batch.commit();
@@ -188,11 +189,9 @@ class FriendService {
       if ((await ref.get()).exists) batch.delete(ref);
     }
     batch.update(_db.collection('users').doc(myUid), {
-      'friends': FieldValue.arrayRemove([friendUid]),
       'following': FieldValue.arrayRemove([friendUid]),
     });
     batch.update(_db.collection('users').doc(friendUid), {
-      'friends': FieldValue.arrayRemove([myUid]),
       'following': FieldValue.arrayRemove([myUid]),
     });
     await batch.commit();
@@ -212,11 +211,9 @@ class FriendService {
     }
     batch.update(_db.collection('users').doc(myUid), {
       'blocked': FieldValue.arrayUnion([otherUid]),
-      'friends': FieldValue.arrayRemove([otherUid]),
       'following': FieldValue.arrayRemove([otherUid]),
     });
     batch.update(_db.collection('users').doc(otherUid), {
-      'friends': FieldValue.arrayRemove([myUid]),
       'following': FieldValue.arrayRemove([myUid]),
     });
     await batch.commit();
@@ -269,18 +266,12 @@ class FriendService {
         .asyncMap(_loadProfiles);
   }
 
-  /// 페이스메이트 uid — **두 구조의 합집합**(expand 단계).
+  /// 페이스메이트 uid.
   ///
-  /// 이관 전 계정은 friends에만, 이관 후 계정은 following에만 들어 있다.
-  /// 둘 다 보면 이관 도중 어느 시점에도 목록이 비지 않는다. contract에서
-  /// following 하나만 남는다
-  static List<String> mateUids(Map<String, dynamic>? user) {
-    final out = <String>{
-      ...List<String>.from(user?['following'] ?? const []),
-      ...List<String>.from(user?['friends'] ?? const []),
-    };
-    return out.toList()..sort();
-  }
+  /// 옛 `friends` 배열은 더 이상 읽지 않는다(contract 완료). 문서에 값이
+  /// 남아 있어도 아무도 보지 않고, 규칙이 쓰기를 막아 되살아나지도 않는다
+  static List<String> mateUids(Map<String, dynamic>? user) =>
+      List<String>.from(user?['following'] ?? const [])..sort();
 
   Future<List<Map<String, dynamic>>> _loadProfiles(List<String> ids) async {
     if (ids.isEmpty) return const [];

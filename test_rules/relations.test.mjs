@@ -1,4 +1,4 @@
-// 페이스메이트 관계 쓰기 규칙 — expand 단계(friends + follows 공존).
+// 페이스메이트 관계 쓰기 규칙 — contract 이후(following만).
 //
 // 여기서 지키는 것은 하나다: **수락 없이는 관계가 생기지 않는다.**
 // 검색이 열려 있는 동안 수락이 유일한 프라이버시 장치라, 이 규칙이 뚫리면
@@ -74,14 +74,8 @@ function acceptBatch(db, me, from) {
     followerUid: me,
     followeeUid: from,
   });
-  batch.update(doc(db, 'users', me), {
-    friends: arrayUnion(from),
-    following: arrayUnion(from),
-  });
-  batch.update(doc(db, 'users', from), {
-    friends: arrayUnion(me),
-    following: arrayUnion(me),
-  });
+  batch.update(doc(db, 'users', me), { following: arrayUnion(from) });
+  batch.update(doc(db, 'users', from), { following: arrayUnion(me) });
   return batch;
 }
 
@@ -122,73 +116,55 @@ describe('페이스메이트 맺기 — 수락이 유일한 문', () => {
   it('요청 없이 남의 목록에 나를 밀어넣을 수 없다', async () => {
     const db = env.authenticatedContext(C).firestore();
     await assertFails(
-      updateDoc(doc(db, 'users', A), {
-        friends: arrayUnion(C),
-        following: arrayUnion(C),
-      }),
+      updateDoc(doc(db, 'users', A), { following: arrayUnion(C) }),
     );
   });
 
-  it('두 배열에 서로 다른 사람을 넣을 수 없다', async () => {
+  it('요청이 없는 사람을 following에 넣을 수 없다', async () => {
     const db = env.authenticatedContext(B).firestore();
     await assertFails(
-      updateDoc(doc(db, 'users', B), {
-        friends: arrayUnion(A),
-        following: arrayUnion(C),
-      }),
+      updateDoc(doc(db, 'users', B), { following: arrayUnion(C) }),
+    );
+  });
+
+  it('한 번에 두 사람을 넣을 수 없다', async () => {
+    const db = env.authenticatedContext(B).firestore();
+    await assertFails(
+      updateDoc(doc(db, 'users', B), { following: arrayUnion(A, C) }),
+    );
+  });
+
+  it('friends 필드는 더 이상 쓸 수 없다 — contract에서 닫혔다', async () => {
+    const db = env.authenticatedContext(B).firestore();
+    await assertFails(
+      updateDoc(doc(db, 'users', B), { friends: arrayUnion(A) }),
     );
   });
 });
 
-describe('끊기 — 이관 중에도 막히지 않아야 한다', () => {
+describe('끊기', () => {
   it('양쪽 구조가 다 있는 관계를 끊는다', async () => {
     await env.withSecurityRulesDisabled(async (ctx) => {
       const db = ctx.firestore();
-      await setDoc(doc(db, 'users', A), { name: 'A', friends: [B], following: [B] });
-      await setDoc(doc(db, 'users', B), { name: 'B', friends: [A], following: [A] });
+      await setDoc(doc(db, 'users', A), { name: 'A', following: [B] });
+      await setDoc(doc(db, 'users', B), { name: 'B', following: [A] });
     });
     const db = env.authenticatedContext(B).firestore();
     const batch = writeBatch(db);
-    batch.update(doc(db, 'users', B), {
-      friends: arrayRemove(A),
-      following: arrayRemove(A),
-    });
-    batch.update(doc(db, 'users', A), {
-      friends: arrayRemove(B),
-      following: arrayRemove(B),
-    });
-    await assertSucceeds(batch.commit());
-  });
-
-  it('아직 이관되지 않은 계정(following 없음)도 끊을 수 있다', async () => {
-    await env.withSecurityRulesDisabled(async (ctx) => {
-      const db = ctx.firestore();
-      await setDoc(doc(db, 'users', A), { name: 'A', friends: [B] });
-      await setDoc(doc(db, 'users', B), { name: 'B', friends: [A] });
-    });
-    const db = env.authenticatedContext(B).firestore();
-    const batch = writeBatch(db);
-    batch.update(doc(db, 'users', B), {
-      friends: arrayRemove(A),
-      following: arrayRemove(A),
-    });
-    batch.update(doc(db, 'users', A), {
-      friends: arrayRemove(B),
-      following: arrayRemove(B),
-    });
+    batch.update(doc(db, 'users', B), { following: arrayRemove(A) });
+    batch.update(doc(db, 'users', A), { following: arrayRemove(B) });
     await assertSucceeds(batch.commit());
   });
 
   it('차단은 관계를 함께 끊는다', async () => {
     await env.withSecurityRulesDisabled(async (ctx) => {
       const db = ctx.firestore();
-      await setDoc(doc(db, 'users', B), { name: 'B', friends: [A], following: [A] });
+      await setDoc(doc(db, 'users', B), { name: 'B', following: [A] });
     });
     const db = env.authenticatedContext(B).firestore();
     await assertSucceeds(
       updateDoc(doc(db, 'users', B), {
         blocked: arrayUnion(A),
-        friends: arrayRemove(A),
         following: arrayRemove(A),
       }),
     );
@@ -199,7 +175,6 @@ describe('끊기 — 이관 중에도 막히지 않아야 한다', () => {
     await assertFails(
       updateDoc(doc(db, 'users', B), {
         blocked: arrayUnion(A),
-        friends: arrayUnion(C),
         following: arrayUnion(C),
       }),
     );

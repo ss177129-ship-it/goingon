@@ -23,38 +23,26 @@ service cloud.firestore {
       allow get: if request.auth != null;
       allow create, delete: if request.auth != null && request.auth.uid == userId;
 
-      // ── 관계 배열 (expand 단계: 옛 friends와 새 following이 공존한다) ──
+      // ── 관계 배열 (contract 완료: following 하나만) ──
       //
-      // `follows/{follower}_{followee}`가 진실의 원천이고, 이 배열들은
+      // `follows/{follower}_{followee}`가 진실의 원천이고, 이 배열은
       // **규칙이 쓰려고 두는 투영**이다. 목록 규칙이 `exists(follows/...)`를
       // 쓰면 평가하는 문서마다 경로가 달라져 접근 한도(10)를 넘긴다.
       // 내 문서 하나를 읽는 배열 방식은 몇 명이든 한 번으로 끝난다.
       //
-      // 두 배열을 한 번에 바꾸는 쓰기를 허용해야 한다(이관 중에는 계정마다
-      // 상태가 달라서, 한쪽만 바뀌는 쓰기도 정상이다)
+      // 옛 `friends`는 더 이상 쓸 수 없다. 남아 있는 값은 아무도 읽지 않고,
+      // 쓰기는 여기서 막힌다 — 되살아나는 길을 닫아 둔다
       function relationOnly() {
         return request.resource.data.diff(resource.data)
-          .affectedKeys().hasOnly(['friends', 'following']);
+          .affectedKeys().hasOnly(['following']);
       }
-      function added(field) {
-        return request.resource.data.get(field, [])
-          .removeAll(resource.data.get(field, []));
+      function added() {
+        return request.resource.data.get('following', [])
+          .removeAll(resource.data.get('following', []));
       }
-      function removed(field) {
-        return resource.data.get(field, [])
-          .removeAll(request.resource.data.get(field, []));
-      }
-      // 한 번에 한 사람만, 그리고 **두 배열에 같은 사람만** 더해진다 —
-      // 한쪽에만 몰래 밀어 넣는 길을 막는다
-      function addsOneMate() {
-        return added('friends').size() <= 1 && added('following').size() <= 1 &&
-          added('friends').size() + added('following').size() >= 1 &&
-          (added('friends').size() == 0 || added('following').size() == 0 ||
-            added('friends')[0] == added('following')[0]);
-      }
-      function addedMate() {
-        return added('friends').size() > 0
-          ? added('friends')[0] : added('following')[0];
+      function removed() {
+        return resource.data.get('following', [])
+          .removeAll(request.resource.data.get('following', []));
       }
 
       // 이름 변경
@@ -105,42 +93,34 @@ service cloud.firestore {
 
       // 내 문서: 수락하면서 상대를 내 목록에 넣음 (요청은 상대→나 방향)
       allow update: if request.auth != null && request.auth.uid == userId &&
-        relationOnly() && addsOneMate() &&
-        removed('friends').size() == 0 && removed('following').size() == 0 &&
-        pendingRequest(addedMate(), userId);
+        relationOnly() &&
+        added().size() == 1 && removed().size() == 0 &&
+        pendingRequest(added()[0], userId);
 
       // 상대 문서: 내가 보낸 요청을 상대가 수락할 때, 상대 목록에 내 uid만 추가
       allow update: if request.auth != null && userId != request.auth.uid &&
-        relationOnly() && addsOneMate() &&
-        addedMate() == request.auth.uid &&
-        removed('friends').size() == 0 && removed('following').size() == 0 &&
+        relationOnly() &&
+        added().hasOnly([request.auth.uid]) && added().size() == 1 &&
+        removed().size() == 0 &&
         pendingRequest(userId, request.auth.uid);
 
       // 내 문서: 관계 제거 — 한 번에 최대 1명 (연결 끊기 / 차단 / 상대 탈퇴)
       allow update: if request.auth != null && request.auth.uid == userId &&
-        relationOnly() &&
-        added('friends').size() == 0 && added('following').size() == 0 &&
-        removed('friends').size() <= 1 && removed('following').size() <= 1;
+        relationOnly() && added().size() == 0 && removed().size() <= 1;
 
-      // 상대 문서: 내 uid만 제거 (내가 끊거나 차단할 때 상대 목록에서도 빠짐).
-      // 한쪽 배열이 이미 비어 있어도 통과한다 — 빈 목록의 hasOnly는 참이고,
-      // 이관 중에는 그 상태가 정상이다
+      // 상대 문서: 내 uid만 제거 (내가 끊거나 차단할 때 상대 목록에서도 빠짐)
       allow update: if request.auth != null && userId != request.auth.uid &&
         relationOnly() &&
-        added('friends').size() == 0 && added('following').size() == 0 &&
-        removed('friends').hasOnly([request.auth.uid]) &&
-        removed('following').hasOnly([request.auth.uid]);
+        added().size() == 0 && removed().hasOnly([request.auth.uid]);
 
       // 내 문서: 차단/차단 해제. 차단은 관계를 동시에 끊어야 하므로
-      // 두 배열이 같이 줄어드는 것을 허용함 (늘어나는 건 불가)
+      // following이 같이 줄어드는 것을 허용함 (늘어나는 건 불가)
       allow update: if request.auth != null && request.auth.uid == userId &&
         request.resource.data.diff(resource.data)
-          .affectedKeys().hasOnly(['blocked', 'friends', 'following']) &&
+          .affectedKeys().hasOnly(['blocked', 'following']) &&
         request.resource.data.blocked is list &&
         request.resource.data.blocked.size() <=
           resource.data.get('blocked', []).size() + 1 &&
-        request.resource.data.get('friends', [])
-          .hasOnly(resource.data.get('friends', [])) &&
         request.resource.data.get('following', [])
           .hasOnly(resource.data.get('following', []));
     }
@@ -330,27 +310,29 @@ service cloud.firestore {
       function mine() {
         return request.auth != null && request.auth.uid == resource.data.uid;
       }
-      // 서로 친구인가 — 한쪽 목록만 보면 상대가 나를 지운 뒤에도 계속 읽힌다
+      // 이 사람이 나를 팔로우하는가 — 즉 내가 이 사람의 러닝을 볼 수 있게
+      // 허락된 관계인가. 단일 문서 조회라 상대 문서를 읽어도 get()이 하나다
       function pacemates() {
         return request.auth != null &&
           request.auth.uid in
             get(/databases/$(database)/documents/users/$(resource.data.uid))
-              .data.get('friends', []);
+              .data.get('following', []);
       }
 
       allow get: if mine() ||
         resource.data.get('visibility', 'pacemates') == 'everyone' ||
         (resource.data.get('visibility', 'pacemates') == 'pacemates' && pacemates());
 
-      /// 내 친구 목록. **상대의 목록이 아니라 내 목록을 보는 이유**는
-      /// 호출 비용이다 — 목록 쿼리는 돌아오는 문서마다 규칙이 돌고,
+      /// 내가 팔로우하는 사람들. **상대의 목록이 아니라 내 목록을 보는
+      /// 이유**는 호출 비용이다 — 목록 쿼리는 돌아오는 문서마다 규칙이 돌고,
       /// 상대 문서를 읽으면 사람 수만큼 get()이 생겨 한도(10)를 넘긴다.
       /// 내 문서는 어느 문서를 판정하든 같은 경로라 한 번만 읽힌다.
-      /// 연결 끊기는 양쪽 문서를 한 배치로 지우므로(friend_service)
-      /// 내 목록과 상대 목록은 같은 것을 말한다
-      function myFriends() {
+      ///
+      /// 이 배열에 사람이 들어가는 길은 **수락뿐**이므로(위 users 규칙),
+      /// 여기서 읽는 것이 곧 "상대가 허락한 관계"다
+      function myFollowing() {
         return get(/databases/$(database)/documents/users/$(request.auth.uid))
-          .data.get('friends', []);
+          .data.get('following', []);
       }
 
       // 목록 조회에서 `resource.data`는 **문서 내용이 아니라 쿼리 조건**으로
@@ -367,7 +349,7 @@ service cloud.firestore {
         resource.data.uid == request.auth.uid ||
         resource.data.visibility == 'everyone' ||
         (resource.data.visibility == 'pacemates' &&
-          resource.data.uid in myFriends())
+          resource.data.uid in myFollowing())
       );
 
       // 남길 때 자기 것으로만. uid를 남의 것으로 적으면 그 사람의 여정에

@@ -40,9 +40,10 @@ let env;
 async function seed() {
   await env.withSecurityRulesDisabled(async (ctx) => {
     const db = ctx.firestore();
-    await setDoc(doc(db, 'users', ME), { name: '나', friends: [MATE] });
-    await setDoc(doc(db, 'users', MATE), { name: '메이트', friends: [ME] });
-    await setDoc(doc(db, 'users', STRANGER), { name: '남', friends: [] });
+    // contract 이후: friends는 없고 following만 있다
+    await setDoc(doc(db, 'users', ME), { name: '나', following: [MATE] });
+    await setDoc(doc(db, 'users', MATE), { name: '메이트', following: [ME] });
+    await setDoc(doc(db, 'users', STRANGER), { name: '남', following: [] });
 
     const run = (uid, visibility, i) => ({
       uid,

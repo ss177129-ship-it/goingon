@@ -24,6 +24,9 @@ admin.initializeApp({
 
 const db = admin.firestore();
 const apply = process.argv.includes('--apply');
+// contract의 마지막 걸음 — 옛 배열을 지운다. 규칙은 이미 클라이언트 쓰기를
+// 막았으므로 되살아나지 않는다. **반드시 이관이 0건인 상태에서** 돌릴 것
+const dropFriends = process.argv.includes('--drop-friends');
 
 const edgeId = (follower, followee) => `${follower}_${followee}`;
 
@@ -56,9 +59,12 @@ async function main() {
     }
     const following = user.get('following') ?? [];
 
-    // following에만 있고 friends에 없는 것 — 아직 있을 수 없지만, 있으면
-    // 사람이 봐야 하는 상태다(수동으로 만든 간선 등)
-    const orphans = following.filter((f) => !friends.includes(f));
+    // following에만 있고 friends에 없는 것 — **이관 중에만** 의미가 있는
+    // 검사다. contract가 끝나 friends 필드가 사라진 뒤에는 전부 여기
+    // 걸리므로(그게 정상이다) friends가 아직 있는 문서만 본다
+    const orphans = user.get('friends') === undefined
+      ? []
+      : following.filter((f) => !friends.includes(f));
     if (orphans.length > 0) {
       orphanFollowing += orphans.length;
       console.log(
@@ -106,6 +112,28 @@ async function main() {
       );
       existing.add(id);
     }
+  }
+
+  if (dropFriends) {
+    if (missingFollowing > 0 || missingEdges > 0) {
+      console.log('');
+      console.log('거부: 아직 옮길 것이 남아 있다. 먼저 --apply 로 이관할 것');
+      process.exit(1);
+    }
+    let dropped = 0;
+    for (const user of users.docs) {
+      if (user.get('friends') === undefined) continue;
+      dropped++;
+      console.log(`  - ${label(user)} — friends 제거`);
+      if (apply) {
+        writes.push(
+          user.ref.update({
+            friends: admin.firestore.FieldValue.delete(),
+          }),
+        );
+      }
+    }
+    console.log(`friends 필드를 가진 문서: ${dropped}`);
   }
 
   await Promise.all(writes);
