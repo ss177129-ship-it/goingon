@@ -1,27 +1,14 @@
-# M0 스파이크 — 설치·실행·판정 가이드
+# 케이던스·템포 스파이크 — 실행·판정 가이드
 
-새 제품 설계(제품설계도 v1.1 / 기술설계서 §8 M0 재정의)의 첫 검증.
-케이던스가 심장이 될 수 있는지(M0-a), 곡이 발을 따라올 수 있는지(M0-b)를
-실주행으로 판정한다. **이 둘이 통과되기 전에는 다음 마일스톤으로 가지 않는다.**
+실주행으로 두 가지를 판정한다: 가속도계가 케이던스를 ±3spm 안에서 세는가(M0-a),
+곡의 템포가 그 값을 따라올 때 지터가 견딜 만한가(M0-b).
+**통과 전까지 `cadence_engine.dart`의 파라미터는 전부 가설이다.**
 
-## 1. 설치 (레포 루트에서)
+## 1. 이미 설치돼 있다
 
-```
-# 1) 파일 복사 — 이 폴더의 lib/를 레포 lib/에 그대로 병합
-#    (신규 파일 3개뿐, 기존 파일은 건드리지 않음)
-lib/services/cadence/cadence_engine.dart
-lib/main_cadence_probe.dart
-lib/main_tempo_probe.dart
-
-# 2) 의존성 추가 — pubspec.yaml dependencies에 한 줄
-  sensors_plus: ^6.1.1
-
-# 3)
-flutter pub get
-```
-
-CLAUDE.md 규칙 확인: 라이브러리 도입(sensors_plus)은 "판단해서 진행" 범주.
-GPS 필터·배포 타깃·기존 설계 결정은 건드리지 않았다. 기존 파일 수정 0건.
+`lib/services/cadence/cadence_engine.dart` · `lib/main_cadence_probe.dart` ·
+`lib/main_tempo_probe.dart` · `sensors_plus` 의존성 전부 레포에 들어와 있다.
+바로 §2로 갈 것.
 
 ## 2. M0-a 케이던스 (main_cadence_probe)
 
@@ -39,7 +26,7 @@ flutter run -t lib/main_cadence_probe.dart
 | 주머니/암밴드/손 | 세 위치 모두에서 기준 충족 (위치별 1회씩) |
 
 실패 시 튜닝 순서: `kThresholdK`(1.0~1.6) → 검출 창(5초) → 그래도 안 되면
-CMPedometer 플랫폼 채널로 이관(문서의 트랙 B 원안). CSV 회수 명령은 프로브
+CMPedometer 플랫폼 채널로 이관. CSV 회수 명령은 프로브
 파일 헤더에.
 
 ## 3. M0-b 템포 동기 (main_tempo_probe)
@@ -52,7 +39,7 @@ flutter run -t lib/main_tempo_probe.dart
 |---|---|---|
 | 메트로놈 지터 | p95 **30ms 이내** (화면에 실시간 표시) | Dart Timer 한계 → SoLoud 오디오 스레드 스케줄링으로 이관 |
 | 케이던스 추종 | BPM이 발 변화를 3초 내 추종 (몸으로 체감) | 스무딩 상수 재조정 |
-| 스템 속도 변경 | setRelativePlaySpeed의 피치 변화가 음악적으로 허용 가능한가 — **귀로 판정** | 허용 불가면 스템을 BPM 대역별(140/160/180) 3벌 제작으로 결정 (기술설계서 §8-2의 답이 됨) |
+| 스템 속도 변경 | setRelativePlaySpeed의 피치 변화가 음악적으로 허용 가능한가 — **귀로 판정** | 허용 불가면 스템을 BPM 대역별(140/160/180) 3벌 제작으로 결정 |
 
 ## 3.5. 합성 검증 층 (2026-08-22 추가 — 실측을 대신하지 않는다)
 
@@ -98,15 +85,8 @@ flutter test test/cadence_engine_test.dart
 append 모드라 한 파일에 세션이 여러 개면 기본으로 마지막 세션을 본다
 (`--session N`으로 지정).
 
-## 4. 통과 후 다음 단계 (M1)
+## 4. 통과하면
 
-1. `resonance.dart`의 closeness 입력을 페이스 → 케이던스로 교체 (트랙 B 승격)
-2. 고스트 타임라인(과거 러닝의 케이던스 기록)을 두 번째 입력으로 — 시차 공명 성립
-3. 커밋 단위: 스파이크 통과 → 파라미터 확정 커밋 → 입력 교체 커밋 (CLAUDE.md: 작업 끝나면 그 자리에서 커밋)
-
-## 5. 이 스파이크가 대답하는 질문 (설계 문서 연결)
-
-- 제품설계도 §1-1 "BPM = 케이던스" — M0-b가 검증
-- 제품설계도 §2-2 "발이 결정한다"(잔향 판정) — M0-a의 GaitState가 그 입력
-- 기술설계서 §8-2 "스템 제작 방식" — M0-b의 귀 판정이 결정
-- 검증 큐 #1 "내 발소리 토글" — CadenceEngine.steps 스트림이 그 트리거 (다음 스파이크)
+1. `cadence_engine.dart`에 "실측 확정(날짜)" 주석을 남긴다 — 그 전까지 파라미터는 가설이다
+2. 지터 p95가 30ms를 넘으면 SoLoud 오디오 스레드로 이관하는 설계를 먼저 한다
+3. 커밋 단위: 스파이크 통과 → 파라미터 확정 커밋 (CLAUDE.md: 작업 끝나면 그 자리에서 커밋)

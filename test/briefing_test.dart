@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:goingon/services/resonance.dart';
 import 'package:goingon/services/sound/briefing_script.dart';
 
-/// 1km 브리핑 문장(`docs/sound_ux_v1.md` §3).
+/// 1km 브리핑 문장.
 ///
 /// TTS를 띄우지 않고도 문장이 자연스러운지 볼 수 있어야 해서 문자열 생성만
 /// 따로 떼어냈다. 여기서 잡는 것은 **읽었을 때 사람 말인가**다 —

@@ -23,9 +23,7 @@ enum RunnerLevel {
   static RunnerLevel fromWire(String? s) =>
       values.firstWhere((v) => v.wire == s, orElse: () => beginner);
 
-  /// 온보딩에서 보여줄 선택지. **숫자를 묻지 않는다** — "주 몇 회"나
-  /// "몇 km"는 기록이 부끄러운 1차 세그먼트(D-006)에게 첫 질문부터
-  /// 시험처럼 느껴진다
+  /// 온보딩에서 보여줄 선택지. 숫자를 묻지 않는다.
   String get choiceLabel => switch (this) {
         RunnerLevel.beginner => '이제 시작하거나, 가끔 달려요',
         RunnerLevel.experienced => '꾸준히 달리는 편이에요',

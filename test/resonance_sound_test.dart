@@ -4,7 +4,7 @@ import 'package:goingon/services/sound/audio_session_controller.dart';
 import 'package:goingon/services/sound/resonance_sound.dart';
 import 'package:goingon/services/sound/sound_engine.dart';
 
-/// 공명 사운드 — 무엇이 언제 울리는가(`docs/sound_ux_v1.md` §2).
+/// 공명 사운드 — 무엇이 언제 울리는가.
 ///
 /// 소리는 귀로만 확인되는 것 같지만, 이 설계에서 틀릴 수 있는 것들은 대부분
 /// 숫자다: 문턱에서 볼륨이 튀는가, 멀어질 때 소리를 내는가, chime이 두 번

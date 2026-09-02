@@ -1,10 +1,9 @@
 // P2 — 공명 판정의 입력이 케이던스가 됐다.
 //
 // 여기서 지키는 것 셋:
-//   1. 케이던스 차이가 §1-3의 문턱과 정확히 맞물리는가 (Δ3 → 공명 문턱 위)
+//   1. 케이던스 차이가 문턱과 정확히 맞물리는가 (Δ3 → 공명 문턱 위)
 //   2. 정수비 폴리리듬이 열리되, 아무 데서나 열리지는 않는가
-//   3. **시차 공명이 라이브 공명과 같은 판정을 타는가** — 고스트가 열등한
-//      대체재가 아니라는 설계 결정(D-001)이 코드에서 지켜지는지
+//   3. **시차 공명이 라이브 공명과 같은 판정을 타는가**
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goingon/services/cadence/partner_cadence.dart';
 import 'package:goingon/services/resonance.dart';
@@ -209,7 +208,7 @@ void main() {
       final ghostResult = runWith(GhostCadenceTimeline(series));
       expect(liveResult, SyncState.resonant);
       expect(ghostResult, liveResult,
-          reason: '시차 동행이 동시성의 열등한 대체재가 아니라는 D-001의 코드판');
+          reason: '고스트와 라이브가 같은 판정 경로를 타야 한다');
     });
   });
 }

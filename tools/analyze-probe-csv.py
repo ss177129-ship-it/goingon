@@ -119,7 +119,7 @@ def analyze_cadence(path, counts, session_index):
             print("     · 엔진 스텝 > 수동  → 노이즈를 걸음으로 셈. K를 올린다")
             print("     · 엔진 스텝 < 수동  → 약한 착지를 놓침. K를 내린다")
             print("  2) 그래도 안 되면 검출 창(kEnvelopeWindow 2초)과 kMinStepMag(1.5)")
-            print("  3) 그래도 안 되면 CMPedometer 플랫폼 채널로 이관(트랙 B 원안)")
+            print("  3) 그래도 안 되면 CMPedometer 플랫폼 채널로 이관")
     else:
         print("수동 카운트(--counts)가 없어 ±3spm 판정은 하지 못했습니다.")
 

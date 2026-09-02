@@ -3,7 +3,7 @@
 // 여기서 지켜야 하는 것 셋:
 //   1. 남긴 것과 되살린 것이 같은가 (delta 압축 왕복)
 //   2. 재생이 **내 페이스와 독립인가** — 이것이 깨지면 추월 게임이 된다
-//   3. 시차 공명이 **동시 공명과 같은 판정**을 타는가 (D-001의 코드판)
+//   3. 시차 공명이 **동시 공명과 같은 판정**을 타는가
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goingon/services/cadence/partner_cadence.dart';
 import 'package:goingon/services/ghost/ghost_engine.dart';
@@ -122,7 +122,7 @@ void main() {
     });
   });
 
-  group('시차 공명 — 동시 공명과 같은 판정 (D-001)', () {
+  group('시차 공명 — 동시 공명과 같은 판정', () {
     test('고스트도 8초를 채우면 공명한다', () {
       final e = GhostEngine(_ghost(List.filled(60, 171.0)));
       final r = ResonanceEngine();
