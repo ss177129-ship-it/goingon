@@ -53,3 +53,6 @@ app.*.map.json
 *.p8
 *.p12
 *.mobileprovision
+
+# 의존성 — package-lock.json으로 복원한다 (npm ci)
+node_modules/
