@@ -44,7 +44,7 @@
 
 `design/prototype_v2.html` 이 **디자인의 단일 기준**. 화면 작업 전 해당 화면의 마크업/CSS를 열어 간격·라운딩·타이포를 그대로 따를 것.
 
-**사운드 작업의 단일 기준은 `docs/redesign/product_design_v1.1.md` §1(사운드 시스템)이다.** 2026-08-22 P0에서 `docs/sound_ux_v1.md`로부터 승계했다. 사운드·햅틱·브리핑 코드를 만지기 전에 반드시 읽을 것. 다만 **sound_ux_v1.md의 금지 목록(실패음·상시 배경음 등)은 새 설계에서도 그대로 유효**하다 — 승계는 확장이지 폐기가 아니다. 세션 화면 개편 프롬프트는 `docs/session_ui_prompts.md`, 개편 시퀀스는 `docs/redesign/rebuild_prompts.md`에 있다.
+**사운드 작업의 단일 기준은 `docs/redesign/product_design_v1.1.md` §1(사운드 시스템)이다.** 2026-08-22 P0에서 `docs/sound_ux_v1.md`로부터 승계했다. 사운드·햅틱·브리핑 코드를 만지기 전에 반드시 읽을 것. 다만 **sound_ux_v1.md의 금지 목록(실패음·상시 배경음 등)은 새 설계에서도 그대로 유효**하다 — 승계는 확장이지 폐기가 아니다.
 
 **피그마 와이어프레임을 기준으로 삼던 화면들은 롤백으로 사라졌다(2026-09-01).** 지금 존재하는 화면은 전부 프로토타입 계열이므로 `prototype_v2.html`이 다시 **유일한 화면 기준**이다. 와이어프레임([피그마](https://www.figma.com/design/koizbsGLUZofes4nXNahux))과 `docs/design/`의 캡처는 **되살릴 때 참조할 자료**로 남긴다 — 지금 앱의 모습이 아니다. 색 의미 규칙(나=lime, 상대=coral, 공명=골드 전용)만은 양쪽 모두에서 유지.
 
@@ -118,7 +118,9 @@ Flutter + Firebase(Apple 로그인, Firestore, Storage, Cloud Messaging) + Cloud
 
 ## 의도된 설계 결정 (바꾸지 말 것)
 
-> **2026-08-22 P0 개정** — `docs/redesign/strategy_memo.md`(D-001~006)에 맞춰 정리했다. 개편 시퀀스는 `docs/redesign/rebuild_prompts.md`(P0~P8), 근거는 `docs/redesign/`의 전략·UX·제품·기술 문서. 아래 §표기는 `product_design_v1.1.md`를 가리킨다.
+> **2026-08-22 P0 개정** — `docs/redesign/strategy_memo.md`(D-001~006)에 맞춰 정리했다. 근거는 `docs/redesign/`의 전략·UX·제품·기술 문서. 아래 §표기는 `product_design_v1.1.md`를 가리킨다.
+>
+> ⚠️ **2026-09-02 — 완전한 피보팅이 선언됐다.** 방향이 정해지기 전까지 아래 결정들은 **효력이 불확실하다.** 새 방향과 충돌하는 항목을 발견하면 그대로 따르지 말고 먼저 확인할 것.
 
 ### v1.0의 '함께'는 무엇인가
 

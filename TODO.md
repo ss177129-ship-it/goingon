@@ -39,7 +39,7 @@
 
 ## ★ 개편 시퀀스 P1~P8 — 기록 (2026-08-22 P0에서 등록, 2026-09-01 롤백)
 
-프롬프트 원문은 `docs/redesign/rebuild_prompts.md`. **아래는 완료 이력이지 현재 상태가 아니다.**
+**아래는 완료 이력이지 현재 상태가 아니다.** (프롬프트 원문은 2026-09-02 피보팅 선언과 함께 삭제됨 — 필요하면 `git show 6d4a28e:docs/redesign/rebuild_prompts.md`)
 
 - [x] **P0 — 거버넌스 개정** (2026-08-22, CEO 승인) — CLAUDE.md의 '의도된 설계 결정'을 strategy_memo D-001~006에 맞춰 개정. 사운드 단일 기준을 sound_ux_v1.md → product_design_v1.1.md §1로 승계
 - [~] **P1 — M0 스파이크 (합성 검증 통과 2026-08-22 · 실측 미완)** — CEO가 실주행 CSV(cadence_probe.csv, tempo_probe.csv)를 가져오면 랩 구간별 수동 카운트 대비 오차 계산. ±3spm 미달이면 `cadence_engine.dart`의 kThresholdK·검출 창 튜닝 후 재실측. 지터 p95>30ms면 SoLoud 오디오 스레드 대안 설계. 통과 시 "실측 확정(날짜)" 주석. **P1 통과 전 P2 금지**
