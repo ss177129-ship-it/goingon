@@ -348,7 +348,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   return Container(
                       width: 32, height: 1,
                       margin: const EdgeInsets.symmetric(horizontal: 4),
-                      color: done ? roles.statusOnline.fg : roles.line);
+                      color: done ? roles.positive : roles.line);
                 }
                 final idx = i ~/ 2;
                 final done = idx < _step;
@@ -360,7 +360,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(4),
                     color: done
-                        ? roles.statusOnline.fg
+                        ? roles.positive
                         : active
                             ? roles.textPrimary
                             : roles.textSecondary,
@@ -381,7 +381,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   color: roles.surface,
                   borderRadius: BorderRadius.circular(GoRadius.md),
                   border: Border.all(
-                      color: _meReady ? roles.statusOnline.fg : roles.line,
+                      color: _meReady ? roles.positive : roles.line,
                       width: _meReady ? GoStroke.accent : GoStroke.card),
                   boxShadow: GoShadow.card,
                 ),
@@ -406,7 +406,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                 style: TextStyle(fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                     color: _meReady
-                                        ? roles.statusOnline.fg
+                                        ? roles.positive
                                         : roles.textPrimary)),
                           ]),
                     ),

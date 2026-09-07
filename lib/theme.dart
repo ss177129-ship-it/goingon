@@ -3,13 +3,15 @@ import 'package:flutter/material.dart';
 /// GoingOn 팔레트 — **값의 유일한 출처.** 화면·위젯은 이 클래스를 직접
 /// 참조하지 않고 [GoRoles](역할 토큰)를 통해서만 색을 얻는다.
 ///
-/// 규칙 (2026-09-08 컬러 토큰 시스템):
+/// 규칙 (2026-09-08, 채도 전면 수정):
 /// - 기본 팔레트 4색([paper]·[lime]·[coral]·[ink])은 바꾸지 않는다
-/// - **paper 위에 lime·coral·white 글자 금지.** 글자용 코랄은 [coralText],
-///   글자용 라임 계열은 [olive]·[pine]
-/// - **coral 배경 위 white 글자는 굵은 16pt 이상만.** 본문 크기 white 금지
-/// - **lime 원색은 ink 또는 pine 배경 위에서만.** paper 위에서는 [olive]
-/// - 칩·배지의 면은 [coralTint]·[limeTint]·[pineTint], 글자는 그 앵커색
+/// - **보조색은 전부 선명하다(채도 0.75 이상).** 러스트·파인·올리브·옅은
+///   틴트 같은 탁한 색은 이 앱과 어울리지 않아 뺐다. 칩·배지는 옅은 틴트가
+///   아니라 **원색 면**(코랄·초록·라임)에 대비가 되는 글자를 얹는다
+/// - 밝은 바탕(paper·surface) 위의 색 글자는 4.5:1 이상 — 코랄은
+///   [coralText], 초록은 [green]. 원색 [lime]·[coral]은 글자로 쓰지 않는다
+/// - coral 면 위 흰 글자는 굵은 16pt 이상만(3.9:1). 초록 면 위 흰 글자는
+///   본문 크기도 된다(5:1)
 /// - 위젯 코드에 `Color(0x…)`를 쓰지 않는다. 새 값이 필요하면 여기에
 class GoColors {
   // ── 기본 팔레트 (변경 금지) ──
@@ -18,31 +20,24 @@ class GoColors {
   static const coral = Color(0xFFF05840);
   static const ink = Color(0xFF1A1A16);
 
-  // ── 보조 컬러 ──
-  /// 버튼·그래픽용 코랄
+  // ── 보조 컬러 (전부 선명) ──
+  /// 버튼용 코랄 — 흰 굵은 글자 3.9:1
   static const coralComponent = Color(0xFFE04A34);
 
-  /// 글자용 코랄(링크)
-  static const coralText = Color(0xFFBD3722);
+  /// 글자·테두리용 코랄 — 페이퍼 위 4.6:1, 채도 0.87
+  static const coralText = Color(0xFFC43119);
 
-  /// 코랄의 다크 앵커 — 아웃라인·상태 칩 글자·상대
-  static const rust = Color(0xFF8A3B1F);
+  /// 초록 — 완료 면, 긍정 상태 글자(페이퍼 위 4.5:1), 나. 채도 0.91
+  static const green = Color(0xFF2B7A0B);
 
-  /// 딥 그린 — 완료 액션 면, 온라인 상태 글자
-  static const pine = Color(0xFF1E5C4A);
+  /// 보조 글자용 중성색 — 페이퍼 위 5.7:1. 유일하게 채도가 없는 색
+  static const mid = Color(0xFF5E5A54);
 
-  /// 라임의 다크 앵커 — 리워드 글자·나
-  static const olive = Color(0xFF5C6D1D);
-
-  /// 웜 그레이 — 보조 글자(단위·캡션·비활성)
-  static const stone = Color(0xFF6B675C);
-
-  static const coralTint = Color(0xFFFAD8D0);
-  static const limeTint = Color(0xFFE8F0C4);
-  static const pineTint = Color(0xFFD8E8E0);
-
-  /// 흰 글자 — coral 면 위 굵은 큰 글자 전용
+  /// 흰 글자 — 코랄·초록 면 위
   static const white = Color(0xFFFFFFFF);
+
+  /// 코랄 15% — 아웃라인 버튼이 눌렸을 때
+  static const coralVeil = Color(0x26F05840);
 
   // ── 면·선 (페이퍼 위의 계층) ──
   /// 카드·시트가 놓이는 면. 순백이 아니라 페이퍼 색상(hue 33°)을 유지한
@@ -73,7 +68,9 @@ class GoColors {
   // ── 눌림 색 (손가락이 닿아 있는 동안만) ──
   static const inkPressed = Color(0xFF35342C);
   static const coralComponentPressed = Color(0xFFC53F2B);
-  static const pinePressed = Color(0xFF174A3B);
+  static const coralPressed = Color(0xFFE04A34); // 원색 코랄 면이 눌렸을 때
+  static const greenPressed = Color(0xFF236409);
+  static const limePressed = Color(0xFFAFC935);
   static const surfacePressed = Color(0xFFEDE7DE);
   static const pressOverlay = Color(0x141A1A16); // ink 8%
 
@@ -151,6 +148,7 @@ class GoRoles extends ThemeExtension<GoRoles> {
     required this.statusRunning,
     required this.statusOnline,
     required this.reward,
+    required this.positive,
     required this.dark,
     required this.selection,
     required this.self,
@@ -204,11 +202,15 @@ class GoRoles extends ThemeExtension<GoRoles> {
   /// 뛰는 중
   final GoRole statusRunning;
 
-  /// 온라인·GPS·완료
+  /// 온라인·GPS·완료 — 초록 면 + 흰 글자
   final GoRole statusOnline;
 
-  /// 코인·적립 전용. **리워드 외 사용 금지**
+  /// 코인·적립 전용. **리워드 외 사용 금지** — 라임 면 + 잉크 글자
   final GoRole reward;
+
+  /// 밝은 바탕 위의 긍정 상태 **글자·아이콘·테두리**(준비 완료, 이룬 것,
+  /// 성공 토스트). 면이 아니라 글자일 때는 [statusOnline]이 아니라 이것
+  final Color positive;
 
   /// 잉크 면(히어로 카드·세그먼트 활성)
   final GoRole dark;
@@ -243,7 +245,7 @@ class GoRoles extends ThemeExtension<GoRoles> {
     lineStrong: GoColors.lineStrong,
     rule: GoColors.ink,
     textPrimary: GoColors.ink,
-    textSecondary: GoColors.stone,
+    textSecondary: GoColors.mid,
     textOnDark: GoColors.paper,
     link: GoColors.coralText,
     actionPrimary: GoRole(
@@ -252,31 +254,32 @@ class GoRoles extends ThemeExtension<GoRoles> {
       pressed: GoColors.coralComponentPressed,
     ),
     actionComplete: GoRole(
-      bg: GoColors.pine,
+      bg: GoColors.green,
       fg: GoColors.lime,
-      pressed: GoColors.pinePressed,
+      pressed: GoColors.greenPressed,
     ),
     actionSecondary: GoRole(
       bg: Color(0x00000000),
-      fg: GoColors.rust,
-      border: GoColors.rust,
-      pressed: GoColors.coralTint,
+      fg: GoColors.coralText,
+      border: GoColors.coralText,
+      pressed: GoColors.coralVeil,
     ),
     statusRunning: GoRole(
-      bg: GoColors.coralTint,
-      fg: GoColors.rust,
-      pressed: GoColors.coralTint,
+      bg: GoColors.coral,
+      fg: GoColors.ink,
+      pressed: GoColors.coralPressed,
     ),
     statusOnline: GoRole(
-      bg: GoColors.pineTint,
-      fg: GoColors.pine,
-      pressed: GoColors.pineTint,
+      bg: GoColors.green,
+      fg: GoColors.white,
+      pressed: GoColors.greenPressed,
     ),
     reward: GoRole(
-      bg: GoColors.limeTint,
-      fg: GoColors.olive,
-      pressed: GoColors.limeTint,
+      bg: GoColors.lime,
+      fg: GoColors.ink,
+      pressed: GoColors.limePressed,
     ),
+    positive: GoColors.green,
     dark: GoRole(
       bg: GoColors.ink,
       fg: GoColors.paper,
@@ -287,11 +290,11 @@ class GoRoles extends ThemeExtension<GoRoles> {
       fg: GoColors.ink,
       pressed: GoColors.inkVeilPressed,
     ),
-    self: GoColors.olive,
-    partner: GoColors.rust,
+    self: GoColors.green,
+    partner: GoColors.coralText,
     selfOnDark: GoColors.lime,
     partnerOnDark: GoColors.coral,
-    attention: GoColors.rust,
+    attention: GoColors.coralText,
     resonance: GoColors.resonance,
   );
 
@@ -423,7 +426,7 @@ class GoText {
   static const secondary = TextStyle(
     fontSize: 13,
     height: 1.45,
-    color: GoColors.stone,
+    color: GoColors.mid,
   );
 
   /// 섹션 라벨·스탯 라벨. 하나뿐이다 — 9/10/11px 변형을 만들지 말 것

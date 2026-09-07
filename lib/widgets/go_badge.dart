@@ -71,7 +71,7 @@ class GoLiveDot extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: roles.statusRunning.fg,
+        color: roles.statusRunning.bg, // 달리는 중 = 코랄 점
         shape: BoxShape.circle,
         border: Border.all(color: roles.background, width: GoStroke.accent),
       ),
@@ -79,7 +79,7 @@ class GoLiveDot extends StatelessWidget {
   }
 }
 
-/// "달리는 중" 태그. statusRunning 칩 — coralTint 면, 점 8 + 12/600 rust,
+/// "달리는 중" 태그. statusRunning 칩 — 코랄 면, 점 8 + 12/600 잉크,
 /// 테두리 없음
 class GoLiveTag extends StatelessWidget {
   const GoLiveTag({super.key, this.label = '달리는 중'});

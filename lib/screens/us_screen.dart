@@ -411,16 +411,16 @@ class _UsScreenState extends State<UsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
           color: roles.surface,
-          border: Border.all(color: roles.statusOnline.fg, width: GoStroke.accent),
+          border: Border.all(color: roles.positive, width: GoStroke.accent),
           borderRadius: BorderRadius.circular(GoRadius.md),
           boxShadow: GoShadow.card,
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Icon(Icons.local_fire_department,
-                size: 24, color: roles.statusOnline.fg),
+                size: 24, color: roles.positive),
             const SizedBox(width: 6),
-            Text('$streak', style: GoTheme.serif(30, color: roles.statusOnline.fg)),
+            Text('$streak', style: GoTheme.serif(30, color: roles.positive)),
             const SizedBox(width: 6),
             Padding(
               padding: const EdgeInsets.only(top: 6),
@@ -442,7 +442,7 @@ class _UsScreenState extends State<UsScreen> {
                   color: done ? roles.statusOnline.bg : roles.surface,
                   borderRadius: BorderRadius.circular(GoRadius.sm),
                   border: isToday && !done
-                      ? Border.all(color: roles.statusOnline.fg, width: GoStroke.accent)
+                      ? Border.all(color: roles.positive, width: GoStroke.accent)
                       : null,
                   boxShadow: GoShadow.card,
                 ),
@@ -469,14 +469,14 @@ class _UsScreenState extends State<UsScreen> {
                 color: roles.surface,
                 child: IntrinsicHeight(
                   child: Row(children: [
-                    Container(width: 4, color: roles.statusOnline.fg),
+                    Container(width: 4, color: roles.positive),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 10),
                         child: Text(
                             '이번 주는 아직 함께 달리지 않았어요. 지금 GO?를 보내볼까요?',
-                            style: TextStyle(fontSize: 12, color: roles.statusOnline.fg,
+                            style: TextStyle(fontSize: 12, color: roles.positive,
                                 height: 1.5)),
                       ),
                     ),
@@ -601,13 +601,13 @@ class _UsScreenState extends State<UsScreen> {
       decoration: BoxDecoration(
         color: roles.surface,
         border: Border.all(
-            color: isNext ? roles.line : roles.statusOnline.fg,
+            color: isNext ? roles.line : roles.positive,
             width: isNext ? GoStroke.rule : GoStroke.accent),
         borderRadius: BorderRadius.circular(GoRadius.md),
         boxShadow: GoShadow.card,
       ),
       child: Row(children: [
-        Icon(icon, size: 20, color: isNext ? roles.textSecondary : roles.statusOnline.fg),
+        Icon(icon, size: 20, color: isNext ? roles.textSecondary : roles.positive),
         const SizedBox(width: GoSpace.m),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -660,7 +660,7 @@ class _UsScreenState extends State<UsScreen> {
               Container(
                 margin: const EdgeInsets.only(bottom: 5),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                // 스토리 라벨 칩(statusOnline): 파인 틴트 면 + 파인 글자, 테두리 없음
+                // 스토리 라벨 칩(statusOnline): 초록 면 + 흰 글자, 테두리 없음
                 decoration: BoxDecoration(
                   color: roles.statusOnline.bg,
                   borderRadius: BorderRadius.circular(GoRadius.sm),

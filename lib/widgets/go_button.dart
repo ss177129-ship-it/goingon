@@ -11,10 +11,10 @@ enum GoButtonKind {
   /// 크기에서만 읽힌다
   primary,
 
-  /// actionComplete — 파인 면 + 라임 글자. 저장·완료
+  /// actionComplete — 초록 면 + 라임 글자. 저장·완료
   complete,
 
-  /// actionSecondary — 투명 면 + 러스트 테두리·글자
+  /// actionSecondary — 투명 면 + 코랄 테두리·글자
   secondary,
 
   /// 배경·테두리 없음. 글자는 textPrimary
@@ -63,13 +63,13 @@ class GoButton extends StatelessWidget {
   final bool enabled;
   final bool loading;
 
-  /// text 버튼의 글자를 러스트로. 면이 있는 버튼에는 영향 없음
+  /// text 버튼의 글자를 코랄로. 면이 있는 버튼에는 영향 없음
   final bool destructive;
 
   /// "GO?" 단독 전용
   final bool serifLabel;
 
-  /// 잉크·파인처럼 어두운 면 위에 놓일 때. secondary·text의 글자·테두리가
+  /// 잉크·초록처럼 어두운 면 위에 놓일 때. secondary·text의 글자·테두리가
   /// textOnDark로 바뀐다. 면이 있는 primary·complete에는 영향 없음
   final bool onDark;
 

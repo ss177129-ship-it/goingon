@@ -181,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (ctx) => Padding(
         padding: const EdgeInsets.fromLTRB(28, 28, 28, 40),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          // 상태 태그(statusRunning): 코랄 틴트 면 + 러스트 글자, 테두리 없음
+          // 상태 태그(statusRunning): 코랄 면 + 잉크 글자, 테두리 없음
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
@@ -568,7 +568,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Text(loaded ? '함께 달릴 준비 완료' : '불러오는 중',
             style: TextStyle(
                 fontSize: 12,
-                color: loaded ? roles.statusOnline.fg : roles.textSecondary)),
+                color: loaded ? roles.positive : roles.textSecondary)),
         const SizedBox(height: 14),
         Container(height: 1, color: roles.lineStrong),
         const SizedBox(height: GoSpace.m),

@@ -191,7 +191,7 @@ class _FinishScreenState extends State<FinishScreen> {
   @override
   Widget build(BuildContext context) {
     final roles = GoRoles.of(context);
-    // 밝은 바탕 위 라임 원색은 금지 조합 — 완료 화면 바탕은 파인(actionComplete.bg)
+    // 밝은 바탕 위 라임 원색은 금지 조합 — 완료 화면 바탕은 초록(actionComplete.bg)
     return Scaffold(
       backgroundColor: roles.actionComplete.bg,
       body: SafeArea(
@@ -298,7 +298,7 @@ class _FinishScreenState extends State<FinishScreen> {
             GoButton('오늘의 순간 공유하기',
                 key: _shareButtonKey,
                 kind: GoButtonKind.text,
-                onDark: true, // 파인 바탕 위
+                onDark: true, // 초록 바탕 위
                 size: GoButtonSize.md,
                 onTap: _shareCard),
           ]),
