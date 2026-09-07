@@ -59,7 +59,9 @@ class _UsScreenState extends State<UsScreen> {
       builder: (context, friendSnap) {
         if (friendSnap.hasError) return _errorState(() => setState(() {}));
         final friends = friendSnap.data;
-        if (friends == null) return const SizedBox.shrink();
+        // 첫 응답 전 완전한 공백은 "여긴 아무것도 없는 탭"으로 읽힌다.
+        // 제목만이라도 먼저 세워 이 화면이 무엇인지 알려준다
+        if (friends == null) return _loadingState();
         if (friends.isEmpty) return _noFriendYet();
 
         final partner = friends.first;
@@ -82,7 +84,7 @@ class _UsScreenState extends State<UsScreen> {
             // 재조회 중에도 이전 데이터를 유지해 깜빡이지 않게 함 —
             // 빈 화면은 최초 로딩일 때만 보여줌
             final sessions = _lastSessions;
-            if (sessions == null) return const SizedBox.shrink();
+            if (sessions == null) return _loadingState();
             if (sessions.isEmpty) return _notRunTogetherYet(partner);
             return _journey(partner, sessions);
           },
@@ -107,11 +109,33 @@ class _UsScreenState extends State<UsScreen> {
 
   // ── 화면 ──
 
+  /// 아직 불러오는 중 — 제목은 세워두고 본문 자리에 스피너만
+  Widget _loadingState() {
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: const [
+        Padding(
+          padding: EdgeInsets.fromLTRB(GoSpace.screen, 18, GoSpace.screen, 0),
+          child: Text('우리의 여정', style: GoText.label),
+        ),
+        SizedBox(height: 80),
+        Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+                strokeWidth: 2, color: GoColors.dim),
+          ),
+        ),
+      ],
+    );
+  }
+
   /// 데이터를 불러오지 못했을 때 — 조용히 빈 화면 대신 다시 시도할 수 있게
   Widget _errorState(VoidCallback onRetry) {
     return Column(children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(24, 14, 24, 6),
+      const Padding(
+        padding: EdgeInsets.fromLTRB(24, 14, 24, 6),
         child: Align(
           alignment: Alignment.centerLeft,
           child: Text('우리의 여정', style: GoText.label),
@@ -134,7 +158,7 @@ class _UsScreenState extends State<UsScreen> {
                     size: 28, color: GoColors.mid),
               ),
               const SizedBox(height: 18),
-              Text('불러오지 못했어요',
+              const Text('불러오지 못했어요',
                   textAlign: TextAlign.center, style: GoText.heading),
               const SizedBox(height: 8),
               const Text('네트워크 상태를 확인하고 다시 시도해 주세요.',
@@ -152,8 +176,8 @@ class _UsScreenState extends State<UsScreen> {
   /// 친구가 아예 없을 때
   Widget _noFriendYet() {
     return Column(children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(24, 14, 24, 6),
+      const Padding(
+        padding: EdgeInsets.fromLTRB(24, 14, 24, 6),
         child: Align(
           alignment: Alignment.centerLeft,
           child: Text('우리의 여정', style: GoText.label),
@@ -176,7 +200,7 @@ class _UsScreenState extends State<UsScreen> {
                     size: 30, color: GoColors.coralDark),
               ),
               const SizedBox(height: 18),
-              Text('아직 함께 뛰는 사람이 없어요',
+              const Text('아직 함께 뛰는 사람이 없어요',
                   textAlign: TextAlign.center, style: GoText.heading),
               const SizedBox(height: 8),
               const Text('아이디로 페이스메이트를 찾으면, 둘만의 여정이 시작돼요.',
@@ -195,8 +219,8 @@ class _UsScreenState extends State<UsScreen> {
   /// 친구는 있지만 함께 달린 세션이 아직 없을 때
   Widget _notRunTogetherYet(Map<String, dynamic> partner) {
     return Column(children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(24, 14, 24, 6),
+      const Padding(
+        padding: EdgeInsets.fromLTRB(24, 14, 24, 6),
         child: Align(
           alignment: Alignment.centerLeft,
           child: Text('우리의 여정', style: GoText.label),
@@ -299,8 +323,8 @@ class _UsScreenState extends State<UsScreen> {
 
     return ListView(padding: EdgeInsets.zero, children: [
       // ── 헤더 ──
-      Padding(
-        padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
+      const Padding(
+        padding: EdgeInsets.fromLTRB(24, 14, 24, 0),
         child: Text('우리의 여정', style: GoText.label),
       ),
       Padding(
@@ -463,8 +487,8 @@ class _UsScreenState extends State<UsScreen> {
       ),
       // ── 마일스톤 ──
       if (achieved.isNotEmpty || nextThreshold != -1) ...[
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(24, 20, 24, 8),
           child: Text('우리가 함께 넘은 것', style: GoText.label),
         ),
         if (achieved.isNotEmpty)
@@ -487,8 +511,8 @@ class _UsScreenState extends State<UsScreen> {
           ),
       ],
       // ── 함께한 순간 ──
-      Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+      const Padding(
+        padding: EdgeInsets.fromLTRB(24, 20, 24, 8),
         child: Text('함께한 순간', style: GoText.label),
       ),
       Padding(
@@ -504,8 +528,8 @@ class _UsScreenState extends State<UsScreen> {
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 12, color: GoColors.mid)),
       ),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(32, 0, 32, 20),
+      const Padding(
+        padding: EdgeInsets.fromLTRB(32, 0, 32, 20),
         child: Text('우리 둘이 함께 쌓아온 기록이에요.\n여기, 우리 사이에만 있어요.',
             textAlign: TextAlign.center,
             style: TextStyle(

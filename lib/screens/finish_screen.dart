@@ -218,11 +218,11 @@ class _FinishScreenState extends State<FinishScreen> {
                       borderRadius: BorderRadius.circular(GoRadius.md),
                     ),
                     child: Column(children: [
-                      Text('함께 달린 것',
-                          style: TextStyle(fontSize: 8,
+                      const Text('함께 달린 것',
+                          style: TextStyle(fontSize: 10,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.2,
-                              color: GoColors.ink.withValues(alpha: .4))),
+                              color: GoColors.mid)),
                       const SizedBox(height: GoSpace.m),
                       Row(children: [
                         _togetherStat(_fmt(widget.mySeconds), '내가 달린 시간'),
@@ -246,9 +246,9 @@ class _FinishScreenState extends State<FinishScreen> {
                           _waiting
                               ? '${widget.partnerName}의 기록이 도착하면 합쳐져요'
                               : '둘의 기록을 합친 값이에요',
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontSize: 11,
-                              color: GoColors.ink.withValues(alpha: .4))),
+                              color: GoColors.mid)),
                     ]),
                   ),
                   const SizedBox(height: 8),
@@ -259,12 +259,12 @@ class _FinishScreenState extends State<FinishScreen> {
             ),
             const SizedBox(height: 14),
             // ── 개인 기록 (fin-ind-row) ──
-            Align(
+            const Align(
               alignment: Alignment.centerLeft,
               child: Text('개인 기록',
-                  style: TextStyle(fontSize: 8, fontWeight: FontWeight.w600,
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
                       letterSpacing: 1.2,
-                      color: GoColors.ink.withValues(alpha: .4))),
+                      color: GoColors.mid)),
             ),
             const SizedBox(height: 8),
             Row(children: [
@@ -281,8 +281,8 @@ class _FinishScreenState extends State<FinishScreen> {
                   _longWait
                       ? "${widget.partnerName}의 기록이 도착하면 '우리' 탭에 합산될 거예요. 먼저 쉬고 있어요."
                       : '${widget.partnerName}는 아직 달리는 중이에요',
-                  style: TextStyle(
-                      fontSize: 11, color: GoColors.ink.withValues(alpha: .4))),
+                  style: const TextStyle(
+                      fontSize: 11, color: GoColors.mid)),
             ],
             const SizedBox(height: 18),
             // ── CTA ──
@@ -309,8 +309,8 @@ class _FinishScreenState extends State<FinishScreen> {
         Text(v, style: GoTheme.serif(26, color: GoColors.ink)),
         const SizedBox(height: 2),
         Text(label,
-            style: TextStyle(fontSize: 8, letterSpacing: .8,
-                color: GoColors.ink.withValues(alpha: .4))),
+            style: const TextStyle(fontSize: 10, letterSpacing: .8,
+                color: GoColors.mid)),
       ]),
     );
   }
@@ -328,16 +328,16 @@ class _FinishScreenState extends State<FinishScreen> {
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(who,
-              style: TextStyle(fontSize: 8, fontWeight: FontWeight.w600,
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
                   letterSpacing: .8, color: color)),
           const SizedBox(height: 4),
           Text(km == null ? '달리는 중...' : '${km.toStringAsFixed(1)}km',
               style: km == null
                   ? GoText.secondary
                   : GoTheme.serif(22)),
-          Text('개인 총 거리',
+          const Text('개인 총 거리',
               style: TextStyle(
-                  fontSize: 9, color: GoColors.ink.withValues(alpha: .4))),
+                  fontSize: 10, color: GoColors.mid)),
           if (mood != null) ...[
             const SizedBox(height: 4),
             Text("'$mood'",

@@ -45,6 +45,11 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _friendsError = false;
   int _friendsRetries = 0;
 
+  /// 첫 응답이 오기 전과 "친구가 없다"는 구분되어야 한다. 둘을 같은 빈
+  /// 목록으로 두면, 앱을 켤 때마다 페이스메이트가 있는 사람에게도 "아직
+  /// 페이스메이트가 없어요"가 한 프레임 스쳐 지나간다
+  bool _friendsLoaded = false;
+
   // 나에게 온 친구 요청. 푸시가 없어서 앱을 열어야 보이므로, 홈 최상단에
   // 눈에 띄게 둠 — 놓치면 상대는 무한정 기다리게 됨
   StreamSubscription? _requestsSub;
@@ -79,6 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       setState(() {
         _friendList = list;
+        _friendsLoaded = true;
         _friendsError = false;
         _friendsRetries = 0;
       });
@@ -251,11 +257,19 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  /// GO?를 보내는 중인 상대의 uid. 세션 생성은 왕복이 있어서 그 사이
+  /// 버튼이 그대로면 사람들은 반응이 없다고 생각해 한 번 더 누르고,
+  /// 그러면 같은 상대에게 세션이 두 개 만들어진다 — 상대 화면에는 수락
+  /// 시트가 두 번 뜨고, 하나는 영영 주인 없이 남는다
+  String? _sendingTo;
+
   Future<void> _sendGo(String friendUid, String friendName) async {
+    if (_sendingTo != null) return; // 연타·다른 행 동시 탭 모두 여기서 막힌다
+    setState(() => _sendingTo = friendUid);
     try {
       final sessionId = await _runs.createSession(_auth.uid, friendUid);
       if (!mounted) return;
-      Navigator.push(context, MaterialPageRoute(
+      await Navigator.push(context, MaterialPageRoute(
         builder: (_) =>
             LobbyScreen(sessionId: sessionId, partnerName: friendName),
       ));
@@ -263,6 +277,8 @@ class _HomeScreenState extends State<HomeScreen> {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
       GoToast.error(context, '요청을 보내지 못했어요. 다시 시도해 주세요.');
+    } finally {
+      if (mounted) setState(() => _sendingTo = null);
     }
   }
 
@@ -306,7 +322,12 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: EdgeInsets.fromLTRB(22, 18, 22, 8),
           child: Text('페이스메이트', style: GoText.label),
         ),
-        if (friends.isEmpty)
+        // 아직 첫 응답 전 → 목록 자리를 뼈대로 잡아둔다. "없다"고 말하지
+        // 않는 이유는, 잠시 뒤 나타날 것을 없다고 했다가 뒤집으면 화면이
+        // 튀고 사용자는 방금 본 것을 의심하게 되기 때문
+        if (!_friendsLoaded)
+          _friendListSkeleton()
+        else if (friends.isEmpty)
           _noFriendsYet()
         else
           GoGroup(
@@ -316,9 +337,42 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         // 친구가 없어도 전체 흐름을 체험할 수 있는 통로. 심사관이 로비·러닝·
         // 완료 화면을 볼 유일한 방법이라 반드시 눈에 띄는 곳에 있어야 함
-        if (friends.isEmpty) _demoLink(),
+        if (_friendsLoaded && friends.isEmpty) _demoLink(),
         const SizedBox(height: GoSpace.m),
       ],
+    );
+  }
+
+  /// 목록이 들어올 자리. 값 대신 회색 면만 두어 높이를 미리 차지한다
+  Widget _friendListSkeleton() {
+    Widget bar(double w, double h) => Container(
+          width: w,
+          height: h,
+          decoration: BoxDecoration(
+            color: GoColors.line,
+            borderRadius: BorderRadius.circular(h / 2),
+          ),
+        );
+    return GoGroup(
+      margin: const EdgeInsets.symmetric(horizontal: 22),
+      dividerInset: GoSpace.card + 44 + GoSpace.m,
+      rows: List.generate(
+        2,
+        (_) => GoGroupRow(
+          child: Row(children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: const BoxDecoration(
+                  color: GoColors.line, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: GoSpace.m),
+            Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [bar(96, 12), const SizedBox(height: 6), bar(64, 10)]),
+          ]),
+        ),
+      ),
     );
   }
 
@@ -470,6 +524,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// 내 프로필 카드 — 프로토타입의 흰 카드 + 3분할 스탯
   Widget _profileCard(int friendCount) {
+    // 프로필이 아직 안 왔을 때 0.0km·0회를 보여주면, 실제로 기록이 있는
+    // 사람에게 잠깐 "아무것도 안 했다"고 말하는 셈이 된다. 값 대신 —
+    final loaded = _me != null;
     final myName = _me?['name'] ?? '';
     final now = DateTime.now();
     final monthKey = '${now.year}-${now.month.toString().padLeft(2, '0')}';
@@ -496,18 +553,22 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 8),
         Text(myName, style: GoText.heading),
         const SizedBox(height: 3),
-        const Text('함께 달릴 준비 완료',
-            style: TextStyle(fontSize: 12, color: GoColors.limeDark)),
+        Text(loaded ? '함께 달릴 준비 완료' : '불러오는 중',
+            style: TextStyle(
+                fontSize: 12,
+                color: loaded ? GoColors.limeDark : GoColors.mid)),
         const SizedBox(height: 14),
         Container(height: 1, color: GoColors.line),
         const SizedBox(height: GoSpace.m),
         IntrinsicHeight(
           child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            _stat(monthKm.toStringAsFixed(1), 'km', '이번 달'),
+            _stat(loaded ? monthKm.toStringAsFixed(1) : '—',
+                loaded ? 'km' : '', '이번 달'),
             _statDivider(),
-            _stat('$totalRuns', '', '함께 달림'),
+            _stat(loaded ? '$totalRuns' : '—', '', '함께 달림'),
             _statDivider(),
-            _stat('$friendCount', '명', '함께하는 사람'),
+            _stat(_friendsLoaded ? '$friendCount' : '—',
+                _friendsLoaded ? '명' : '', '함께하는 사람'),
           ]),
         ),
       ]),
@@ -541,6 +602,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final uid = f['uid'] as String;
     // 그룹 안의 행 하나. 상대 역할색(coralDark)은 아바타 링에만
     return GoGroupRow(
+      // 길게 누르기는 지름길로 남기되, 그것'만'으로는 아무도 못 찾는다.
+      // 차단·신고는 App Store 가이드라인 1.2가 요구하는 수단이라 화면에
+      // 보이는 입구가 반드시 있어야 한다
       onLongPress: () => _showFriendActions(uid, name),
       child: Row(children: [
           InitialAvatar(
@@ -566,10 +630,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(fontSize: 11, color: GoColors.mid)),
                 ]),
           ),
+          Pressable(
+            onTap: () => _showFriendActions(uid, name),
+            child: const Padding(
+              // 아이콘 18 + 상하좌우 13 = 44pt 터치 표적
+              padding: EdgeInsets.all(13),
+              child: Icon(Icons.more_horiz, size: 18, color: GoColors.mid),
+            ),
+          ),
+          const SizedBox(width: 2),
           GoButton('GO?',
               kind: GoButtonKind.go,
               size: GoButtonSize.md,
               serifLabel: true,
+              loading: _sendingTo == uid,
+              // 다른 행을 보내는 중이면 이 행도 눌리지 않는다 — 두 사람에게
+              // 동시에 GO?를 보내면 어느 로비로 들어갈지가 경합이 된다
+              enabled: _sendingTo == null || _sendingTo == uid,
               onTap: () => _sendGo(uid, name)),
         ]),
     );

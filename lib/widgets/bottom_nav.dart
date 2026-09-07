@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import 'pressable.dart';
 
 /// 하단 탭 — 홈 / 우리 / 설정 (프로토타입 .nav-bar)
 class GoBottomNav extends StatelessWidget {
@@ -29,8 +30,11 @@ class GoBottomNav extends StatelessWidget {
   Widget _item(int i, IconData icon, String label) {
     final active = i == index;
     return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
+      // 탭바는 모든 화면에 붙어 있어서, 여기가 반응하지 않으면 앱 전체가
+      // 둔하게 느껴진다. 축소는 0.92 — 아이콘 하나짜리 작은 표적이라
+      // 버튼(0.97)보다 크게 줄여야 눈에 보인다
+      child: Pressable(
+        scale: .92,
         onTap: () => onChanged(i),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, size: 24, color: active ? GoColors.ink : GoColors.mid),

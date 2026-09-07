@@ -290,17 +290,24 @@ class _LobbyScreenState extends State<LobbyScreen> {
       body: SafeArea(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           // ── 헤더 ──
+          // 뒤로가기는 11px 글자뿐이라 손가락으로 겨냥할 수 없었고 눌러도
+          // 아무 반응이 없었다. 44pt 표적 + 눌림 반응으로 교체.
+          // 왼쪽 12는 버튼 자체 좌우 여백(16)을 빼고 제목(28)에 맞춘 값
           Padding(
-            padding: const EdgeInsets.fromLTRB(28, 14, 28, 0),
+            padding: const EdgeInsets.fromLTRB(12, 10, 28, 0),
+            child: Row(children: [
+              GoButton('홈으로',
+                  kind: GoButtonKind.text,
+                  size: GoButtonSize.md,
+                  icon: Icons.arrow_back,
+                  onTap: () => Navigator.pop(context)),
+              const Spacer(),
+            ]),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(28, 0, 28, 0),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Text('← 홈으로',
-                        style:
-                            TextStyle(fontSize: 11, color: GoColors.mid)),
-                  ),
-                  const SizedBox(height: 10),
                   Text(
                       _meReady && _partnerReady
                           ? '출발 준비 완료'
@@ -408,6 +415,15 @@ class _LobbyScreenState extends State<LobbyScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        // 화살표만 두면 "이게 눌리는 카드"라는 걸 아무도
+                        // 모른다 — 아이콘은 이미 아는 사람에게만 말을 건다.
+                        // 무엇이 일어나는지 글로 한 번 적어준다(2026-09-07)
+                        Text(_meReady ? '준비 취소' : '탭해서 다음 단계',
+                            style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: GoColors.mid)),
+                        const SizedBox(width: GoSpace.s),
                         // 칩 대신 화살표만 — 카드 자체가 눌린다(2026-09-07)
                         Icon(_meReady ? Icons.close : Icons.arrow_forward,
                             size: 20, color: GoColors.ink),

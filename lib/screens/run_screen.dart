@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart' show kDebugMode, ValueListenable;
 import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
+import 'package:permission_handler/permission_handler.dart' as ph;
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../services/active_run_guard.dart';
@@ -529,6 +530,9 @@ class _RunScreenState extends State<RunScreen>
   @override
   Widget build(BuildContext context) {
     if (!_gpsOk) {
+      // 경로를 글로만 알려주면(설정 > GoingOn > 위치) 사람들은 앱을 나가
+      // 헤매다 돌아오지 않는다. 여기서 바로 앱 설정을 열어주고, 돌아올
+      // 곳도 남긴다 — 막다른 화면을 만들지 않는다
       return Scaffold(
         body: Center(
           child: Padding(
@@ -536,9 +540,18 @@ class _RunScreenState extends State<RunScreen>
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               const Text('위치 권한이 필요해요', style: GoText.heading),
               const SizedBox(height: 10),
-              const Text('설정 > GoingOn > 위치에서 허용해 주세요.',
+              const Text('달린 거리를 재려면 위치 접근이 필요해요.\n좌표는 기기 밖으로 나가지 않아요.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: GoColors.mid)),
+                  style: TextStyle(fontSize: 13, height: 1.5, color: GoColors.mid)),
+              const SizedBox(height: GoSpace.section),
+              GoButton('설정 열기',
+                  icon: Icons.settings_outlined,
+                  onTap: () => ph.openAppSettings()),
+              const SizedBox(height: GoSpace.s),
+              GoButton('돌아가기',
+                  kind: GoButtonKind.text,
+                  size: GoButtonSize.md,
+                  onTap: () => Navigator.maybePop(context)),
             ]),
           ),
         ),
@@ -679,8 +692,9 @@ class _RunScreenState extends State<RunScreen>
             const SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 28),
+              // canvas 위에서 amber는 2.5:1로 읽히지 않는다. amberDark는 4.6:1
               child: _caption('화면을 끄면 거리가 멈춰요 — 위치를 "항상 허용"으로 바꾸면 꺼도 기록돼요',
-                  color: GoColors.amber.withValues(alpha: .9)),
+                  color: GoColors.amberDark),
             ),
           ],
           const SizedBox(height: GoSpace.section),
@@ -714,7 +728,7 @@ class _RunScreenState extends State<RunScreen>
         height: _kStopButtonSize,
         child: Stack(alignment: Alignment.center, children: [
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
             ),
