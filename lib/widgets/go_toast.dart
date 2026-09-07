@@ -23,6 +23,7 @@ class GoToast {
       {required bool isError}) {
     final messenger = ScaffoldMessenger.maybeOf(context);
     if (messenger == null) return;
+    final roles = GoRoles.of(context);
     messenger
       ..hideCurrentSnackBar() // 연달아 뜰 때 줄 서지 않고 최신 것만 보이게
       ..showSnackBar(SnackBar(
@@ -30,21 +31,21 @@ class GoToast {
           Icon(
             isError ? Icons.error_outline : Icons.check_circle_outline,
             size: 18,
-            color: isError ? GoColors.coralDark : GoColors.limeDark,
+            color: isError ? roles.attention : roles.statusOnline.fg,
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 13,
                   height: 1.4,
                   fontWeight: FontWeight.w500,
-                  color: GoColors.ink),
+                  color: roles.textPrimary),
             ),
           ),
         ]),
-        backgroundColor: GoColors.surfaceHigh,
+        backgroundColor: roles.surfaceHigh,
         elevation: 8,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.fromLTRB(22, 0, 22, 20),
@@ -54,8 +55,8 @@ class GoToast {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
             color: isError
-                ? GoColors.coral.withValues(alpha: .35)
-                : GoColors.line,
+                ? roles.partner.withValues(alpha: .35)
+                : roles.line,
             width: 1.5,
           ),
         ),

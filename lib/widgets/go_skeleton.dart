@@ -13,9 +13,6 @@ import '../theme.dart';
 class GoSkeletonRow extends StatelessWidget {
   const GoSkeletonRow({super.key});
 
-  static final _strong = GoColors.ink.withValues(alpha: .08);
-  static final _weak = GoColors.ink.withValues(alpha: .06);
-
   Widget _bar(double widthFactor, double height, Color color) =>
       FractionallySizedBox(
         widthFactor: widthFactor,
@@ -31,27 +28,30 @@ class GoSkeletonRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final roles = GoRoles.of(context);
+    final strong = roles.textPrimary.withValues(alpha: .08);
+    final weak = roles.textPrimary.withValues(alpha: .06);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: GoSpace.m),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: GoColors.line, width: GoStroke.rule),
+          top: BorderSide(color: roles.line, width: GoStroke.rule),
         ),
       ),
       child: Row(children: [
         Container(
           width: 44,
           height: 44,
-          decoration: BoxDecoration(color: _strong, shape: BoxShape.circle),
+          decoration: BoxDecoration(color: strong, shape: BoxShape.circle),
         ),
         const SizedBox(width: GoSpace.m),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _bar(.30, 12, _strong),
+              _bar(.30, 12, strong),
               const SizedBox(height: GoSpace.s),
-              _bar(.55, 10, _weak),
+              _bar(.55, 10, weak),
             ],
           ),
         ),
@@ -60,7 +60,7 @@ class GoSkeletonRow extends StatelessWidget {
           width: 64,
           height: 44,
           decoration: BoxDecoration(
-            color: _strong,
+            color: strong,
             borderRadius: BorderRadius.circular(GoRadius.sm),
           ),
         ),

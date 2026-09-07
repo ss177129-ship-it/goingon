@@ -64,10 +64,11 @@ class _UpdateRequiredScreenState extends State<UpdateRequiredScreen> {
   @override
   Widget build(BuildContext context) {
     // 뒤로 나갈 수 없다 — 이 화면이 곧 앱의 전부인 상태
+    final roles = GoRoles.of(context);
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: GoColors.paper,
+        backgroundColor: roles.background,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -79,17 +80,17 @@ class _UpdateRequiredScreenState extends State<UpdateRequiredScreen> {
                 Text('업데이트가 필요해요',
                     textAlign: TextAlign.center, style: GoText.title),
                 const SizedBox(height: GoSpace.m),
-                const Text(
+                Text(
                   '지금 버전으로는 함께 달릴 수 없어요.\n최신 버전으로 업데이트하면 이어서 쓸 수 있어요.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, height: 1.5, color: GoColors.mid),
+                  style: TextStyle(fontSize: 14, height: 1.5, color: roles.textSecondary),
                 ),
                 if (_notice != null) ...[
                   const SizedBox(height: 14),
                   Text(_notice!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                          fontSize: 12, color: GoColors.coralDark)),
+                      style: TextStyle(
+                          fontSize: 12, color: roles.attention)),
                 ],
                 const SizedBox(height: 32),
                 GoButton('업데이트하러 가기', onTap: _openTestFlight),

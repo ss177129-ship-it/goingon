@@ -60,6 +60,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final roles = GoRoles.of(context);
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -69,7 +70,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
               const SizedBox(height: 40),
               BrandMark.standard(),
               const SizedBox(height: 16),
-              Text('goingon', style: GoTheme.serif(20, color: GoColors.mid)),
+              Text('goingon', style: GoTheme.serif(20, color: roles.textSecondary)),
               const SizedBox(height: 18),
               Text('마지막으로,\n프로필을 만들어요',
                   textAlign: TextAlign.center, style: GoText.title),
@@ -83,10 +84,10 @@ class _NicknameScreenState extends State<NicknameScreen> {
                   hintText: '뭐라고 부르면 될까요?',
                   counterText: '',
                   filled: true,
-                  fillColor: GoColors.surface,
+                  fillColor: roles.surface,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: GoColors.line, width: GoStroke.card),
+                    borderSide: BorderSide(color: roles.line, width: GoStroke.card),
                   ),
                 ),
               ),
@@ -99,17 +100,17 @@ class _NicknameScreenState extends State<NicknameScreen> {
                   hintText: '아이디 (페이스메이트가 찾아요)',
                   counterText: '',
                   filled: true,
-                  fillColor: GoColors.surface,
+                  fillColor: roles.surface,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: GoColors.line, width: GoStroke.card),
+                    borderSide: BorderSide(color: roles.line, width: GoStroke.card),
                   ),
                 ),
                 onSubmitted: (_) => _confirm(),
               ),
               const SizedBox(height: 8),
-              const Text('영문 소문자·숫자·_ 로 3~20자',
-                  style: TextStyle(fontSize: 11, color: GoColors.mid)),
+              Text('영문 소문자·숫자·_ 로 3~20자',
+                  style: TextStyle(fontSize: 11, color: roles.textSecondary)),
               const SizedBox(height: 36),
               GoButton('시작하기', loading: _loading, onTap: _confirm),
               const SizedBox(height: GoSpace.section),

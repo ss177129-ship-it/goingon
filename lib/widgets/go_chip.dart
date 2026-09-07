@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import 'pressable.dart';
 
-/// 칩 셋. 전부 틴트 없이 — 흰 면에 테두리, 글자는 테두리와 같은 색.
-/// 12px 미만 글자는 없다.
+/// 칩 셋. 12px 미만 글자는 없다.
 ///
-/// - [GoSelectChip]: 필터·목표 선택. 선택되면 ink 면 + paper 글자
-/// - [GoStoryChip]: 순간 행의 스토리 라벨("첫 런", "새 기록"). limeDark 2px
-/// - [GoStatusTag]: 시트 상단의 상태 한 마디("함께 달리기 요청"). *Dark 2px,
-///   자간 1.2 — 시트에 하나만
+/// - [GoSelectChip]: 필터·목표 선택. 선택되면 dark 면 + dark 글자
+/// - [GoStoryChip]: 순간 행의 스토리 라벨("첫 런", "새 기록"). statusOnline
+///   칩 — 틴트 면 + 앵커색 글자, 테두리 없음
+/// - [GoStatusTag]: 시트 상단의 상태 한 마디("함께 달리기 요청"). 기본
+///   statusRunning 칩, 자간 1.2 — 시트에 하나만
 class GoSelectChip extends StatelessWidget {
   const GoSelectChip({
     super.key,
@@ -26,6 +26,7 @@ class GoSelectChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final roles = GoRoles.of(context);
     return Semantics(
       selected: selected,
       button: onTap != null,
@@ -39,11 +40,11 @@ class GoSelectChip extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected
-                ? (pressed ? GoColors.inkPressed : GoColors.ink)
-                : (pressed ? GoColors.surfacePressed : GoColors.surface),
+                ? (pressed ? roles.dark.pressed : roles.dark.bg)
+                : (pressed ? roles.surfacePressed : roles.surface),
             borderRadius: BorderRadius.circular(GoRadius.sm),
             border: Border.all(
-              color: selected ? GoColors.ink : GoColors.line,
+              color: selected ? roles.dark.bg : roles.line,
               width: GoStroke.card,
             ),
           ),
@@ -55,7 +56,7 @@ class GoSelectChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: selected ? GoColors.paper : GoColors.ink,
+              color: selected ? roles.dark.fg : roles.textPrimary,
             ),
           child: Text(label),
         ),
@@ -64,7 +65,7 @@ class GoSelectChip extends StatelessWidget {
   }
 }
 
-/// 순간 행의 스토리 라벨. 흰 면, limeDark 2px, 12/600 limeDark
+/// 순간 행의 스토리 라벨. statusOnline 칩 — pineTint 면, 12/600 pine
 class GoStoryChip extends StatelessWidget {
   const GoStoryChip(this.label, {super.key});
 
@@ -72,38 +73,39 @@ class GoStoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final role = GoRoles.of(context).statusOnline;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: GoColors.surface,
+        color: role.bg,
         borderRadius: BorderRadius.circular(GoRadius.sm),
-        border: Border.all(color: GoColors.limeDark, width: GoStroke.accent),
       ),
       child: Text(label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: GoColors.limeDark,
+            color: role.fg,
           )),
     );
   }
 }
 
-/// 시트 상단의 상태 태그. [color]는 *Dark 계열만(글자로도 쓰이므로)
+/// 시트 상단의 상태 태그. [role]은 상태 칩 역할([GoRoles.statusRunning] /
+/// [GoRoles.statusOnline])만 — null이면 statusRunning
 class GoStatusTag extends StatelessWidget {
-  const GoStatusTag(this.label, {super.key, this.color = GoColors.coralDark});
+  const GoStatusTag(this.label, {super.key, this.role});
 
   final String label;
-  final Color color;
+  final GoRole? role;
 
   @override
   Widget build(BuildContext context) {
+    final r = role ?? GoRoles.of(context).statusRunning;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
-        color: GoColors.surface,
+        color: r.bg,
         borderRadius: BorderRadius.circular(GoRadius.sm),
-        border: Border.all(color: color, width: GoStroke.accent),
         boxShadow: GoShadow.card,
       ),
       child: Text(label,
@@ -111,7 +113,7 @@ class GoStatusTag extends StatelessWidget {
             fontSize: 12,
             fontWeight: FontWeight.w600,
             letterSpacing: 1.2,
-            color: color,
+            color: r.fg,
           )),
     );
   }

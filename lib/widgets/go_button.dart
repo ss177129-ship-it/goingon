@@ -4,18 +4,20 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import 'pressable.dart';
 
-/// 버튼의 종류. 색은 여기서 정해지고 호출부는 고르기만 한다.
+/// 버튼의 종류. 색은 [GoRoles]의 액션 역할에서 오고 호출부는 고르기만 한다.
 enum GoButtonKind {
-  /// 잉크 배경 · 페이퍼 글자. 화면의 주 행동
+  /// actionPrimary — 코랄 면 + 흰 글자. 러닝 시작/정지·GO?·수락 같은
+  /// 주 액션. **글자는 항상 굵게 16pt 이상** — 코랄 위의 흰 글자는 그
+  /// 크기에서만 읽힌다
   primary,
 
-  /// 라임 배경 · 잉크 글자. **GO?와 요청 수락 둘만** 쓴다
-  go,
+  /// actionComplete — 파인 면 + 라임 글자. 저장·완료
+  complete,
 
-  /// 투명 · line 1.5 테두리
+  /// actionSecondary — 투명 면 + 러스트 테두리·글자
   secondary,
 
-  /// 배경·테두리 없음
+  /// 배경·테두리 없음. 글자는 textPrimary
   text,
 }
 
@@ -49,6 +51,7 @@ class GoButton extends StatelessWidget {
     this.loading = false,
     this.destructive = false,
     this.serifLabel = false,
+    this.onDark = false,
   });
 
   final String label;
@@ -60,11 +63,15 @@ class GoButton extends StatelessWidget {
   final bool enabled;
   final bool loading;
 
-  /// secondary·text의 글자를 coralDark로. primary·go에는 영향 없음
+  /// text 버튼의 글자를 러스트로. 면이 있는 버튼에는 영향 없음
   final bool destructive;
 
   /// "GO?" 단독 전용
   final bool serifLabel;
+
+  /// 잉크·파인처럼 어두운 면 위에 놓일 때. secondary·text의 글자·테두리가
+  /// textOnDark로 바뀐다. 면이 있는 primary·complete에는 영향 없음
+  final bool onDark;
 
   bool get _active => enabled && !loading && onTap != null;
 
@@ -73,44 +80,57 @@ class GoButton extends StatelessWidget {
     final lg = size == GoButtonSize.lg;
     final height = lg ? 52.0 : 44.0;
     final radius = lg ? GoRadius.md : GoRadius.sm;
-    final fontSize = lg ? 16.0 : 14.0;
-
+    final roles = GoRoles.of(context);
     final Color bg;
     final Color fg;
     final BoxBorder? border;
-    // 눌렸을 때의 배경 — 값은 GoColors의 *Pressed 토큰
     final Color bgDown;
     final List<BoxShadow>? shadow;
+    // 코랄 위의 흰 글자는 굵은 16pt 이상만 허용 — md 크기여도 주 액션은
+    // 글자를 줄이지 않는다
+    var fontSize = lg ? 16.0 : 14.0;
     switch (kind) {
       case GoButtonKind.primary:
-        bg = GoColors.ink;
-        fg = GoColors.paper;
-        bgDown = GoColors.inkPressed;
+        bg = roles.actionPrimary.bg;
+        fg = roles.actionPrimary.fg;
+        bgDown = roles.actionPrimary.pressed;
         border = null;
         shadow = GoShadow.raised;
-      case GoButtonKind.go:
-        bg = GoColors.lime;
-        fg = GoColors.ink;
-        bgDown = GoColors.limePressed;
+        fontSize = 16;
+      case GoButtonKind.complete:
+        bg = roles.actionComplete.bg;
+        fg = roles.actionComplete.fg;
+        bgDown = roles.actionComplete.pressed;
         border = null;
         shadow = GoShadow.raised;
       case GoButtonKind.secondary:
-        bg = GoColors.surface;
-        fg = destructive ? GoColors.coralDark : GoColors.ink;
-        bgDown = GoColors.surfacePressed;
-        border = Border.all(color: GoColors.line, width: GoStroke.card);
-        shadow = GoShadow.card;
+        bg = roles.actionSecondary.bg;
+        fg = onDark ? roles.textOnDark : roles.actionSecondary.fg;
+        bgDown = onDark
+            ? roles.textOnDark.withValues(alpha: .12)
+            : roles.actionSecondary.pressed;
+        border = Border.all(color: fg, width: GoStroke.card);
+        shadow = null;
       case GoButtonKind.text:
-        bg = Colors.transparent;
-        fg = destructive ? GoColors.coralDark : GoColors.ink;
-        bgDown = GoColors.pressOverlay;
+        bg = roles.actionSecondary.bg;
+        fg = onDark
+            ? roles.textOnDark
+            : (destructive ? roles.actionSecondary.fg : roles.textPrimary);
+        bgDown = onDark
+            ? roles.textOnDark.withValues(alpha: .12)
+            : roles.pressOverlay;
         border = null;
         shadow = null;
     }
 
     final textStyle = serifLabel
         ? GoTheme.serif(fontSize + 2, color: fg)
-        : TextStyle(fontSize: fontSize, fontWeight: FontWeight.w600, color: fg);
+        : TextStyle(
+            fontSize: fontSize,
+            fontWeight: kind == GoButtonKind.primary
+                ? FontWeight.w700
+                : FontWeight.w600,
+            color: fg);
 
     final labelWidget = Text(label, style: textStyle, maxLines: 1);
     final Widget content;

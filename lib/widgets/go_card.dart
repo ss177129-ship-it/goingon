@@ -6,11 +6,11 @@ import 'pressable.dart';
 
 /// 화면 위의 독립된 객체 하나.
 ///
-/// 배경은 [GoColors.surface](따뜻한 흰 면), 라운드 [GoRadius.md],
+/// 배경은 [GoRoles.surface](따뜻한 흰 면), 라운드 [GoRadius.md],
 /// **기본 테두리 없음.** 경계를 만드는 것은 선이 아니라 [GoShadow.card]다 —
 /// 페이퍼와 면의 명도 차이는 1.15:1이라 그것만으로는 가장자리가 보이지
 /// 않았고, 그래서 카드가 배경에 녹아 "흰 얼룩"처럼 보였다(2026-09-07).
-/// [borderColor]에 역할색(limeDark=나, coralDark=상대, amberDark=경고)을
+/// [borderColor]에 역할색(self=나, partner=상대, attention=경고)을
 /// 주면 그때만 [GoStroke.accent] 테두리가 더해진다.
 /// 목록은 카드가 아니라 [GoGroup]으로 — 행마다 카드를 만들지 말 것.
 ///
@@ -52,6 +52,7 @@ class _GoCardState extends State<GoCard> {
   @override
   Widget build(BuildContext context) {
     final accent = widget.borderColor;
+    final roles = GoRoles.of(context);
     final card = AnimatedContainer(
       duration: _down ? Duration.zero : Pressable.releaseDuration,
       curve: Curves.easeOut,
@@ -59,7 +60,7 @@ class _GoCardState extends State<GoCard> {
       margin: widget.margin,
       padding: widget.padding,
       decoration: BoxDecoration(
-        color: _down ? GoColors.surfacePressed : GoColors.surface,
+        color: _down ? roles.surfacePressed : roles.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
         border: accent == null
             ? null

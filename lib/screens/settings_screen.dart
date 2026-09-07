@@ -140,10 +140,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// 차단 목록 — 차단은 되돌릴 수 있어야 하므로 해제 경로를 반드시 둠
   void _showBlockedList() {
     final friends = FriendService();
+    final roles = GoRoles.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: GoColors.surfaceHigh,
+      backgroundColor: roles.surfaceHigh,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => DraggableScrollableSheet(
@@ -161,8 +162,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 const Text('차단 목록', style: GoText.heading),
                 const SizedBox(height: 6),
-                const Text('차단한 사람은 나를 검색하거나 요청을 보낼 수 없어요.',
-                    style: TextStyle(fontSize: 13, color: GoColors.mid)),
+                Text('차단한 사람은 나를 검색하거나 요청을 보낼 수 없어요.',
+                    style: TextStyle(fontSize: 13, color: roles.textSecondary)),
                 const SizedBox(height: 20),
                 if (snap.connectionState == ConnectionState.waiting)
                   const Center(child: CircularProgressIndicator())
@@ -171,7 +172,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 28),
                     child: Center(
                       child: Text('차단한 사람이 없어요',
-                          style: GoText.heading.copyWith(color: GoColors.mid)),
+                          style: GoText.heading.copyWith(color: roles.textSecondary)),
                     ),
                   )
                 else
@@ -185,6 +186,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _blockedRow(Map<String, dynamic> b, FriendService friends) {
+    final roles = GoRoles.of(context);
     final rawName = b['name'];
     final name = (rawName is String && rawName.trim().isNotEmpty)
         ? rawName.trim()
@@ -194,7 +196,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       margin: const EdgeInsets.only(bottom: GoSpace.gutter),
       padding: const EdgeInsets.symmetric(horizontal: GoSpace.card, vertical: GoSpace.m),
       decoration: BoxDecoration(
-        color: GoColors.surface,
+        color: roles.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
         boxShadow: GoShadow.card,
       ),
@@ -203,7 +205,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           letter: name[0],
           size: 40,
           fontSize: 16,
-          borderColor: GoColors.line,
+          borderColor: roles.line,
           borderWidth: 1.5,
           photoUrl: b['photoUrl'] as String?,
         ),
@@ -213,15 +215,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(name,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: GoColors.ink)),
+                        color: roles.textPrimary)),
                 if (username != null && username.isNotEmpty) ...[
                   const SizedBox(height: 1),
                   Text('@$username',
                       style:
-                          const TextStyle(fontSize: 11, color: GoColors.mid)),
+                          TextStyle(fontSize: 11, color: roles.textSecondary)),
                 ],
               ]),
         ),
@@ -294,6 +296,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final roles = GoRoles.of(context);
     return ListView(padding: EdgeInsets.zero, children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 14, 24, 6),
@@ -308,7 +311,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           letter: _myName.isEmpty ? '' : _myName[0],
           size: 24,
           fontSize: 11,
-          borderColor: GoColors.limeDark,
+          borderColor: roles.self,
           borderWidth: 1.2,
           emptyIcon: Icons.person_outline,
           photoUrl: _myPhotoUrl,
@@ -326,7 +329,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             : Icons.notifications_off_outlined,
         title: '알림',
         subtitle: _pushStatus,
-        titleColor: _pushRegistered ? null : GoColors.amberDark,
+        titleColor: _pushRegistered ? null : roles.attention,
         onTap: _retryPush,
       ),
       // 사운드는 러닝 화면에서만 나는데 끄는 자리가 여기밖에 없다.
@@ -382,7 +385,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _row(
         icon: Icons.person_remove_outlined,
         title: '회원탈퇴',
-        titleColor: GoColors.coralDark,
+        titleColor: roles.attention,
         onTap: _busy ? null : _deleteAccount,
       ),
       ]),
@@ -392,7 +395,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         icon: Icons.info_outline,
         title: '버전',
         trailing: Text(_appVersion,
-            style: const TextStyle(fontSize: 13, color: GoColors.mid)),
+            style: TextStyle(fontSize: 13, color: roles.textSecondary)),
       ),
       ]),
       const SizedBox(height: GoSpace.m),
@@ -410,6 +413,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     VoidCallback? onTap,
   }) {
     assert(icon != null || leading != null);
+    final roles = GoRoles.of(context);
     return GoGroupRow(
       onTap: onTap,
       padding: const EdgeInsets.symmetric(
@@ -418,24 +422,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SizedBox(
             width: 24,
             child: leading ??
-                Icon(icon, size: 20, color: titleColor ?? GoColors.ink),
+                Icon(icon, size: 20, color: titleColor ?? roles.textPrimary),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(title,
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
-                      color: titleColor ?? GoColors.ink)),
+                      color: titleColor ?? roles.textPrimary)),
               if (subtitle != null && subtitle.isNotEmpty) ...[
                 const SizedBox(height: 1),
                 Text(subtitle,
-                    style: const TextStyle(fontSize: 11, color: GoColors.mid)),
+                    style: TextStyle(fontSize: 11, color: roles.textSecondary)),
               ],
             ]),
           ),
           trailing ??
               (onTap != null
-                  ? const Icon(Icons.chevron_right, size: 20, color: GoColors.dim)
+                  ? Icon(Icons.chevron_right, size: 20, color: roles.textSecondary)
                   : const SizedBox.shrink()),
         ]),
     );

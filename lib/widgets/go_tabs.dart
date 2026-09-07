@@ -27,22 +27,23 @@ class GoTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final roles = GoRoles.of(context);
     final items = <Widget>[];
     for (var i = 0; i < labels.length; i++) {
       if (i > 0) items.add(const SizedBox(width: _gap));
-      items.add(_tab(i));
+      items.add(_tab(roles, i));
     }
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: GoColors.line, width: GoStroke.rule),
+          bottom: BorderSide(color: roles.line, width: GoStroke.rule),
         ),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: items),
     );
   }
 
-  Widget _tab(int i) {
+  Widget _tab(GoRoles roles, int i) {
     final active = i == index;
     return Semantics(
       selected: active,
@@ -63,7 +64,7 @@ class GoTabs extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: active ? GoColors.ink : Colors.transparent,
+                color: active ? roles.textPrimary : Colors.transparent,
                 width: GoStroke.accent,
               ),
             ),
@@ -72,7 +73,7 @@ class GoTabs extends StatelessWidget {
             duration: GoMotion.select,
             curve: GoMotion.curve,
             style: GoText.buttonSmall
-                .copyWith(color: active ? GoColors.ink : GoColors.mid),
+                .copyWith(color: active ? roles.textPrimary : roles.textSecondary),
             child: Text(labels[i]),
           ),
         ),

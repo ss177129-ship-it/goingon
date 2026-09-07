@@ -177,6 +177,7 @@ class _SplashGateState extends State<SplashGate>
   }
 
   Widget _connectionErrorScreen() {
+    final roles = GoRoles.of(context);
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -185,22 +186,22 @@ class _SplashGateState extends State<SplashGate>
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               Text('연결이 원활하지 않아요', style: GoTheme.serif(24)),
               const SizedBox(height: 10),
-              const Text('네트워크 상태를 확인하고 다시 시도해 주세요.',
+              Text('네트워크 상태를 확인하고 다시 시도해 주세요.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: GoColors.mid)),
+                  style: TextStyle(fontSize: 13, color: roles.textSecondary)),
               const SizedBox(height: 22),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
                   style: FilledButton.styleFrom(
-                    backgroundColor: GoColors.ink,
+                    backgroundColor: roles.dark.bg,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
                   ),
                   onPressed: _resolve,
                   child: Text('다시 시도',
-                      style: GoTheme.serif(18, color: GoColors.paper)),
+                      style: GoTheme.serif(18, color: roles.dark.fg)),
                 ),
               ),
             ]),
@@ -211,6 +212,7 @@ class _SplashGateState extends State<SplashGate>
   }
 
   Widget _splash() {
+    final roles = GoRoles.of(context);
     return Scaffold(
       body: SafeArea(
         child: Column(children: [
@@ -231,7 +233,7 @@ class _SplashGateState extends State<SplashGate>
                 Text('goingon', style: GoTheme.serif(42)),
                 const SizedBox(height: 20),
                 Text('멀리 있어도, 함께',
-                    style: GoTheme.serif(15, color: GoColors.mid)),
+                    style: GoTheme.serif(15, color: roles.textSecondary)),
               ]),
             ),
           ),
@@ -239,9 +241,9 @@ class _SplashGateState extends State<SplashGate>
             padding: const EdgeInsets.only(bottom: 46),
             child: Opacity(
               opacity: .75,
-              child: const Text('화면을 누르면 시작해요',
+              child: Text('화면을 누르면 시작해요',
                   style: TextStyle(
-                      fontSize: 11, letterSpacing: .5, color: GoColors.mid)),
+                      fontSize: 11, letterSpacing: .5, color: roles.textSecondary)),
             ),
           ),
         ]),

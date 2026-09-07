@@ -8,7 +8,7 @@ import 'pressable.dart';
 /// Material `Switch`를 쓰지 않는 이유: M3 스위치는 트랙 테두리·손잡이 크기
 /// 변화·아이콘 등 자기 문법이 많아 페이퍼 위에서 다른 앱의 부품처럼 보인다.
 /// 여기 스위치는 **트랙 색 하나와 손잡이 위치 하나**로만 말한다 —
-/// 켬은 limeDark 트랙, 끔은 dim 트랙(dim은 글자 금지지만 면으로는 허용).
+/// 켬은 actionComplete(pine) 트랙, 끔은 textSecondary 트랙.
 ///
 /// 상태는 갖지 않는다(controlled). [onChanged]가 null이면 비활성 —
 /// 전체가 40%로 가라앉고 탭을 받지 않는다. 행 안에 놓일 때는 행 전체가
@@ -31,13 +31,13 @@ class GoSwitch extends StatelessWidget {
   /// 않고, 손잡이가 움직일 방향으로 늘어나는 것이 "곧 넘어간다"를 말해준다
   static const _thumbStretch = 4.0;
 
-  Widget _track(bool pressed) => AnimatedContainer(
+  Widget _track(GoRoles roles, bool pressed) => AnimatedContainer(
         duration: GoMotion.toggle,
         curve: GoMotion.curve,
         width: width,
         height: height,
         decoration: BoxDecoration(
-          color: value ? GoColors.limeDark : GoColors.dim,
+          color: value ? roles.actionComplete.bg : roles.textSecondary,
           borderRadius: BorderRadius.circular(GoRadius.md),
         ),
         child: AnimatedAlign(
@@ -51,7 +51,7 @@ class GoSwitch extends StatelessWidget {
             height: _thumb,
             margin: const EdgeInsets.symmetric(horizontal: _inset),
             decoration: BoxDecoration(
-              color: GoColors.surfaceHigh,
+              color: roles.surfaceHigh,
               borderRadius: BorderRadius.circular(_thumb / 2),
               boxShadow: GoShadow.thumb,
             ),
@@ -61,6 +61,7 @@ class GoSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final roles = GoRoles.of(context);
     return Semantics(
       toggled: value,
       enabled: _enabled,
@@ -69,7 +70,7 @@ class GoSwitch extends StatelessWidget {
         child: Pressable(
           scale: 1, // 축소 대신 손잡이 늘어남
           onTap: _enabled ? () => onChanged!(!value) : null,
-          builder: (context, pressed, _) => _track(pressed),
+          builder: (context, pressed, _) => _track(roles, pressed),
           child: const SizedBox.shrink(),
         ),
       ),

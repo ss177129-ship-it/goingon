@@ -69,9 +69,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       return;
     }
     if (!mounted) return;
+    final roles = GoRoles.of(context);
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: GoColors.surfaceHigh,
+      backgroundColor: roles.surfaceHigh,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => SafeArea(
@@ -80,7 +81,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           _sheetAction(ctx, Icons.photo_library_outlined, '사진첩에서 고르기',
               _pickPhoto),
           _sheetAction(ctx, Icons.delete_outline, '사진 지우기', _removePhoto,
-              color: GoColors.coralDark),
+              color: roles.attention),
           const SizedBox(height: GoSpace.m),
         ]),
       ),
@@ -91,6 +92,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       BuildContext sheetContext, IconData icon, String label, Future<void> Function() action,
       {Color? color}) {
     // 시트의 행 — 목록 행과 같은 눌림(축소 없이 면이 가라앉는다)
+    final roles = GoRoles.of(sheetContext);
     return Pressable(
       scale: 1,
       onTap: () {
@@ -100,18 +102,18 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       builder: (context, pressed, child) => AnimatedContainer(
         duration: pressed ? Duration.zero : Pressable.releaseDuration,
         curve: GoMotion.curve,
-        color: pressed ? GoColors.surfacePressed : Colors.transparent,
+        color: pressed ? roles.surfacePressed : Colors.transparent,
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
         child: child,
       ),
       child: Row(children: [
-          Icon(icon, size: 20, color: color ?? GoColors.ink),
+          Icon(icon, size: 20, color: color ?? roles.textPrimary),
           const SizedBox(width: 14),
           Text(label,
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: color ?? GoColors.ink)),
+                  color: color ?? roles.textPrimary)),
         ]),
     );
   }
@@ -224,12 +226,14 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     String? helper,
   }) {
     final controller = TextEditingController(text: initial);
+    final roles = GoRoles.of(context);
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: GoColors.surfaceHigh,
+        backgroundColor: roles.surfaceHigh,
         elevation: 12,
-        shadowColor: GoColors.shadow,
+        // Material이 elevation에 맞춰 알파를 씌우므로 그림자 색은 불투명하게
+        shadowColor: GoShadow.overlay.last.color.withValues(alpha: 1),
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(GoRadius.lg)),
         title: Text(title, style: GoText.heading),
@@ -245,17 +249,17 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 hintText: hint,
                 counterText: '',
                 filled: true,
-                fillColor: GoColors.surface,
+                fillColor: roles.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: GoColors.line, width: GoStroke.card),
+                  borderSide: BorderSide(color: roles.line, width: GoStroke.card),
                 ),
               ),
             ),
             if (helper != null) ...[
               const SizedBox(height: 6),
               Text(helper,
-                  style: const TextStyle(fontSize: 11, color: GoColors.mid)),
+                  style: TextStyle(fontSize: 11, color: roles.textSecondary)),
             ],
           ],
         ),
@@ -265,6 +269,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               size: GoButtonSize.md,
               onTap: () => Navigator.pop(ctx)),
           GoButton('저장',
+              kind: GoButtonKind.complete,
               size: GoButtonSize.md,
               onTap: () => Navigator.pop(ctx, controller.text.trim())),
         ],
@@ -277,8 +282,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   @override
   Widget build(BuildContext context) {
     final username = (_me?['username'] as String?) ?? '';
+    final roles = GoRoles.of(context);
     return Scaffold(
-      backgroundColor: GoColors.paper,
+      backgroundColor: roles.background,
       body: SafeArea(
         bottom: false,
         child: ListView(padding: EdgeInsets.zero, children: [
@@ -294,10 +300,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   opacity: pressed ? .6 : 1,
                   child: child,
                 ),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Text('← 설정으로',
-                      style: TextStyle(fontSize: 12, color: GoColors.mid)),
+                      style: TextStyle(fontSize: 12, color: roles.link)),
                 ),
               ),
               const SizedBox(height: 2),
@@ -313,10 +319,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 _editUsername),
           ]),
           const SizedBox(height: GoSpace.section),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text('이름과 사진은 페이스메이트와 나에게 온 요청 목록에 보여요.',
-                style: TextStyle(fontSize: 11, color: GoColors.mid, height: 1.6)),
+                style: TextStyle(fontSize: 11, color: roles.textSecondary, height: 1.6)),
           ),
           const SizedBox(height: 40),
         ]),
@@ -325,6 +331,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   }
 
   Widget _photoBlock() {
+    final roles = GoRoles.of(context);
     return Center(
       child: Column(children: [
         // 사진은 버튼처럼 눌린다 — 0.97 축소 + 햅틱
@@ -335,7 +342,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               letter: _name.isEmpty ? '' : _name[0],
               size: 96,
               fontSize: 40,
-              borderColor: GoColors.limeDark,
+              borderColor: roles.self,
               emptyIcon: Icons.person_outline,
               photoUrl: _photoUrl,
             ),
@@ -345,14 +352,14 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 height: 96,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: GoColors.ink.withValues(alpha: .45),
+                  color: roles.dark.bg.withValues(alpha: .45),
                 ),
-                child: const Center(
+                child: Center(
                   child: SizedBox(
                     width: 22,
                     height: 22,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2, color: roles.textOnDark),
                   ),
                 ),
               ),
@@ -370,6 +377,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   /// 그룹 안의 행 하나
   GoGroupRow _row(String title, String value, VoidCallback onTap) {
+    final roles = GoRoles.of(context);
     return GoGroupRow(
       onTap: onTap,
       padding: const EdgeInsets.symmetric(
@@ -377,15 +385,15 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       child: Row(children: [
           Expanded(
             child: Text(title,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: GoColors.ink)),
+                    color: roles.textPrimary)),
           ),
           Text(value,
-              style: const TextStyle(fontSize: 13, color: GoColors.mid)),
+              style: TextStyle(fontSize: 13, color: roles.textSecondary)),
           const SizedBox(width: 6),
-          const Icon(Icons.chevron_right, size: 18, color: GoColors.dim),
+          Icon(Icons.chevron_right, size: 18, color: roles.textSecondary),
         ]),
     );
   }

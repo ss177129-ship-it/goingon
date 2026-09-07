@@ -238,10 +238,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final roles = GoRoles.of(context);
     // ── 카운트다운 오버레이 ──
     if (_countdown != null) {
       return Scaffold(
-        backgroundColor: GoColors.canvas,
+        backgroundColor: roles.canvas,
         body: Center(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             const Text('함께 달리기 시작', style: GoText.label),
@@ -249,16 +250,16 @@ class _LobbyScreenState extends State<LobbyScreen> {
             Text('$_countdown', style: GoTheme.serif(128)),
             const SizedBox(height: 10),
             Text('나 & ${widget.partnerName}',
-                style: const TextStyle(fontSize: 13, color: GoColors.mid)),
+                style: TextStyle(fontSize: 13, color: roles.textSecondary)),
             const SizedBox(height: 10),
             Row(mainAxisSize: MainAxisSize.min, children: [
-              _cdDot(GoColors.lime, GoColors.limeDark),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
+              _cdDot(roles.self),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text('+',
-                    style: TextStyle(fontSize: 11, color: GoColors.mid)),
+                    style: TextStyle(fontSize: 11, color: roles.textSecondary)),
               ),
-              _cdDot(GoColors.coral, GoColors.coralDark),
+              _cdDot(roles.partner),
             ]),
           ]),
         ),
@@ -286,6 +287,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
   }
 
   Widget _lobbyBody(_Step step) {
+    final roles = GoRoles.of(context);
     return Scaffold(
       body: SafeArea(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -323,12 +325,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
               Expanded(
                   child: _runner('나', _meReady,
                       isLate: _isLate,
-                      fill: GoColors.lime, line: GoColors.limeDark)),
-              Container(width: GoStroke.rule, height: 64, color: GoColors.lineStrong),
+                      color: roles.self)),
+              Container(width: GoStroke.rule, height: 64, color: roles.lineStrong),
               Expanded(
                   child: _runner(widget.partnerName, _partnerReady,
                       isLate: _partnerLate,
-                      fill: GoColors.coral, line: GoColors.coralDark,
+                      color: roles.partner,
                       // 상대가 앱을 안 켠 건지, 수락하고 준비 중인 건지
                       // 구분해서 보여줌 — 예전엔 둘 다 똑같이 보였음
                       waitingText:
@@ -346,7 +348,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   return Container(
                       width: 32, height: 1,
                       margin: const EdgeInsets.symmetric(horizontal: 4),
-                      color: done ? GoColors.limeDark : GoColors.line);
+                      color: done ? roles.statusOnline.fg : roles.line);
                 }
                 final idx = i ~/ 2;
                 final done = idx < _step;
@@ -358,10 +360,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(4),
                     color: done
-                        ? GoColors.limeDark
+                        ? roles.statusOnline.fg
                         : active
-                            ? GoColors.ink
-                            : GoColors.dim,
+                            ? roles.textPrimary
+                            : roles.textSecondary,
                   ),
                 );
               }),
@@ -376,10 +378,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
               child: Container(
                 padding: const EdgeInsets.all(GoSpace.hero),
                 decoration: BoxDecoration(
-                  color: GoColors.surface,
+                  color: roles.surface,
                   borderRadius: BorderRadius.circular(GoRadius.md),
                   border: Border.all(
-                      color: _meReady ? GoColors.limeDark : GoColors.line,
+                      color: _meReady ? roles.statusOnline.fg : roles.line,
                       width: _meReady ? GoStroke.accent : GoStroke.card),
                   boxShadow: GoShadow.card,
                 ),
@@ -388,7 +390,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                     Icon(_isLate ? Icons.schedule : step.icon,
                         size: 32,
                         color:
-                            _isLate ? GoColors.amber : GoColors.ink),
+                            _isLate ? roles.attention : roles.textPrimary),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
@@ -404,14 +406,14 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                 style: TextStyle(fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                     color: _meReady
-                                        ? GoColors.limeDark
-                                        : GoColors.ink)),
+                                        ? roles.statusOnline.fg
+                                        : roles.textPrimary)),
                           ]),
                     ),
                   ]),
                   if (!_isLate) ...[
                     const SizedBox(height: 10),
-                    Container(height: 1, color: GoColors.lineStrong),
+                    Container(height: 1, color: roles.lineStrong),
                     const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -420,14 +422,14 @@ class _LobbyScreenState extends State<LobbyScreen> {
                         // 모른다 — 아이콘은 이미 아는 사람에게만 말을 건다.
                         // 무엇이 일어나는지 글로 한 번 적어준다(2026-09-07)
                         Text(_meReady ? '준비 취소' : '탭해서 다음 단계',
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: GoColors.mid)),
+                                color: roles.textSecondary)),
                         const SizedBox(width: GoSpace.s),
                         // 칩 대신 화살표만 — 카드 자체가 눌린다(2026-09-07)
                         Icon(_meReady ? Icons.close : Icons.arrow_forward,
-                            size: 20, color: GoColors.ink),
+                            size: 20, color: roles.textPrimary),
                       ],
                     ),
                   ],
@@ -461,17 +463,17 @@ class _LobbyScreenState extends State<LobbyScreen> {
           const Spacer(),
           // 러닝 화면에서 옮겨온 안내 — 달리는 중에는 안내문이 읽히지 않는다.
           // 손이 비어 있고 화면을 보고 있는 지금이 이 문장의 자리다
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: GoSpace.screen),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: GoSpace.screen),
             child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.touch_app_outlined,
-                      size: 14, color: GoColors.mid),
-                  SizedBox(width: 6),
+                      size: 14, color: roles.textSecondary),
+                  const SizedBox(width: 6),
                   Flexible(
                     child: Text('달리는 중엔 화면을 탭·스와이프·길게 눌러 신호를 보낼 수 있어요',
-                        style: TextStyle(fontSize: 11, color: GoColors.mid)),
+                        style: TextStyle(fontSize: 11, color: roles.textSecondary)),
                   ),
                 ]),
           ),
@@ -492,6 +494,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
   }
 
   Widget _actionButton() {
+    final roles = GoRoles.of(context);
     if (!_meReady) {
       return GoButton('준비완료',
           icon: Icons.arrow_forward, iconTrailing: true, onTap: _jumpToReady);
@@ -500,40 +503,41 @@ class _LobbyScreenState extends State<LobbyScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 18),
       decoration: BoxDecoration(
-        color: GoColors.surface,
+        color: roles.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
         boxShadow: GoShadow.card,
       ),
       child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        const SizedBox(
+        SizedBox(
             width: 16, height: 16,
             child: CircularProgressIndicator(
-                strokeWidth: 2, color: GoColors.mid)),
+                strokeWidth: 2, color: roles.textSecondary)),
         const SizedBox(width: 10),
         Text(
             _partnerJoined
                 ? '${widget.partnerName} 준비 중'
                 : '${widget.partnerName} 기다리는 중',
-            style: GoText.heading.copyWith(color: GoColors.mid)),
+            style: GoText.heading.copyWith(color: roles.textSecondary)),
       ]),
     );
   }
 
   /// 3분 무응답 시 나오는 안내 — 무한 대기 대신 탈출구를 줌
   Widget _timeoutHelp() {
+    final roles = GoRoles.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(GoSpace.card),
       decoration: BoxDecoration(
-        color: GoColors.surface,
+        color: roles.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
-        border: Border.all(color: GoColors.amberDark, width: GoStroke.accent),
+        border: Border.all(color: roles.attention, width: GoStroke.accent),
         boxShadow: GoShadow.card,
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('아직 응답이 없어요. 앱을 안 보고 있을 수 있어요.',
             style: TextStyle(
-                fontSize: 12, color: GoColors.ink.withValues(alpha: .7), height: 1.5)),
+                fontSize: 12, color: roles.textPrimary.withValues(alpha: .7), height: 1.5)),
         const SizedBox(height: 10),
         Row(children: [
           Expanded(
@@ -556,24 +560,26 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   Widget _runner(String name, bool ready,
       {bool isLate = false,
-      required Color fill,
-      required Color line,
+      required Color color,
       String waitingText = '준비 중'}) {
+    final roles = GoRoles.of(context);
+    // 밝은 바탕 위의 나/상대는 한 색으로 — 면은 그 색 25%, 선은 그 색
+    final line = color;
     // (이모지 대신 텍스트만 — 폰트 폴백 이슈 회피)
     return Column(children: [
       Container(
         width: 64, height: 64,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: GoColors.surface,
-          border: Border.all(color: ready ? line : GoColors.line, width: GoStroke.accent),
+          color: color.withValues(alpha: .25),
+          border: Border.all(color: ready ? line : roles.line, width: GoStroke.accent),
         ),
         child: Center(
             child: Text(name[0],
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
-                    color: GoColors.ink))),
+                    color: roles.textPrimary))),
       ),
       const SizedBox(height: 7),
       Text(name,
@@ -583,14 +589,14 @@ class _LobbyScreenState extends State<LobbyScreen> {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         decoration: BoxDecoration(
-          color: GoColors.surface,
+          color: roles.surface,
           borderRadius: BorderRadius.circular(GoRadius.sm),
           border: Border.all(
               color: isLate
-                  ? GoColors.amberDark
+                  ? roles.attention
                   : ready
                       ? line
-                      : GoColors.line,
+                      : roles.line,
               width: (ready || isLate) ? GoStroke.accent : GoStroke.rule),
           boxShadow: GoShadow.card,
         ),
@@ -605,18 +611,19 @@ class _LobbyScreenState extends State<LobbyScreen> {
                 color: ready
                     ? line
                     : isLate
-                        ? GoColors.amber
-                        : GoColors.mid)),
+                        ? roles.attention
+                        : roles.textSecondary)),
       ),
     ]);
   }
 
-  Widget _cdDot(Color fill, Color line) => Container(
+  /// 카운트다운의 나/상대 점 — 밝은 바탕이라 한 색으로(면 25%, 선 100%)
+  Widget _cdDot(Color color) => Container(
         width: 18, height: 18,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: GoColors.surface,
-          border: Border.all(color: line, width: GoStroke.accent),
+          color: color.withValues(alpha: .25),
+          border: Border.all(color: color, width: GoStroke.accent),
         ),
       );
 }

@@ -149,6 +149,9 @@ class _ResonanceCanvasState extends State<ResonanceCanvas>
 
   @override
   Widget build(BuildContext context) {
+    // 페인터에는 context가 없으므로 색은 여기서 꺼내 넘긴다. 캔버스는
+    // 밝은 canvas 바탕 위라 나·상대는 다크 앵커(self/partner)를 쓴다
+    final roles = GoRoles.of(context);
     // 이 안에서 매 프레임 다시 그려도 바깥 화면(페이스·시간 텍스트)까지
     // 다시 칠하지 않도록 격리한다
     return RepaintBoundary(
@@ -157,6 +160,9 @@ class _ResonanceCanvasState extends State<ResonanceCanvas>
         painter: _ResonancePainter(
           frame: _frame,
           engine: widget.engine,
+          selfColor: roles.self,
+          partnerColor: roles.partner,
+          resonanceColor: roles.resonance,
           bursts: _bursts,
           signals: _signals,
           isBreathing: () => _breathing,
@@ -271,10 +277,18 @@ class _ResonancePainter extends CustomPainter {
     required this.myCadence,
     required this.partnerCadence,
     required this.radii,
+    required this.selfColor,
+    required this.partnerColor,
+    required this.resonanceColor,
   }) : super(repaint: frame);
 
   final ValueListenable<double> frame;
   final ResonanceEngine engine;
+
+  /// 나·상대·공명의 색. 위젯이 [GoRoles]에서 꺼내 넘긴다
+  final Color selfColor;
+  final Color partnerColor;
+  final Color resonanceColor;
   final List<double> bursts;
   final List<_SignalAnim> signals;
   final bool Function() isBreathing;
@@ -342,23 +356,24 @@ class _ResonancePainter extends CustomPainter {
       radius,
       Paint()
         ..shader = RadialGradient(colors: [
-          GoColors.resonance.withValues(alpha: 0.10 * strength),
-          GoColors.resonance.withValues(alpha: 0),
+          resonanceColor.withValues(alpha: 0.10 * strength),
+          resonanceColor.withValues(alpha: 0),
         ]).createShader(Rect.fromCircle(center: center, radius: radius)),
     );
   }
 
-  /// 나(lime)와 상대(coral)의 테두리. 색 배정은 절대 섞지 않는다
+  /// 나(self)와 상대(partner)의 테두리. 색 배정은 절대 섞지 않는다.
+  /// 면은 같은 색을 옅게 깐 것(5%→20%), 테두리는 65%
   void _paintRings(Canvas canvas, Offset center, double rMine, double rTheirs) {
-    void ring(double r, Color fill, Color edge) {
+    void ring(double r, Color color) {
       final rect = Rect.fromCircle(center: center, radius: r);
       canvas.drawCircle(
         center,
         r,
         Paint()
           ..shader = RadialGradient(colors: [
-            fill.withValues(alpha: 0.05),
-            fill.withValues(alpha: 0.20),
+            color.withValues(alpha: 0.05),
+            color.withValues(alpha: 0.20),
           ]).createShader(rect),
       );
       canvas.drawCircle(
@@ -367,17 +382,17 @@ class _ResonancePainter extends CustomPainter {
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2.2
-          ..color = edge.withValues(alpha: 0.65),
+          ..color = color.withValues(alpha: 0.65),
       );
     }
 
     // 큰 것부터 그려야 작은 원의 테두리가 위로 온다
     if (rMine >= rTheirs) {
-      ring(rMine, GoColors.lime, GoColors.limeDark);
-      ring(rTheirs, GoColors.coral, GoColors.coralDark);
+      ring(rMine, selfColor);
+      ring(rTheirs, partnerColor);
     } else {
-      ring(rTheirs, GoColors.coral, GoColors.coralDark);
-      ring(rMine, GoColors.lime, GoColors.limeDark);
+      ring(rTheirs, partnerColor);
+      ring(rMine, selfColor);
     }
   }
 
@@ -404,8 +419,8 @@ class _ResonancePainter extends CustomPainter {
       r,
       Paint()
         ..shader = RadialGradient(colors: [
-          GoColors.resonance.withValues(alpha: 0.55 * gold),
-          GoColors.resonance.withValues(alpha: 0.12 * gold),
+          resonanceColor.withValues(alpha: 0.55 * gold),
+          resonanceColor.withValues(alpha: 0.12 * gold),
         ]).createShader(Rect.fromCircle(center: center, radius: r)),
     );
   }
@@ -438,7 +453,7 @@ class _ResonancePainter extends CustomPainter {
           Paint()
             ..style = PaintingStyle.stroke
             ..strokeWidth = 3.2 * (1 - 0.7 * p)
-            ..color = GoColors.resonance.withValues(alpha: alpha),
+            ..color = resonanceColor.withValues(alpha: alpha),
         );
       }
     }
@@ -473,11 +488,11 @@ class _ResonancePainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3.0 * (1 - 0.5 * p)
-        ..color = GoColors.limeDark.withValues(alpha: 0.6 * fade),
+        ..color = selfColor.withValues(alpha: 0.6 * fade),
     );
   }
 
-  /// 받은 신호 — 상대 원(coral)이 종류마다 다른 박자로 맥동한다
+  /// 받은 신호 — 상대 원(partner)이 종류마다 다른 박자로 맥동한다
   void _paintReceived(Canvas canvas, Offset center, double rTheirs,
       SignalKind kind, double p) {
     switch (kind) {
@@ -499,7 +514,7 @@ class _ResonancePainter extends CustomPainter {
         canvas.drawCircle(
           center,
           rTheirs,
-          Paint()..color = GoColors.coral.withValues(alpha: 0.18 * (1 - p)),
+          Paint()..color = partnerColor.withValues(alpha: 0.18 * (1 - p)),
         );
     }
   }
@@ -512,7 +527,7 @@ class _ResonancePainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = width
-        ..color = GoColors.coralDark.withValues(alpha: alpha.clamp(0.0, 1.0)),
+        ..color = partnerColor.withValues(alpha: alpha.clamp(0.0, 1.0)),
     );
   }
 

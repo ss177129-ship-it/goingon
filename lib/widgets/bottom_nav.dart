@@ -26,22 +26,24 @@ class GoBottomNav extends StatelessWidget {
     // iOS 탭바 방식 — 목록이 밑으로 지나가는 게 비쳐 보이는 막.
     // 불투명한 색을 깔면 화면을 가로로 자른 벽이 되고, 반투명이기만 하고
     // 블러가 없으면 글자가 그대로 비쳐 지저분해진다. 둘은 한 세트다
+    final roles = GoRoles.of(context);
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
-          decoration: const BoxDecoration(
-            color: GoColors.surfaceVeil,
+          decoration: BoxDecoration(
+            color: roles.surfaceVeil,
             border: Border(
                 top: BorderSide(
-                    color: GoColors.line, width: GoStroke.rule)),
+                    color: roles.line, width: GoStroke.rule)),
             boxShadow: GoShadow.bar,
           ),
           padding: const EdgeInsets.fromLTRB(28, 6, 28, 6),
           child: Row(children: [
-            _item(0, Icons.home_rounded, '홈'),
-            _item(1, Icons.people_alt_outlined, '우리', badge: requestCount),
-            _item(2, Icons.settings_outlined, '설정'),
+            _item(roles, 0, Icons.home_rounded, '홈'),
+            _item(roles, 1, Icons.people_alt_outlined, '우리',
+                badge: requestCount),
+            _item(roles, 2, Icons.settings_outlined, '설정'),
           ]),
         ),
       ),
@@ -55,10 +57,11 @@ class GoBottomNav extends StatelessWidget {
   static const _pillWidth = 56.0;
   static const _pillHeight = 32.0;
 
-  Widget _item(int i, IconData icon, String label, {int badge = 0}) {
+  Widget _item(GoRoles roles, int i, IconData icon, String label,
+      {int badge = 0}) {
     final active = i == index;
-    final iconWidget =
-        Icon(icon, size: 24, color: active ? GoColors.paper : GoColors.mid);
+    final iconWidget = Icon(icon,
+        size: 24, color: active ? roles.dark.fg : roles.textSecondary);
     return Expanded(
       // 탭바는 모든 화면에 붙어 있어서, 여기가 반응하지 않으면 앱 전체가
       // 둔하게 느껴진다. 축소는 0.92 — 아이콘 하나짜리 작은 표적이라
@@ -82,8 +85,8 @@ class GoBottomNav extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: active
-                      ? (pressed ? GoColors.inkPressed : GoColors.ink)
-                      : (pressed ? GoColors.pressOverlay : Colors.transparent),
+                      ? (pressed ? roles.dark.pressed : roles.dark.bg)
+                      : (pressed ? roles.pressOverlay : Colors.transparent),
                   borderRadius: BorderRadius.circular(GoRadius.md),
                 ),
                 child: GoCountBadge(count: badge, child: iconWidget),
@@ -97,7 +100,7 @@ class GoBottomNav extends StatelessWidget {
             curve: GoMotion.curve,
             style: TextStyle(
                 fontSize: 10, fontWeight: FontWeight.w600,
-                color: active ? GoColors.ink : GoColors.mid),
+                color: active ? roles.textPrimary : roles.textSecondary),
             child: Text(label),
           ),
         ),

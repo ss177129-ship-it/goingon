@@ -14,7 +14,8 @@ class InitialAvatar extends StatelessWidget {
   final double size;
   final double fontSize;
   final Color borderColor;
-  final Color fill;
+  /// null이면 [GoRoles.surface]
+  final Color? fill;
   final double borderWidth;
   final IconData? emptyIcon;
   final String? photoUrl;
@@ -25,7 +26,7 @@ class InitialAvatar extends StatelessWidget {
     required this.size,
     required this.fontSize,
     required this.borderColor,
-    this.fill = GoColors.surface,
+    this.fill,
     this.borderWidth = 2,
     this.emptyIcon,
     this.photoUrl,
@@ -34,32 +35,33 @@ class InitialAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final url = photoUrl;
+    final roles = GoRoles.of(context);
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: fill,
+        color: fill ?? roles.surface,
         border: Border.all(color: borderColor, width: borderWidth),
       ),
       // 테두리 두께만큼 안쪽으로 들어온 영역이 자식의 자리라, 원으로 자르면
       // 사진이 테두리를 덮지 않고 정확히 안쪽만 채움
       child: ClipOval(
         child: url == null || url.isEmpty
-            ? _fallback()
+            ? _fallback(roles)
             : CachedNetworkImage(
                 imageUrl: url,
                 fit: BoxFit.cover,
                 width: size,
                 height: size,
-                placeholder: (_, __) => _fallback(),
-                errorWidget: (_, __, ___) => _fallback(),
+                placeholder: (_, __) => _fallback(roles),
+                errorWidget: (_, __, ___) => _fallback(roles),
               ),
       ),
     );
   }
 
-  Widget _fallback() {
+  Widget _fallback(GoRoles roles) {
     final showEmptyIcon = letter.isEmpty && emptyIcon != null;
     return Center(
       child: showEmptyIcon
@@ -69,7 +71,7 @@ class InitialAvatar extends StatelessWidget {
               style: TextStyle(
                   fontSize: fontSize,
                   fontWeight: FontWeight.w700,
-                  color: GoColors.ink)),
+                  color: roles.textPrimary)),
     );
   }
 }

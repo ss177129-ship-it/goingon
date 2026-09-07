@@ -1,93 +1,269 @@
 import 'package:flutter/material.dart';
 
-/// GoingOn 색 토큰.
+/// GoingOn 팔레트 — **값의 유일한 출처.** 화면·위젯은 이 클래스를 직접
+/// 참조하지 않고 [GoRoles](역할 토큰)를 통해서만 색을 얻는다.
 ///
-/// 규칙 (2026-09-07):
-/// - 글자에 쓸 수 있는 색은 [ink]·[mid]·[coralDark]·[limeDark]·[amberDark]뿐.
-/// - [dim]·[line]은 선·구분·비활성·플레이스홀더용. **글자에 쓰지 말 것** —
-///   흰 배경에서 2.3:1, 페이퍼에서 1.9:1이라 어떤 크기에서도 읽히지 않는다.
-/// - [lime]·[coral]·[amber]는 면·점·강조 배경용. 글자로 쓰면 페이퍼 위에서
-///   라임 1.2:1, 코랄 2.9:1이라 안 보인다. 글자가 필요하면 *Dark 쪽을 쓴다.
-/// - 틴트 배경(라임 10%, 코랄 7% 등)은 쓰지 않는다. "다른 카드"는 테두리
-///   색(2px)이나 왼쪽 세로 바(4px)로 말한다. 틴트는 페이퍼 위에서 사라진다.
-/// - 값은 판단이므로 바꿀 수 있지만, 바꾼다면 **여기서만** 바꾼다.
+/// 규칙 (2026-09-08 컬러 토큰 시스템):
+/// - 기본 팔레트 4색([paper]·[lime]·[coral]·[ink])은 바꾸지 않는다
+/// - **paper 위에 lime·coral·white 글자 금지.** 글자용 코랄은 [coralText],
+///   글자용 라임 계열은 [olive]·[pine]
+/// - **coral 배경 위 white 글자는 굵은 16pt 이상만.** 본문 크기 white 금지
+/// - **lime 원색은 ink 또는 pine 배경 위에서만.** paper 위에서는 [olive]
+/// - 칩·배지의 면은 [coralTint]·[limeTint]·[pineTint], 글자는 그 앵커색
+/// - 위젯 코드에 `Color(0x…)`를 쓰지 않는다. 새 값이 필요하면 여기에
 class GoColors {
+  // ── 기본 팔레트 (변경 금지) ──
   static const paper = Color(0xFFF0EAE0);
-  static const canvas = Color(0xFFEBE4D6);
   static const lime = Color(0xFFC5E040);
-
-  /// 라임 계열 글자·테두리. #6A9810(흰 3.4:1)에서 내렸다 —
-  /// 흰 5.8:1, 페이퍼 4.9:1
-  static const limeDark = Color(0xFF48700A);
-
   static const coral = Color(0xFFF05840);
-
-  /// 흰 6.4:1, 페이퍼 5.4:1 — 그대로
-  static const coralDark = Color(0xFFB03020);
-
   static const ink = Color(0xFF1A1A16);
-  static const amber = Color(0xFFD97706);
 
-  /// 앰버 계열 글자. [amber]는 흰 3.2:1이라 30px 이상 큰 숫자에만 쓴다
-  static const amberDark = Color(0xFF9A5200);
+  // ── 보조 컬러 ──
+  /// 버튼·그래픽용 코랄
+  static const coralComponent = Color(0xFFE04A34);
 
-  static const resonance = Color(0xFFD4A84B);
+  /// 글자용 코랄(링크)
+  static const coralText = Color(0xFFBD3722);
 
-  /// 보조 글자. #78746E(페이퍼 3.9:1)에서 내렸다 — 흰 6.8:1, 페이퍼 5.7:1.
-  /// 이제 페이퍼 위에 직접 놓아도 된다
-  static const mid = Color(0xFF5E5A54);
+  /// 코랄의 다크 앵커 — 아웃라인·상태 칩 글자·상대
+  static const rust = Color(0xFF8A3B1F);
 
-  /// 선·비활성·플레이스홀더 전용. 글자 금지
-  static const dim = Color(0xFFB0ACA6);
+  /// 딥 그린 — 완료 액션 면, 온라인 상태 글자
+  static const pine = Color(0xFF1E5C4A);
 
-  /// 카드·시트가 놓이는 면. **순백이 아니다.**
-  ///
-  /// 왜 (2026-09-07): 페이퍼(#F0EAE0)는 따뜻한 베이지인데 순백(#FFFFFF)은
-  /// 색이 없다. 따뜻한 종이 위에 색 없는 흰 면을 얹으면 카드가 "페이지에
-  /// 뚫린 차가운 구멍"으로 읽힌다. 게다가 페이퍼와 순백의 대비는 1.2:1이라
-  /// 테두리도 그림자도 없으면 경계가 아예 안 보인다. 그래서 흰 면은
-  /// **페이퍼와 같은 색상(hue 33°)을 유지한 채 밝기만 올린** 값으로 바꾸고,
-  /// 경계는 [GoShadow]가 만든다
+  /// 라임의 다크 앵커 — 리워드 글자·나
+  static const olive = Color(0xFF5C6D1D);
+
+  /// 웜 그레이 — 보조 글자(단위·캡션·비활성)
+  static const stone = Color(0xFF6B675C);
+
+  static const coralTint = Color(0xFFFAD8D0);
+  static const limeTint = Color(0xFFE8F0C4);
+  static const pineTint = Color(0xFFD8E8E0);
+
+  /// 흰 글자 — coral 면 위 굵은 큰 글자 전용
+  static const white = Color(0xFFFFFFFF);
+
+  // ── 면·선 (페이퍼 위의 계층) ──
+  /// 카드·시트가 놓이는 면. 순백이 아니라 페이퍼 색상(hue 33°)을 유지한
+  /// 채 밝기만 올린 값 — 따뜻한 종이 위의 순백은 차가운 구멍으로 읽힌다
   static const surface = Color(0xFFFDFAF5);
 
-  /// 시트·다이얼로그처럼 화면 위로 떠오르는 면. surface보다 한 단 밝다 —
-  /// 겹쳐 있을 때 어느 쪽이 위인지 밝기로 말한다
+  /// 시트·다이얼로그처럼 위로 떠오르는 면. surface보다 한 단 밝다
   static const surfaceHigh = Color(0xFFFFFDF9);
 
-  /// 뒤가 비쳐야 하는 면(탭바). 스크롤되는 내용이 밑으로 지나가는 것이
-  /// 보여야 "떠 있는 막"으로 읽힌다. 불투명하면 그냥 잘린 벽이 된다
-  static const surfaceVeil = Color(0xE6FDFAF5); // surface 90%
+  /// 뒤가 비쳐야 하는 면(탭바). surface 90%
+  static const surfaceVeil = Color(0xE6FDFAF5);
 
-  /// 그림자 색. **검정이 아니다** — 베이지 위의 중성 검정 그림자는 탁한
-  /// 회색으로 죽는다. 종이의 색상을 따라간 따뜻한 갈색-검정을 쓴다
+  /// 그림자 색 — 종이의 색상을 따라간 따뜻한 갈색-검정
   static const shadow = Color(0xFF4A3A24);
 
-  /// 면 안쪽의 헤어라인. ink 16%에서 올렸다(2026-09-07) — 16%는 흰 면 위
-  /// 1px에서 사실상 보이지 않아 "행이 나뉘어 있다"는 사실이 전달되지 않았다
-  static const line = Color(0x381A1A16); // ink 22%
+  /// 면 안쪽의 헤어라인. ink 22%
+  static const line = Color(0x381A1A16);
 
-  /// 반드시 읽혀야 하는 구분선 — 그룹의 행 사이, 카드 안의 단 나눔
-  static const lineStrong = Color(0x571A1A16); // ink 34%
+  /// 반드시 읽혀야 하는 구분선. ink 34%
+  static const lineStrong = Color(0x571A1A16);
 
-  /// 섹션 사이 1px 구분선. 신문처럼 잉크 100%. 카드 테두리엔 쓰지 않는다
-  static const rule = ink;
+  /// 공명(두 사람의 발이 맞은 순간) — 제품 고유색. ink·canvas 위에서만
+  static const resonance = Color(0xFFD4A84B);
 
-  // ── 눌림 색 ──
-  // 축소(Pressable)만으로는 손끝에 가려 안 보인다. 면이 있는 것은 **색이
-  // 가라앉고**, 면이 없는 것은 잉크가 옅게 깔린다. 손가락이 닿아 있는
-  // 동안만 보이는 색이라 대비 규칙(글자 금지 등)과는 무관하다
+  /// 러닝·로비 화면 바탕. 페이퍼보다 한 단 어둡다
+  static const canvas = Color(0xFFEBE4D6);
 
-  /// 잉크 면이 눌린 색 — 이미 거의 검정이라 밝히는 쪽으로
+  // ── 눌림 색 (손가락이 닿아 있는 동안만) ──
   static const inkPressed = Color(0xFF35342C);
-
-  /// 라임 면이 눌린 색 — 한 단 낮춘 값
-  static const limePressed = Color(0xFFAFC935);
-
-  /// 흰 면(surface)이 눌린 색 — 잉크 6%를 섞은 값
+  static const coralComponentPressed = Color(0xFFC53F2B);
+  static const pinePressed = Color(0xFF174A3B);
   static const surfacePressed = Color(0xFFEDE7DE);
+  static const pressOverlay = Color(0x141A1A16); // ink 8%
+}
 
-  /// 면이 없는 것(텍스트 버튼·아이콘·투명 항목)이 눌렸을 때 얹는 잉크 8%
-  static const pressOverlay = Color(0x141A1A16);
+/// 면 + 글자(+테두리) 한 세트. 역할 하나가 곧 조합 하나다
+class GoRole {
+  const GoRole({
+    required this.bg,
+    required this.fg,
+    this.border,
+    required this.pressed,
+  });
+
+  final Color bg;
+  final Color fg;
+  final Color? border;
+
+  /// 눌려 있는 동안의 면
+  final Color pressed;
+}
+
+/// 역할 토큰. 화면·위젯은 **반드시 이 이름으로만** 색을 쓴다 —
+/// `GoRoles.of(context).actionPrimary.bg`처럼.
+///
+/// 팔레트([GoColors])는 값이고 역할은 뜻이다. "코랄"이 아니라 "주 액션",
+/// "올리브"가 아니라 "리워드 글자". 값이 바뀌어도 화면 코드는 그대로다.
+class GoRoles extends ThemeExtension<GoRoles> {
+  const GoRoles({
+    required this.background,
+    required this.canvas,
+    required this.surface,
+    required this.surfaceHigh,
+    required this.surfaceVeil,
+    required this.surfacePressed,
+    required this.pressOverlay,
+    required this.line,
+    required this.lineStrong,
+    required this.rule,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textOnDark,
+    required this.link,
+    required this.actionPrimary,
+    required this.actionComplete,
+    required this.actionSecondary,
+    required this.statusRunning,
+    required this.statusOnline,
+    required this.reward,
+    required this.dark,
+    required this.self,
+    required this.partner,
+    required this.selfOnDark,
+    required this.partnerOnDark,
+    required this.attention,
+    required this.resonance,
+  });
+
+  // 면·선
+  /// 화면 바탕(paper)
+  final Color background;
+
+  /// 러닝·로비 바탕
+  final Color canvas;
+  final Color surface;
+  final Color surfaceHigh;
+  final Color surfaceVeil;
+  final Color surfacePressed;
+
+  /// 면이 없는 것이 눌렸을 때 얹는 잉크 8%
+  final Color pressOverlay;
+  final Color line;
+  final Color lineStrong;
+
+  /// 섹션 사이 1px — 잉크 100%
+  final Color rule;
+
+  // 글자
+  final Color textPrimary;
+
+  /// 단위·캡션·비활성
+  final Color textSecondary;
+
+  /// 잉크 면 위의 글자
+  final Color textOnDark;
+  final Color link;
+
+  // 액션
+  /// 러닝 시작/정지 등 주 액션. **글자는 굵게 16pt 이상**
+  final GoRole actionPrimary;
+
+  /// 저장·완료
+  final GoRole actionComplete;
+
+  /// 아웃라인 버튼
+  final GoRole actionSecondary;
+
+  // 상태 칩
+  /// 뛰는 중
+  final GoRole statusRunning;
+
+  /// 온라인·GPS·완료
+  final GoRole statusOnline;
+
+  /// 코인·적립 전용. **리워드 외 사용 금지**
+  final GoRole reward;
+
+  /// 잉크 면(히어로 카드·선택 알약·세그먼트 활성)
+  final GoRole dark;
+
+  // 관계색 — 아바타 테두리·점. paper 위에서는 다크 앵커
+  final Color self;
+  final Color partner;
+
+  /// ink·canvas 위에서만 쓰는 원색(히어로의 점, 공명 캔버스의 링)
+  final Color selfOnDark;
+  final Color partnerOnDark;
+
+  /// 주의·경고 테두리와 아이콘 (연결 안내, 늦음, 미등록)
+  final Color attention;
+
+  /// 공명 골드 — 러닝 화면 전용
+  final Color resonance;
+
+  static const light = GoRoles(
+    background: GoColors.paper,
+    canvas: GoColors.canvas,
+    surface: GoColors.surface,
+    surfaceHigh: GoColors.surfaceHigh,
+    surfaceVeil: GoColors.surfaceVeil,
+    surfacePressed: GoColors.surfacePressed,
+    pressOverlay: GoColors.pressOverlay,
+    line: GoColors.line,
+    lineStrong: GoColors.lineStrong,
+    rule: GoColors.ink,
+    textPrimary: GoColors.ink,
+    textSecondary: GoColors.stone,
+    textOnDark: GoColors.paper,
+    link: GoColors.coralText,
+    actionPrimary: GoRole(
+      bg: GoColors.coralComponent,
+      fg: GoColors.white,
+      pressed: GoColors.coralComponentPressed,
+    ),
+    actionComplete: GoRole(
+      bg: GoColors.pine,
+      fg: GoColors.lime,
+      pressed: GoColors.pinePressed,
+    ),
+    actionSecondary: GoRole(
+      bg: Color(0x00000000),
+      fg: GoColors.rust,
+      border: GoColors.rust,
+      pressed: GoColors.coralTint,
+    ),
+    statusRunning: GoRole(
+      bg: GoColors.coralTint,
+      fg: GoColors.rust,
+      pressed: GoColors.coralTint,
+    ),
+    statusOnline: GoRole(
+      bg: GoColors.pineTint,
+      fg: GoColors.pine,
+      pressed: GoColors.pineTint,
+    ),
+    reward: GoRole(
+      bg: GoColors.limeTint,
+      fg: GoColors.olive,
+      pressed: GoColors.limeTint,
+    ),
+    dark: GoRole(
+      bg: GoColors.ink,
+      fg: GoColors.paper,
+      pressed: GoColors.inkPressed,
+    ),
+    self: GoColors.olive,
+    partner: GoColors.rust,
+    selfOnDark: GoColors.lime,
+    partnerOnDark: GoColors.coral,
+    attention: GoColors.rust,
+    resonance: GoColors.resonance,
+  );
+
+  static GoRoles of(BuildContext context) =>
+      Theme.of(context).extension<GoRoles>() ?? light;
+
+  @override
+  GoRoles copyWith() => this;
+
+  @override
+  GoRoles lerp(ThemeExtension<GoRoles>? other, double t) => this;
 }
 
 /// 높이 3단계. 그림자는 **두 겹**이다 — 붙어 있는 접촉 그림자 하나와
@@ -174,13 +350,14 @@ class GoSpace {
 }
 
 /// 텍스트 스타일 7개. 화면에서 fontSize·color를 직접 적지 말고 여기서 고른다.
+/// 색은 역할 그대로다 — 기본이 textPrimary, [secondary]만 textSecondary.
 ///
 /// - **12px 미만은 없다.** 필요하면 [label]을 쓴다.
 /// - **세리프 이탤릭은 숫자·라틴 문자·"GO?"·워드마크 "goingon"에만.** 한글은
 ///   전부 NotoSansKR. Instrument Serif에는 한글이 없어서 한글은 NotoSansKR로
 ///   넘어가는데, 그 위에 이탤릭이 걸리면 억지로 기울어진다. 제목·버튼 라벨·
 ///   본문은 산세리프. 숫자가 필요하면 [GoTheme.serif]를 직접 쓴다.
-/// - 색을 바꿔야 하면 `.copyWith(color: ...)`, 단 [GoColors]의 글자 허용 색만.
+/// - 색을 바꿔야 하면 `.copyWith(color: ...)`, 단 [GoRoles]의 글자 역할만.
 class GoText {
   /// 화면 제목 (2026-09-07 산세리프로)
   static const title = TextStyle(
@@ -203,11 +380,11 @@ class GoText {
     color: GoColors.ink,
   );
 
-  /// 보조 설명. 흰 카드 안이든 페이퍼 위든 같은 스타일
+  /// 보조 설명(textSecondary). 흰 카드 안이든 페이퍼 위든 같은 스타일
   static const secondary = TextStyle(
     fontSize: 13,
     height: 1.45,
-    color: GoColors.mid,
+    color: GoColors.stone,
   );
 
   /// 섹션 라벨·스탯 라벨. 하나뿐이다 — 9/10/11px 변형을 만들지 말 것
@@ -255,11 +432,12 @@ class GoTheme {
       useMaterial3: true,
       fontFamily: _sansFamily,
       fontFamilyFallback: _sansFallback,
-      scaffoldBackgroundColor: GoColors.paper,
+      scaffoldBackgroundColor: GoRoles.light.background,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: GoColors.lime,
+        seedColor: GoColors.coralComponent,
         surface: GoColors.paper,
       ),
+      extensions: const [GoRoles.light],
     );
 
     final buttonShape = RoundedRectangleBorder(
@@ -289,16 +467,18 @@ class GoTheme {
           minimumSize: const Size(0, 48),
           shape: buttonShape,
           textStyle: GoText.button,
-          foregroundColor: GoColors.ink,
+          backgroundColor: GoRoles.light.actionPrimary.bg,
+          foregroundColor: GoRoles.light.actionPrimary.fg,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(0, 48),
           shape: buttonShape,
-          side: const BorderSide(color: GoColors.line, width: 1.5),
+          side: BorderSide(
+              color: GoRoles.light.actionSecondary.border!, width: 1.5),
           textStyle: GoText.button,
-          foregroundColor: GoColors.ink,
+          foregroundColor: GoRoles.light.actionSecondary.fg,
         ),
       ),
       textButtonTheme: TextButtonThemeData(

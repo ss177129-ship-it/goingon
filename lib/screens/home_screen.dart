@@ -171,33 +171,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _showGoRequest(String sessionId, String hostName, String? hostPhotoUrl) {
     _openSheets++;
+    final roles = GoRoles.of(context);
     showModalBottomSheet(
       context: context,
       isDismissible: false,
-      backgroundColor: GoColors.surfaceHigh,
+      backgroundColor: roles.surfaceHigh,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.fromLTRB(28, 28, 28, 40),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
+          // 상태 태그(statusRunning): 코랄 틴트 면 + 러스트 글자, 테두리 없음
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
-              color: GoColors.surface,
+              color: roles.statusRunning.bg,
               borderRadius: BorderRadius.circular(GoRadius.sm),
-              border: Border.all(color: GoColors.coralDark, width: GoStroke.accent),
-              boxShadow: GoShadow.card,
             ),
-            child: const Text('함께 달리기 요청',
+            child: Text('함께 달리기 요청',
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                    color: GoColors.coralDark, letterSpacing: 1.2)),
+                    color: roles.statusRunning.fg, letterSpacing: 1.2)),
           ),
           const SizedBox(height: 18),
           InitialAvatar(
             letter: hostName[0],
             size: 88,
             fontSize: 36,
-            borderColor: GoColors.coralDark,
+            borderColor: roles.partner,
             photoUrl: hostPhotoUrl,
           ),
           const SizedBox(height: 16),
@@ -232,7 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const options = ['지금은 어려워요', '30분 뒤 어때요?', '오늘은 쉬고 싶어요'];
     showModalBottomSheet(
       context: context,
-      backgroundColor: GoColors.surfaceHigh,
+      backgroundColor: GoRoles.of(context).surfaceHigh,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
@@ -295,6 +295,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final friends = _friendList;
+    final roles = GoRoles.of(context);
     return ListView(
       padding: EdgeInsets.zero,
       children: [
@@ -304,11 +305,11 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Row(children: [
             Text('goingon',
                 style:
-                    GoTheme.serif(13, color: GoColors.mid)),
+                    GoTheme.serif(13, color: roles.textSecondary)),
             const Spacer(),
             GoIconButton(
               icon: Icons.search,
-              color: GoColors.mid,
+              color: roles.textSecondary,
               onTap: () => showFriendSearchSheet(context),
               tooltip: '페이스메이트 찾기',
             ),
@@ -348,11 +349,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// 목록이 들어올 자리. 값 대신 회색 면만 두어 높이를 미리 차지한다
   Widget _friendListSkeleton() {
+    final roles = GoRoles.of(context);
     Widget bar(double w, double h) => Container(
           width: w,
           height: h,
           decoration: BoxDecoration(
-            color: GoColors.line,
+            color: roles.line,
             borderRadius: BorderRadius.circular(h / 2),
           ),
         );
@@ -366,8 +368,8 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               width: 44,
               height: 44,
-              decoration: const BoxDecoration(
-                  color: GoColors.line, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                  color: roles.line, shape: BoxShape.circle),
             ),
             const SizedBox(width: GoSpace.m),
             Column(
@@ -410,13 +412,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _requestRow(FriendRequest r) {
     final name = _displayName(r.name);
+    final roles = GoRoles.of(context);
     return Container(
       margin: const EdgeInsets.fromLTRB(22, 0, 22, 8),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
-        color: GoColors.surface,
+        color: roles.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
-        border: Border.all(color: GoColors.coralDark, width: GoStroke.accent),
+        border: Border.all(color: roles.partner, width: GoStroke.accent),
         boxShadow: GoShadow.card,
       ),
       child: Column(children: [
@@ -425,7 +428,7 @@ class _HomeScreenState extends State<HomeScreen> {
             letter: name[0],
             size: 40,
             fontSize: 17,
-            borderColor: GoColors.coralDark,
+            borderColor: roles.partner,
             photoUrl: r.photoUrl,
           ),
           const SizedBox(width: GoSpace.m),
@@ -434,15 +437,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('$name님이 함께 달리고 싶어해요',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: GoColors.ink)),
+                          color: roles.textPrimary)),
                   if (r.username.isNotEmpty) ...[
                     const SizedBox(height: 1),
                     Text('@${r.username}',
-                        style: const TextStyle(
-                            fontSize: 11, color: GoColors.mid)),
+                        style: TextStyle(
+                            fontSize: 11, color: roles.textSecondary)),
                   ],
                 ]),
           ),
@@ -459,7 +462,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             flex: 2,
             child: GoButton('수락하고 연결',
-                kind: GoButtonKind.go,
+                kind: GoButtonKind.primary,
                 size: GoButtonSize.md,
                 onTap: () => _respondToRequest(r, accept: true)),
           ),
@@ -488,17 +491,18 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 요청 감지나 친구 목록 구독이 끊겼을 때 — 조용히 실패하지 않고 알림.
   /// 여기 걸리면 대개 Firestore 인덱스 미배포나 보안 규칙 문제임
   Widget _connectionNotice() {
+    final roles = GoRoles.of(context);
     return Container(
       margin: const EdgeInsets.fromLTRB(22, 6, 22, 0),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: GoColors.surface,
+        color: roles.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
-        border: Border.all(color: GoColors.amberDark, width: GoStroke.accent),
+        border: Border.all(color: roles.attention, width: GoStroke.accent),
         boxShadow: GoShadow.card,
       ),
       child: Row(children: [
-        const Icon(Icons.wifi_off, size: 18, color: GoColors.amber),
+        Icon(Icons.wifi_off, size: 18, color: roles.attention),
         const SizedBox(width: GoSpace.m),
         Expanded(
           child: Text(
@@ -506,7 +510,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ? '지금은 함께 달리기 요청을 받지 못하고 있어요.'
                 : '페이스메이트 목록을 불러오지 못했어요.',
             style: TextStyle(
-                fontSize: 12, height: 1.4, color: GoColors.ink.withValues(alpha: .7)),
+                fontSize: 12, height: 1.4, color: roles.textPrimary.withValues(alpha: .7)),
           ),
         ),
         GoButton('다시 시도',
@@ -539,11 +543,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ? ((_me?['monthKm'] ?? 0) as num).toDouble()
         : 0.0;
     final totalRuns = (_me?['totalRuns'] ?? 0) as num;
+    final roles = GoRoles.of(context);
     return Container(
       margin: const EdgeInsets.fromLTRB(22, 6, 22, 0),
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
       decoration: BoxDecoration(
-        color: GoColors.surface,
+        color: roles.surface,
         borderRadius: BorderRadius.circular(22),
         boxShadow: GoShadow.card,
       ),
@@ -552,7 +557,7 @@ class _HomeScreenState extends State<HomeScreen> {
           letter: myName.isEmpty ? '' : myName[0],
           size: 60,
           fontSize: 26,
-          borderColor: GoColors.limeDark,
+          borderColor: roles.self,
           emptyIcon: Icons.person_outline,
           photoUrl: _me?['photoUrl'] as String?,
         ),
@@ -562,9 +567,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Text(loaded ? '함께 달릴 준비 완료' : '불러오는 중',
             style: TextStyle(
                 fontSize: 12,
-                color: loaded ? GoColors.limeDark : GoColors.mid)),
+                color: loaded ? roles.statusOnline.fg : roles.textSecondary)),
         const SizedBox(height: 14),
-        Container(height: 1, color: GoColors.lineStrong),
+        Container(height: 1, color: roles.lineStrong),
         const SizedBox(height: GoSpace.m),
         IntrinsicHeight(
           child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -582,13 +587,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _stat(String v, String unit, String label) {
+    final roles = GoRoles.of(context);
     return Expanded(
       child: Column(children: [
         Text.rich(TextSpan(children: [
           TextSpan(text: v, style: GoTheme.serif(19)),
           TextSpan(
               text: unit,
-              style: const TextStyle(fontSize: 11, color: GoColors.mid)),
+              style: TextStyle(fontSize: 11, color: roles.textSecondary)),
         ])),
         const SizedBox(height: 2),
         Text(label, style: GoText.label),
@@ -598,7 +604,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _statDivider() => Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Container(width: 1, color: GoColors.lineStrong),
+        child: Container(width: 1, color: GoRoles.of(context).lineStrong),
       );
 
   /// 친구 행 — 프로토타입의 friend-row (아바타 + 이름 + GO?)
@@ -606,7 +612,8 @@ class _HomeScreenState extends State<HomeScreen> {
   GoGroupRow _friendRow(Map<String, dynamic> f) {
     final name = _displayName(f['name']);
     final uid = f['uid'] as String;
-    // 그룹 안의 행 하나. 상대 역할색(coralDark)은 아바타 링에만
+    final roles = GoRoles.of(context);
+    // 그룹 안의 행 하나. 상대 역할색(partner)은 아바타 링에만
     return GoGroupRow(
       // 길게 누르기는 지름길로 남기되, 그것'만'으로는 아무도 못 찾는다.
       // 차단·신고는 App Store 가이드라인 1.2가 요구하는 수단이라 화면에
@@ -617,7 +624,7 @@ class _HomeScreenState extends State<HomeScreen> {
             letter: name[0],
             size: 44,
             fontSize: 18,
-            borderColor: GoColors.coralDark,
+            borderColor: roles.partner,
             borderWidth: 1.5,
             photoUrl: f['photoUrl'] as String?,
           ),
@@ -627,26 +634,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(name,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: GoColors.ink)),
+                          color: roles.textPrimary)),
                   const SizedBox(height: 1),
-                  const Text('멀리 있어도, 함께',
-                      style: TextStyle(fontSize: 11, color: GoColors.mid)),
+                  Text('멀리 있어도, 함께',
+                      style: TextStyle(fontSize: 11, color: roles.textSecondary)),
                 ]),
           ),
           Pressable(
             onTap: () => _showFriendActions(uid, name),
-            child: const Padding(
+            child: Padding(
               // 아이콘 18 + 상하좌우 13 = 44pt 터치 표적
-              padding: EdgeInsets.all(13),
-              child: Icon(Icons.more_horiz, size: 18, color: GoColors.mid),
+              padding: const EdgeInsets.all(13),
+              child: Icon(Icons.more_horiz, size: 18, color: roles.textSecondary),
             ),
           ),
           const SizedBox(width: 2),
           GoButton('GO?',
-              kind: GoButtonKind.go,
+              kind: GoButtonKind.primary,
               size: GoButtonSize.md,
               serifLabel: true,
               loading: _sendingTo == uid,
@@ -663,7 +670,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showFriendActions(String uid, String name) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: GoColors.surfaceHigh,
+      backgroundColor: GoRoles.of(context).surfaceHigh,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
@@ -704,6 +711,7 @@ class _HomeScreenState extends State<HomeScreen> {
     bool destructive = false,
   }) {
     // 두 줄(라벨+설명) 타일이라 GoButton(한 줄 라벨)이 아니라 Pressable
+    final roles = GoRoles.of(context);
     return Pressable(
       onTap: onTap,
       child: Container(
@@ -718,11 +726,11 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: destructive ? GoColors.coralDark : GoColors.ink)),
+                color: destructive ? roles.attention : roles.textPrimary)),
         const SizedBox(height: 2),
         Text(note,
-            style: const TextStyle(
-                fontSize: 11, height: 1.4, color: GoColors.mid)),
+            style: TextStyle(
+                fontSize: 11, height: 1.4, color: roles.textSecondary)),
       ]),
       ),
     );
@@ -777,20 +785,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// 친구가 아직 없을 때
   Widget _noFriendsYet() {
+    final roles = GoRoles.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 22),
       padding: const EdgeInsets.symmetric(vertical: GoSpace.xl, horizontal: GoSpace.hero),
       decoration: BoxDecoration(
-        color: GoColors.surface,
+        color: roles.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
         boxShadow: GoShadow.card,
       ),
       child: Column(children: [
         Text('아직 페이스메이트가 없어요',
-            style: GoText.heading.copyWith(color: GoColors.mid)),
+            style: GoText.heading.copyWith(color: roles.textSecondary)),
         const SizedBox(height: 6),
-        const Text('한 명만 있으면 고잉온이 시작돼요.',
-            style: TextStyle(fontSize: 12, color: GoColors.mid)),
+        Text('한 명만 있으면 고잉온이 시작돼요.',
+            style: TextStyle(fontSize: 12, color: roles.textSecondary)),
       ]),
     );
   }

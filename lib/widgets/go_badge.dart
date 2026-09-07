@@ -6,7 +6,7 @@ import '../theme.dart';
 /// 떨어져 보이도록 전부 2px paper 링을 두른다.
 ///
 /// - [GoCountBadge]: 탭 아이콘 우상단의 수(친구 요청 등). 0이면 없다
-/// - [GoLiveDot]: 아바타 우하단의 라임 점 — 지금 달리는 중
+/// - [GoLiveDot]: 아바타 우하단의 statusRunning 점 — 지금 달리는 중
 /// - [GoLiveTag]: "달리는 중" 한 마디짜리 태그
 class GoCountBadge extends StatelessWidget {
   const GoCountBadge({super.key, required this.count, required this.child});
@@ -22,6 +22,7 @@ class GoCountBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (count <= 0) return child;
+    final roles = GoRoles.of(context);
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -37,16 +38,16 @@ class GoCountBadge extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 5 + _ring),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: GoColors.coralDark,
+                color: roles.statusRunning.bg,
                 borderRadius: BorderRadius.circular((_min + _ring * 2) / 2),
-                border: Border.all(color: GoColors.paper, width: _ring),
+                border: Border.all(color: roles.background, width: _ring),
               ),
               child: Text('$count',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     height: 1,
-                    color: GoColors.paper,
+                    color: roles.statusRunning.fg,
                   )),
             ),
           ),
@@ -65,19 +66,21 @@ class GoLiveDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final roles = GoRoles.of(context);
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: GoColors.lime,
+        color: roles.statusRunning.fg,
         shape: BoxShape.circle,
-        border: Border.all(color: GoColors.paper, width: GoStroke.accent),
+        border: Border.all(color: roles.background, width: GoStroke.accent),
       ),
     );
   }
 }
 
-/// "달리는 중" 태그. 흰 면, limeDark 2px, 점 8 lime + 12/600 limeDark
+/// "달리는 중" 태그. statusRunning 칩 — coralTint 면, 점 8 + 12/600 rust,
+/// 테두리 없음
 class GoLiveTag extends StatelessWidget {
   const GoLiveTag({super.key, this.label = '달리는 중'});
 
@@ -85,26 +88,25 @@ class GoLiveTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final role = GoRoles.of(context).statusRunning;
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 5, 10, 5),
       decoration: BoxDecoration(
-        color: GoColors.surface,
+        color: role.bg,
         borderRadius: BorderRadius.circular(GoRadius.sm),
-        border: Border.all(color: GoColors.limeDark, width: GoStroke.accent),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Container(
           width: 8,
           height: 8,
-          decoration: const BoxDecoration(
-              color: GoColors.lime, shape: BoxShape.circle),
+          decoration: BoxDecoration(color: role.fg, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
         Text(label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: GoColors.limeDark,
+              color: role.fg,
             )),
       ]),
     );

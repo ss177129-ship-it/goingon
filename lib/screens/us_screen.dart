@@ -111,20 +111,21 @@ class _UsScreenState extends State<UsScreen> {
 
   /// 아직 불러오는 중 — 제목은 세워두고 본문 자리에 스피너만
   Widget _loadingState() {
+    final roles = GoRoles.of(context);
     return ListView(
       padding: EdgeInsets.zero,
-      children: const [
-        Padding(
+      children: [
+        const Padding(
           padding: EdgeInsets.fromLTRB(GoSpace.screen, 18, GoSpace.screen, 0),
           child: Text('우리의 여정', style: GoText.label),
         ),
-        SizedBox(height: 80),
+        const SizedBox(height: 80),
         Center(
           child: SizedBox(
             width: 20,
             height: 20,
             child: CircularProgressIndicator(
-                strokeWidth: 2, color: GoColors.dim),
+                strokeWidth: 2, color: roles.textSecondary),
           ),
         ),
       ],
@@ -133,6 +134,7 @@ class _UsScreenState extends State<UsScreen> {
 
   /// 데이터를 불러오지 못했을 때 — 조용히 빈 화면 대신 다시 시도할 수 있게
   Widget _errorState(VoidCallback onRetry) {
+    final roles = GoRoles.of(context);
     return Column(children: [
       const Padding(
         padding: EdgeInsets.fromLTRB(24, 14, 24, 6),
@@ -150,20 +152,20 @@ class _UsScreenState extends State<UsScreen> {
                 width: 64, height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: GoColors.surface,
+                  color: roles.surface,
                   border: Border.all(
-                      color: GoColors.line, width: GoStroke.accent),
+                      color: roles.line, width: GoStroke.accent),
                 ),
-                child: const Icon(Icons.wifi_off_rounded,
-                    size: 28, color: GoColors.mid),
+                child: Icon(Icons.wifi_off_rounded,
+                    size: 28, color: roles.textSecondary),
               ),
               const SizedBox(height: 18),
               const Text('불러오지 못했어요',
                   textAlign: TextAlign.center, style: GoText.heading),
               const SizedBox(height: 8),
-              const Text('네트워크 상태를 확인하고 다시 시도해 주세요.',
+              Text('네트워크 상태를 확인하고 다시 시도해 주세요.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: GoColors.mid)),
+                  style: TextStyle(fontSize: 13, color: roles.textSecondary)),
               const SizedBox(height: 22),
               GoButton('다시 시도', kind: GoButtonKind.secondary, onTap: onRetry),
             ]),
@@ -175,6 +177,7 @@ class _UsScreenState extends State<UsScreen> {
 
   /// 친구가 아예 없을 때
   Widget _noFriendYet() {
+    final roles = GoRoles.of(context);
     return Column(children: [
       const Padding(
         padding: EdgeInsets.fromLTRB(24, 14, 24, 6),
@@ -192,20 +195,20 @@ class _UsScreenState extends State<UsScreen> {
                 width: 64, height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: GoColors.surface,
+                  color: roles.surface,
                   border: Border.all(
-                      color: GoColors.coralDark, width: GoStroke.accent),
+                      color: roles.partner, width: GoStroke.accent),
                 ),
-                child: const Icon(Icons.people_alt_outlined,
-                    size: 30, color: GoColors.coralDark),
+                child: Icon(Icons.people_alt_outlined,
+                    size: 30, color: roles.partner),
               ),
               const SizedBox(height: 18),
               const Text('아직 함께 뛰는 사람이 없어요',
                   textAlign: TextAlign.center, style: GoText.heading),
               const SizedBox(height: 8),
-              const Text('아이디로 페이스메이트를 찾으면, 둘만의 여정이 시작돼요.',
+              Text('아이디로 페이스메이트를 찾으면, 둘만의 여정이 시작돼요.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: GoColors.mid)),
+                  style: TextStyle(fontSize: 13, color: roles.textSecondary)),
               const SizedBox(height: 22),
               GoButton('페이스메이트 찾기',
                   onTap: () => showFriendSearchSheet(context)),
@@ -218,6 +221,7 @@ class _UsScreenState extends State<UsScreen> {
 
   /// 친구는 있지만 함께 달린 세션이 아직 없을 때
   Widget _notRunTogetherYet(Map<String, dynamic> partner) {
+    final roles = GoRoles.of(context);
     return Column(children: [
       const Padding(
         padding: EdgeInsets.fromLTRB(24, 14, 24, 6),
@@ -235,20 +239,20 @@ class _UsScreenState extends State<UsScreen> {
                 width: 64, height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: GoColors.surface,
+                  color: roles.surface,
                   border: Border.all(
-                      color: GoColors.limeDark, width: GoStroke.accent),
+                      color: roles.self, width: GoStroke.accent),
                 ),
-                child: const Icon(Icons.directions_run,
-                    size: 30, color: GoColors.limeDark),
+                child: Icon(Icons.directions_run,
+                    size: 30, color: roles.self),
               ),
               const SizedBox(height: 18),
               Text('${partner['name']}님과\n아직 함께 달리지 않았어요',
                   textAlign: TextAlign.center, style: GoText.heading),
               const SizedBox(height: 8),
-              const Text('한 번만 같이 뛰면, 여기에 우리 기록이 쌓여요.',
+              Text('한 번만 같이 뛰면, 여기에 우리 기록이 쌓여요.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: GoColors.mid)),
+                  style: TextStyle(fontSize: 13, color: roles.textSecondary)),
               const SizedBox(height: 22),
               GoButton('GO? 보내러 홈으로', onTap: () => Navigator.pop(context)),
             ]),
@@ -264,6 +268,7 @@ class _UsScreenState extends State<UsScreen> {
     final me = _auth.uid;
     final partnerUid = partner['uid'] as String;
     final partnerName = partner['name'] as String;
+    final roles = GoRoles.of(context);
 
     final totalKm = sessions.fold<double>(
         0, (sum, s) => sum + combinedKm(s, me, partnerUid));
@@ -334,14 +339,14 @@ class _UsScreenState extends State<UsScreen> {
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
         child: Row(children: [
-          _pairAvatar(_avatarLetter(null), GoColors.limeDark,
+          _pairAvatar(_avatarLetter(null), roles.self,
               photoUrl: _myPhotoUrl),
-          _pairAvatar(_avatarLetter(partnerName), GoColors.coralDark,
+          _pairAvatar(_avatarLetter(partnerName), roles.partner,
               overlap: true, photoUrl: partner['photoUrl'] as String?),
           const SizedBox(width: 8),
           Expanded(
             child: Text('함께 달린 지 $daysTogether일째',
-                style: const TextStyle(fontSize: 12, color: GoColors.mid)),
+                style: TextStyle(fontSize: 12, color: roles.textSecondary)),
           ),
         ]),
       ),
@@ -350,42 +355,43 @@ class _UsScreenState extends State<UsScreen> {
         margin: const EdgeInsets.fromLTRB(22, 12, 22, 0),
         padding: const EdgeInsets.all(GoSpace.hero),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft, end: Alignment.bottomRight,
-            colors: [GoColors.ink, Color(0xFF2A2A22)],
+            colors: [roles.dark.bg, roles.dark.pressed],
           ),
           borderRadius: BorderRadius.circular(22),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('멀리 있어도, 함께',
-              style: GoText.label.copyWith(color: GoColors.paper)),
+              style: GoText.label.copyWith(color: roles.textOnDark)),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 14),
             child: Row(children: [
+              // 잉크 면 위라 selfOnDark/partnerOnDark
               Container(width: 13, height: 13,
-                  decoration: const BoxDecoration(
-                      shape: BoxShape.circle, color: GoColors.lime)),
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle, color: roles.selfOnDark)),
               const SizedBox(width: 10),
               Expanded(
                 child: Container(
                   height: 2,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(2),
-                    gradient: const LinearGradient(
-                        colors: [GoColors.lime, GoColors.coral]),
+                    gradient: LinearGradient(
+                        colors: [roles.selfOnDark, roles.partnerOnDark]),
                   ),
                 ),
               ),
               const SizedBox(width: 10),
               Container(width: 13, height: 13,
-                  decoration: const BoxDecoration(
-                      shape: BoxShape.circle, color: GoColors.coral)),
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle, color: roles.partnerOnDark)),
             ]),
           ),
           Center(
             child: Text('$partnerName님과 함께',
                 style: TextStyle(
-                    fontSize: 11, color: GoColors.paper.withValues(alpha: .5))),
+                    fontSize: 11, color: roles.textOnDark.withValues(alpha: .5))),
           ),
           const SizedBox(height: 14),
           // 한글은 산세리프, 숫자만 세리프 이탤릭
@@ -393,10 +399,10 @@ class _UsScreenState extends State<UsScreen> {
             const TextSpan(text: '함께 달린 '),
             TextSpan(
                 text: '${totalKm.toStringAsFixed(1)}km',
-                style: GoTheme.serif(26, color: GoColors.lime)),
+                style: GoTheme.serif(26, color: roles.selfOnDark)),
             const TextSpan(text: '를\n만들었어요.'),
-          ]), style: const TextStyle(
-              fontSize: 23, fontWeight: FontWeight.w700, color: GoColors.paper)),
+          ]), style: TextStyle(
+              fontSize: 23, fontWeight: FontWeight.w700, color: roles.textOnDark)),
         ]),
       ),
       // ── 스트릭 ──
@@ -404,22 +410,22 @@ class _UsScreenState extends State<UsScreen> {
         margin: const EdgeInsets.fromLTRB(22, 12, 22, 0),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
-          color: GoColors.surface,
-          border: Border.all(color: GoColors.amberDark, width: GoStroke.accent),
+          color: roles.surface,
+          border: Border.all(color: roles.statusOnline.fg, width: GoStroke.accent),
           borderRadius: BorderRadius.circular(GoRadius.md),
           boxShadow: GoShadow.card,
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const Icon(Icons.local_fire_department,
-                size: 24, color: GoColors.amber),
+            Icon(Icons.local_fire_department,
+                size: 24, color: roles.statusOnline.fg),
             const SizedBox(width: 6),
-            Text('$streak', style: GoTheme.serif(30, color: GoColors.amber)),
+            Text('$streak', style: GoTheme.serif(30, color: roles.statusOnline.fg)),
             const SizedBox(width: 6),
-            const Padding(
-              padding: EdgeInsets.only(top: 6),
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
               child: Text('주째 함께',
-                  style: TextStyle(fontSize: 12, color: GoColors.mid)),
+                  style: TextStyle(fontSize: 12, color: roles.textSecondary)),
             ),
           ]),
           const SizedBox(height: GoSpace.m),
@@ -433,16 +439,16 @@ class _UsScreenState extends State<UsScreen> {
                 height: 28,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: done ? GoColors.amber : GoColors.surface,
+                  color: done ? roles.statusOnline.bg : roles.surface,
                   borderRadius: BorderRadius.circular(GoRadius.sm),
                   border: isToday && !done
-                      ? Border.all(color: GoColors.limeDark, width: GoStroke.accent)
+                      ? Border.all(color: roles.statusOnline.fg, width: GoStroke.accent)
                       : null,
                   boxShadow: GoShadow.card,
                 ),
                 child: Text(_kWeekdayLabels[i],
                     style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                        color: done ? GoColors.ink : GoColors.mid)),
+                        color: done ? roles.statusOnline.fg : roles.textSecondary)),
               ),
             );
           })),
@@ -453,17 +459,17 @@ class _UsScreenState extends State<UsScreen> {
               borderRadius: BorderRadius.circular(GoRadius.sm),
               child: Container(
                 width: double.infinity,
-                color: GoColors.surface,
+                color: roles.surface,
                 child: IntrinsicHeight(
                   child: Row(children: [
-                    Container(width: 4, color: GoColors.limeDark),
-                    const Expanded(
+                    Container(width: 4, color: roles.statusOnline.fg),
+                    Expanded(
                       child: Padding(
-                        padding: EdgeInsets.symmetric(
+                        padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 10),
                         child: Text(
                             '이번 주는 아직 함께 달리지 않았어요. 지금 GO?를 보내볼까요?',
-                            style: TextStyle(fontSize: 11, color: GoColors.limeDark,
+                            style: TextStyle(fontSize: 11, color: roles.statusOnline.fg,
                                 height: 1.5)),
                       ),
                     ),
@@ -528,14 +534,14 @@ class _UsScreenState extends State<UsScreen> {
         padding: const EdgeInsets.fromLTRB(0, 14, 0, 4),
         child: Text('$count개의 순간을 함께 쌓았어요',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, color: GoColors.mid)),
+            style: TextStyle(fontSize: 12, color: roles.textSecondary)),
       ),
-      const Padding(
-        padding: EdgeInsets.fromLTRB(32, 0, 32, 20),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(32, 0, 32, 20),
         child: Text('우리 둘이 함께 쌓아온 기록이에요.\n여기, 우리 사이에만 있어요.',
             textAlign: TextAlign.center,
             style: TextStyle(
-                fontSize: 11, color: GoColors.coralDark, height: 1.6)),
+                fontSize: 11, color: roles.partner, height: 1.6)),
       ),
     ]);
   }
@@ -562,7 +568,7 @@ class _UsScreenState extends State<UsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 6),
         decoration: BoxDecoration(
-          color: GoColors.surface,
+          color: GoRoles.of(context).surface,
           borderRadius: BorderRadius.circular(GoRadius.md),
           boxShadow: GoShadow.card,
         ),
@@ -581,19 +587,20 @@ class _UsScreenState extends State<UsScreen> {
     required String subtitle,
     bool isNext = false,
   }) {
+    final roles = GoRoles.of(context);
     return Container(
       margin: const EdgeInsets.fromLTRB(22, 0, 22, 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: GoColors.surface,
+        color: roles.surface,
         border: Border.all(
-            color: isNext ? GoColors.line : GoColors.limeDark,
+            color: isNext ? roles.line : roles.statusOnline.fg,
             width: isNext ? GoStroke.rule : GoStroke.accent),
         borderRadius: BorderRadius.circular(GoRadius.md),
         boxShadow: GoShadow.card,
       ),
       child: Row(children: [
-        Icon(icon, size: 20, color: isNext ? GoColors.dim : GoColors.limeDark),
+        Icon(icon, size: 20, color: isNext ? roles.textSecondary : roles.statusOnline.fg),
         const SizedBox(width: GoSpace.m),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -601,7 +608,7 @@ class _UsScreenState extends State<UsScreen> {
                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 1),
             Text(subtitle,
-                style: const TextStyle(fontSize: 11, color: GoColors.mid)),
+                style: TextStyle(fontSize: 11, color: roles.textSecondary)),
           ]),
         ),
       ]),
@@ -626,6 +633,7 @@ class _UsScreenState extends State<UsScreen> {
       if (partnerMood != null) "$partnerName '$partnerMood'",
     ].join(' · ');
 
+    final roles = GoRoles.of(context);
     // 그룹 안의 행 하나
     return GoGroupRow(
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -635,7 +643,7 @@ class _UsScreenState extends State<UsScreen> {
             Text(day, style: GoTheme.serif(19)),
             const SizedBox(height: 2),
             Text(month,
-                style: const TextStyle(fontSize: 9, color: GoColors.mid)),
+                style: TextStyle(fontSize: 9, color: roles.textSecondary)),
           ]),
         ),
         const SizedBox(width: 14),
@@ -645,15 +653,14 @@ class _UsScreenState extends State<UsScreen> {
               Container(
                 margin: const EdgeInsets.only(bottom: 5),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                // 스토리 라벨 칩(statusOnline): 파인 틴트 면 + 파인 글자, 테두리 없음
                 decoration: BoxDecoration(
-                  color: GoColors.surface,
+                  color: roles.statusOnline.bg,
                   borderRadius: BorderRadius.circular(GoRadius.sm),
-                  border: Border.all(color: GoColors.limeDark, width: GoStroke.accent),
-                  boxShadow: GoShadow.card,
                 ),
                 child: Text(storyLabel,
-                    style: const TextStyle(fontSize: 9,
-                        fontWeight: FontWeight.w600, color: GoColors.limeDark)),
+                    style: TextStyle(fontSize: 9,
+                        fontWeight: FontWeight.w600, color: roles.statusOnline.fg)),
               ),
             ],
             Text('함께 $minutes분 달렸어요',
@@ -661,11 +668,11 @@ class _UsScreenState extends State<UsScreen> {
                     fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 3),
             Text('${km.toStringAsFixed(1)}km · $timeOfDay',
-                style: const TextStyle(fontSize: 11, color: GoColors.mid)),
+                style: TextStyle(fontSize: 11, color: roles.textSecondary)),
             if (moodLine.isNotEmpty) ...[
               const SizedBox(height: 3),
               Text(moodLine,
-                  style: const TextStyle(fontSize: 10, color: GoColors.coralDark)),
+                  style: TextStyle(fontSize: 10, color: roles.partner)),
             ],
           ]),
         ),

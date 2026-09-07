@@ -9,7 +9,7 @@ import 'pressable.dart';
 /// 흰 조각이 많아질수록 화면이 지저분해진다.
 ///
 /// 테두리는 없다. 그룹의 경계는 [GoShadow.card]가, 행 사이는
-/// [GoColors.lineStrong]이 만든다 — 구분선이 안 보이면 행이 몇 개인지,
+/// [GoRoles.lineStrong]이 만든다 — 구분선이 안 보이면 행이 몇 개인지,
 /// 어디까지가 한 행인지 읽히지 않는다(2026-09-07).
 class GoGroup extends StatelessWidget {
   const GoGroup({
@@ -27,12 +27,13 @@ class GoGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final roles = GoRoles.of(context);
     final children = <Widget>[];
     for (var i = 0; i < rows.length; i++) {
       if (i > 0) {
         children.add(Padding(
           padding: EdgeInsets.only(left: dividerInset),
-          child: Container(height: GoStroke.rule, color: GoColors.lineStrong),
+          child: Container(height: GoStroke.rule, color: roles.lineStrong),
         ));
       }
       children.add(rows[i]);
@@ -41,7 +42,7 @@ class GoGroup extends StatelessWidget {
       width: double.infinity,
       margin: margin,
       decoration: BoxDecoration(
-        color: GoColors.surface,
+        color: roles.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
         boxShadow: GoShadow.card,
       ),
@@ -89,12 +90,13 @@ class _GoGroupRowState extends State<GoGroupRow> {
   Widget build(BuildContext context) {
     // 눌리는 것은 즉시, 놓는 것만 90ms — 손을 뗐을 때 색이 뚝 끊기면
     // 깜빡임으로 보인다
+    final roles = GoRoles.of(context);
     final row = AnimatedContainer(
       duration: _down ? Duration.zero : Pressable.releaseDuration,
       curve: Curves.easeOut,
       width: double.infinity,
       padding: widget.padding,
-      color: _down ? GoColors.surfacePressed : GoColors.surface,
+      color: _down ? roles.surfacePressed : roles.surface,
       child: widget.child,
     );
     if (!_pressable) return row;

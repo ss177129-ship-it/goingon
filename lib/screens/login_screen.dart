@@ -73,6 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final roles = GoRoles.of(context);
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -86,13 +87,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     BrandMark.standard(),
                     const SizedBox(height: 16),
-                    Text('goingon', style: GoTheme.serif(20, color: GoColors.mid)),
+                    Text('goingon', style: GoTheme.serif(20, color: roles.textSecondary)),
                     const SizedBox(height: 18),
                     Text('멀리 있어도,\n함께 달려요',
                         textAlign: TextAlign.center, style: GoText.title),
                     const SizedBox(height: 8),
-                    const Text('소중한 사람과 발을 맞추는 곳',
-                        style: TextStyle(fontSize: 13, color: GoColors.mid)),
+                    Text('소중한 사람과 발을 맞추는 곳',
+                        style: TextStyle(fontSize: 13, color: roles.textSecondary)),
                   ]),
                 ),
               ),

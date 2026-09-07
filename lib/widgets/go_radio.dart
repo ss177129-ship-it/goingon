@@ -52,17 +52,17 @@ class _GoRadioRow extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  Widget _circle(bool pressed) => AnimatedContainer(
+  Widget _circle(GoRoles roles, bool pressed) => AnimatedContainer(
       duration: pressed ? Duration.zero : GoMotion.select,
       curve: GoMotion.curve,
       width: GoRadioGroup._size,
       height: GoRadioGroup._size,
       decoration: BoxDecoration(
         // 눌려 있는 동안 원이 가라앉는다 (GoCheckbox와 같은 반응)
-        color: pressed ? GoColors.surfacePressed : GoColors.surface,
+        color: pressed ? roles.surfacePressed : roles.surface,
         shape: BoxShape.circle,
         border: Border.all(
-          color: selected ? GoColors.ink : GoColors.line,
+          color: selected ? roles.textPrimary : roles.line,
           width: selected ? GoStroke.accent : GoStroke.card,
         ),
       ),
@@ -72,8 +72,8 @@ class _GoRadioRow extends StatelessWidget {
           curve: GoMotion.curve,
           width: selected ? GoRadioGroup._dot : 0,
           height: selected ? GoRadioGroup._dot : 0,
-          decoration: const BoxDecoration(
-            color: GoColors.ink,
+          decoration: BoxDecoration(
+            color: roles.textPrimary,
             shape: BoxShape.circle,
           ),
         ),
@@ -82,6 +82,7 @@ class _GoRadioRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final roles = GoRoles.of(context);
     return Semantics(
       inMutuallyExclusiveGroup: true,
       checked: selected,
@@ -92,7 +93,7 @@ class _GoRadioRow extends StatelessWidget {
           constraints:
               const BoxConstraints(minHeight: GoRadioGroup.minHeight),
           child: Row(children: [
-            _circle(pressed),
+            _circle(roles, pressed),
             const SizedBox(width: GoSpace.m),
             Expanded(child: child),
           ]),

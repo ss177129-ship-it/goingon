@@ -17,6 +17,9 @@ import 'package:goingon/widgets/pressable.dart';
 ///
 /// 전부 controlled — 값은 호출한 화면이 갖고, 위젯은 onChanged로 돌려줄 뿐
 /// 스스로 바뀌지 않는다. 눌림은 [Pressable] 하나로 통일한다.
+/// 역할 토큰 — 값이 아니라 뜻으로 검사한다
+const R = GoRoles.light;
+
 void main() {
   Widget host(Widget child) => MaterialApp(
         theme: GoTheme.light(),
@@ -45,13 +48,13 @@ void main() {
       expect(tester.getSize(find.byType(GoSwitch)), const Size(51, 31));
       expect(
           fillOf(tester, inside<AnimatedContainer>(GoSwitch).first),
-          GoColors.limeDark);
+          R.actionComplete.bg);
 
       await tester.pumpWidget(host(GoSwitch(value: false, onChanged: (_) {})));
       await tester.pumpAndSettle();
       expect(
           fillOf(tester, inside<AnimatedContainer>(GoSwitch).first),
-          GoColors.dim);
+          R.textSecondary);
     });
 
     testWidgets('탭하면 반대 값을 돌려주고 스스로는 바뀌지 않는다', (tester) async {
@@ -63,7 +66,7 @@ void main() {
       // controlled — 부모가 value를 안 바꿨으니 여전히 끔
       expect(
           fillOf(tester, inside<AnimatedContainer>(GoSwitch).first),
-          GoColors.dim);
+          R.textSecondary);
     });
 
     testWidgets('onChanged가 없으면 40%로 가라앉고 탭을 무시한다', (tester) async {
@@ -79,7 +82,7 @@ void main() {
           GoCheckbox(value: true, onChanged: (_) {}, label: const Text('동의'))));
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.check), findsOneWidget);
-      expect(fillOf(tester, find.byType(AnimatedContainer)), GoColors.lime);
+      expect(fillOf(tester, find.byType(AnimatedContainer)), R.actionComplete.bg);
 
       await tester.pumpWidget(host(
           GoCheckbox(value: false, onChanged: (_) {}, label: const Text('동의'))));
@@ -120,7 +123,7 @@ void main() {
       final dots = tester
           .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
           .where((c) =>
-              (c.decoration as BoxDecoration?)?.color == GoColors.ink)
+              (c.decoration as BoxDecoration?)?.color == R.dark.bg)
           .toList();
       expect(dots.length, 2);
       expect(dots.map((d) => d.constraints?.maxWidth).toList(), [10, 0]);
@@ -137,7 +140,7 @@ void main() {
       )));
       await tester.pumpAndSettle();
       expect(textColorsIn(tester, GoTabs),
-          [GoColors.ink, GoColors.mid, GoColors.mid]);
+          [R.dark.bg, R.textSecondary, R.textSecondary]);
 
       await tester.tap(find.text('기록'));
       expect(got, 2);
@@ -162,9 +165,9 @@ void main() {
           .widgetList<AnimatedContainer>(inside<AnimatedContainer>(GoSegment))
           .map((c) => (c.decoration as BoxDecoration).color)
           .toList();
-      expect(fills, [Colors.transparent, GoColors.ink, Colors.transparent]);
+      expect(fills, [Colors.transparent, R.dark.bg, Colors.transparent]);
       expect(textColorsIn(tester, GoSegment),
-          [GoColors.mid, GoColors.paper, GoColors.mid]);
+          [R.textSecondary, R.dark.fg, R.textSecondary]);
 
       await tester.tap(find.text('전체'));
       expect(got, 2);
@@ -178,8 +181,8 @@ void main() {
           GoSelectChip(label: '5km', selected: true, onTap: () => tapped = true)));
       await tester.pumpAndSettle();
       expect(tester.getSize(find.byType(GoSelectChip)).height, 32);
-      expect(fillOf(tester, inside<AnimatedContainer>(GoSelectChip)), GoColors.ink);
-      expect(textColorsIn(tester, GoSelectChip), [GoColors.paper]);
+      expect(fillOf(tester, inside<AnimatedContainer>(GoSelectChip)), R.dark.bg);
+      expect(textColorsIn(tester, GoSelectChip), [R.dark.fg]);
       await tester.tap(find.text('5km'));
       expect(tapped, isTrue);
     });
@@ -247,12 +250,12 @@ void main() {
           .widgetList<AnimatedContainer>(inside<AnimatedContainer>(GoBottomNav))
           .map((c) => (c.decoration as BoxDecoration).color)
           .toList();
-      expect(pills, [Colors.transparent, GoColors.ink, Colors.transparent]);
+      expect(pills, [Colors.transparent, R.dark.bg, Colors.transparent]);
       final icons = tester
           .widgetList<Icon>(inside<Icon>(GoBottomNav))
           .map((i) => i.color)
           .toList();
-      expect(icons, [GoColors.mid, GoColors.paper, GoColors.mid]);
+      expect(icons, [R.textSecondary, R.dark.fg, R.textSecondary]);
       expect(find.text('3'), findsOneWidget, reason: '배지는 알약 위에도 남는다');
 
       await tester.tap(find.text('설정'));
@@ -293,7 +296,7 @@ void main() {
           .widgetList<AnimatedContainer>(inside<AnimatedContainer>(GoSegment))
           .map((c) => (c.decoration as BoxDecoration).color)
           .toList();
-      expect(fills, [GoColors.ink, GoColors.pressOverlay]);
+      expect(fills, [R.dark.bg, R.pressOverlay]);
       await g.up();
       await tester.pumpAndSettle();
     });
@@ -309,14 +312,14 @@ void main() {
           .map((c) => (c.decoration as BoxDecoration).color)
           .toList();
       final g1 = await press(tester, find.text('홈'));
-      expect(pills()[0], GoColors.inkPressed);
+      expect(pills()[0], R.dark.pressed);
       await g1.up();
       await tester.pumpAndSettle();
       final g2 = await press(tester, find.text('설정'));
-      expect(pills()[2], GoColors.pressOverlay);
+      expect(pills()[2], R.pressOverlay);
       await g2.up();
       await tester.pumpAndSettle();
-      expect(pills(), [GoColors.ink, Colors.transparent, Colors.transparent]);
+      expect(pills(), [R.dark.bg, Colors.transparent, Colors.transparent]);
     });
 
     testWidgets('GoSelectChip·GoCheckbox: 누르면 면이 가라앉는다', (tester) async {
@@ -330,11 +333,11 @@ void main() {
       await tester.pumpAndSettle();
       final g1 = await press(tester, find.text('5km'));
       expect(fillOf(tester, inside<AnimatedContainer>(GoSelectChip)),
-          GoColors.surfacePressed);
+          R.surfacePressed);
       await g1.up();
       final g2 = await press(tester, find.text('동의'));
       expect(fillOf(tester, inside<AnimatedContainer>(GoCheckbox)),
-          GoColors.limePressed);
+          R.actionComplete.pressed);
       await g2.up();
       await tester.pumpAndSettle();
     });
@@ -344,7 +347,7 @@ void main() {
       expect(tester.getSize(find.byType(GoIconButton)), const Size(44, 44));
       final g = await press(tester, find.byType(GoIconButton));
       expect(fillOf(tester, inside<AnimatedContainer>(GoIconButton)),
-          GoColors.pressOverlay);
+          R.pressOverlay);
       expect(
           tester
               .widget<AnimatedScale>(inside<AnimatedScale>(GoIconButton))

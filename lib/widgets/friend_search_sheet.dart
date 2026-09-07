@@ -17,7 +17,7 @@ Future<void> showFriendSearchSheet(BuildContext context) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: GoColors.surfaceHigh,
+    backgroundColor: GoRoles.of(context).surfaceHigh,
     shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
     builder: (ctx) => const _FriendSearchSheet(),
@@ -145,6 +145,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
   @override
   Widget build(BuildContext context) {
     final c = _found;
+    final roles = GoRoles.of(context);
     return Padding(
       padding: EdgeInsets.fromLTRB(
           28, 28, 28, MediaQuery.of(context).viewInsets.bottom + 40),
@@ -154,20 +155,20 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
           children: [
             const Text('페이스메이트 찾기', style: GoText.heading),
             const SizedBox(height: 6),
-            const Text('아이디로 찾아 요청을 보내면, 상대가 수락했을 때 연결돼요.',
-                style: TextStyle(fontSize: 13, color: GoColors.mid)),
+            Text('아이디로 찾아 요청을 보내면, 상대가 수락했을 때 연결돼요.',
+                style: TextStyle(fontSize: 13, color: roles.textSecondary)),
             const SizedBox(height: 20),
             // @는 **화면에 고정으로 박아둔다.** 앱이 아이디를 어디서나
             // @ruty로 보여주므로, 검색창만 @를 안 받으면 본 대로 입력한
             // 사람이 실패한다. 붙여넣기로 @가 또 들어와도 정규화가 떼어낸다
             Container(
               decoration: BoxDecoration(
-                color: GoColors.surface,
+                color: roles.surface,
                 borderRadius: BorderRadius.circular(14),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(children: [
-                Text('@', style: GoTheme.serif(24, color: GoColors.mid)),
+                Text('@', style: GoTheme.serif(24, color: roles.textSecondary)),
                 const SizedBox(width: 2),
                 Expanded(
                   child: TextField(
@@ -200,14 +201,13 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
             if (_error != null) ...[
               const SizedBox(height: 10),
               Text(_error!,
-                  style:
-                      const TextStyle(fontSize: 12, color: GoColors.coralDark)),
+                  style: TextStyle(fontSize: 12, color: roles.attention)),
             ],
             if (_notice != null) ...[
               const SizedBox(height: 10),
               Text(_notice!,
                   style:
-                      const TextStyle(fontSize: 12, color: GoColors.limeDark)),
+                      TextStyle(fontSize: 12, color: roles.statusOnline.fg)),
             ],
             if (c != null) ...[
               const SizedBox(height: 14),
@@ -247,10 +247,11 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
   /// 연결 전 확인 카드 — 오타 하나로 모르는 사람에게 요청이 가지 않도록
   Widget _foundCard(FriendCandidate c) {
     final status = _relationNote(c.relation);
+    final roles = GoRoles.of(context);
     return Container(
       padding: const EdgeInsets.all(GoSpace.card),
       decoration: BoxDecoration(
-        color: GoColors.surface,
+        color: roles.surface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(children: [
@@ -258,7 +259,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
           letter: c.name.isEmpty ? '' : c.name[0],
           size: 44,
           fontSize: 18,
-          borderColor: GoColors.line,
+          borderColor: roles.line,
           borderWidth: 1.5,
           emptyIcon: Icons.person_outline,
           photoUrl: c.photoUrl,
@@ -269,20 +270,20 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(c.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: GoColors.ink)),
+                        color: roles.textPrimary)),
                 const SizedBox(height: 2),
                 Text('@${c.username}',
-                    style: const TextStyle(fontSize: 12, color: GoColors.mid)),
+                    style: TextStyle(fontSize: 12, color: roles.textSecondary)),
                 if (status != null) ...[
                   const SizedBox(height: 4),
                   Text(status,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: GoColors.mid)),
+                          color: roles.textSecondary)),
                 ],
               ]),
         ),

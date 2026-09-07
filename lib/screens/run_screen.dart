@@ -489,7 +489,7 @@ class _RunScreenState extends State<RunScreen>
     const moods = ['상쾌했어요', '죽을 뻔했어요', '네 생각 났어요', '또 하고 싶어요'];
     return showModalBottomSheet<String>(
       context: context,
-      backgroundColor: GoColors.surfaceHigh,
+      backgroundColor: GoRoles.of(context).surfaceHigh,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
@@ -529,6 +529,7 @@ class _RunScreenState extends State<RunScreen>
 
   @override
   Widget build(BuildContext context) {
+    final roles = GoRoles.of(context);
     if (!_gpsOk) {
       // 경로를 글로만 알려주면(설정 > GoingOn > 위치) 사람들은 앱을 나가
       // 헤매다 돌아오지 않는다. 여기서 바로 앱 설정을 열어주고, 돌아올
@@ -540,9 +541,9 @@ class _RunScreenState extends State<RunScreen>
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               const Text('위치 권한이 필요해요', style: GoText.heading),
               const SizedBox(height: 10),
-              const Text('달린 거리를 재려면 위치 접근이 필요해요.\n좌표는 기기 밖으로 나가지 않아요.',
+              Text('달린 거리를 재려면 위치 접근이 필요해요.\n좌표는 기기 밖으로 나가지 않아요.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, height: 1.5, color: GoColors.mid)),
+                  style: TextStyle(fontSize: 13, height: 1.5, color: roles.textSecondary)),
               const SizedBox(height: GoSpace.section),
               GoButton('설정 열기',
                   icon: Icons.settings_outlined,
@@ -575,7 +576,7 @@ class _RunScreenState extends State<RunScreen>
   /// 캡션 라벨 — 이 화면에서 34px 미만이 허용되는 **유일한** 글자.
   /// 달리는 사람은 3초 이상 화면을 못 본다는 전제에서, 값은 크게 두고
   /// 값이 무엇인지 알려주는 꼬리표만 작게 남긴다
-  Widget _caption(String text, {Color color = GoColors.mid}) => Text(
+  Widget _caption(String text, {Color? color}) => Text(
         text,
         textAlign: TextAlign.center,
         style: TextStyle(
@@ -583,7 +584,7 @@ class _RunScreenState extends State<RunScreen>
           height: 1.3,
           fontWeight: FontWeight.w600,
           letterSpacing: 1.2,
-          color: color,
+          color: color ?? GoRoles.of(context).textSecondary,
         ),
       );
 
@@ -604,12 +605,13 @@ class _RunScreenState extends State<RunScreen>
   /// 공명일 때만 골드. 그 외에는 상대의 색(coral) — 색 배정은 섞지 않는다
   Color get _stateColor =>
       _resonance.hasCloseness && _syncState == SyncState.resonant
-          ? GoColors.resonance
-          : GoColors.coralDark;
+          ? GoRoles.of(context).resonance
+          : GoRoles.of(context).partner;
 
   Widget _runBody() {
+    final roles = GoRoles.of(context);
     return Scaffold(
-      backgroundColor: GoColors.canvas,
+      backgroundColor: roles.canvas,
       body: SafeArea(
         child: Column(children: [
           const SizedBox(height: 8),
@@ -620,16 +622,16 @@ class _RunScreenState extends State<RunScreen>
             child: GoCard(
               padding: const EdgeInsets.symmetric(vertical: GoSpace.m),
               child: Column(children: [
-                _caption('나 · 페이스', color: GoColors.limeDark),
+                _caption('나 · 페이스', color: roles.self),
                 Text(LocationService.pace(_km, _seconds),
-                    style: GoTheme.serif(68, color: GoColors.limeDark)
+                    style: GoTheme.serif(68, color: roles.self)
                         .copyWith(height: 1.1)),
                 _caption('km당'),
                 const SizedBox(height: GoSpace.m),
-                Container(height: GoStroke.rule, color: GoColors.lineStrong),
+                Container(height: GoStroke.rule, color: roles.lineStrong),
                 const SizedBox(height: GoSpace.m),
                 // ── 상대 상태어 ──
-                _caption('${widget.partnerName} · 상태', color: GoColors.coralDark),
+                _caption('${widget.partnerName} · 상태', color: roles.partner),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 400),
                   child: Text(_stateWord,
@@ -666,11 +668,11 @@ class _RunScreenState extends State<RunScreen>
             padding: const EdgeInsets.symmetric(horizontal: 28),
             child: Container(
               decoration: BoxDecoration(
-                color: GoColors.surface,
+                color: roles.surface,
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withValues(alpha: .05),
+                      color: roles.pressOverlay,
                       blurRadius: 6, offset: const Offset(0, 1)),
                 ],
               ),
@@ -694,7 +696,7 @@ class _RunScreenState extends State<RunScreen>
               padding: const EdgeInsets.symmetric(horizontal: 28),
               // canvas 위에서 amber는 2.5:1로 읽히지 않는다. amberDark는 4.6:1
               child: _caption('화면을 끄면 거리가 멈춰요 — 위치를 "항상 허용"으로 바꾸면 꺼도 기록돼요',
-                  color: GoColors.amberDark),
+                  color: roles.attention),
             ),
           ],
           const SizedBox(height: GoSpace.section),
@@ -710,6 +712,7 @@ class _RunScreenState extends State<RunScreen>
   /// 눌러야 하는지 알 수 없어서, 사람들이 중간에 손을 떼고 "왜 안 되지"
   /// 하다가 결국 짧게 여러 번 누른다
   Widget _stopButton() {
+    final roles = GoRoles.of(context);
     return GestureDetector(
       onTapDown: _finishing ? null : (_) => _beginStopHold(),
       onTapUp: (_) => _cancelStopHold(),
@@ -728,9 +731,9 @@ class _RunScreenState extends State<RunScreen>
         height: _kStopButtonSize,
         child: Stack(alignment: Alignment.center, children: [
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: GoColors.surface,
+              color: roles.surface,
               // 러닝 화면에서 유일하게 눌러야 하는 것 — 종이에서 떠 있어야
               // 달리면서 곁눈으로도 "누르는 것"으로 읽힌다
               boxShadow: GoShadow.raised,
@@ -741,14 +744,15 @@ class _RunScreenState extends State<RunScreen>
           RepaintBoundary(
             child: CustomPaint(
               size: const Size.square(_kStopButtonSize),
-              painter: _StopHoldPainter(_stopHold),
+              painter: _StopHoldPainter(
+                  _stopHold, roles.textPrimary.withValues(alpha: .45)),
             ),
           ),
-          const Text('멈춤',
+          Text('멈춤',
               style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: GoColors.mid)),
+                  color: roles.textSecondary)),
         ]),
       ),
     );
@@ -769,14 +773,14 @@ class _RunScreenState extends State<RunScreen>
   Widget _togetherCell(String value, String label) => Expanded(
         child: Column(children: [
           Text(value,
-              style: GoTheme.serif(40, color: GoColors.ink)
+              style: GoTheme.serif(40, color: GoRoles.of(context).textPrimary)
                   .copyWith(height: 1.1)),
           _caption(label),
         ]),
       );
 
   Widget _togetherDivider() =>
-      Container(width: 1, height: 44, color: GoColors.lineStrong);
+      Container(width: 1, height: 44, color: GoRoles.of(context).lineStrong);
 }
 
 /// 멈춤 버튼 테두리를 따라 차오르는 진행 링.
@@ -785,9 +789,10 @@ class _RunScreenState extends State<RunScreen>
 /// 러닝 화면은 원 애니메이션이 이미 매 프레임 돌고 있어서, 여기까지
 /// setState로 그리면 화면 전체가 초당 60번 리빌드된다
 class _StopHoldPainter extends CustomPainter {
-  _StopHoldPainter(this.progress) : super(repaint: progress);
+  _StopHoldPainter(this.progress, this.color) : super(repaint: progress);
 
   final ValueListenable<double> progress;
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -803,7 +808,7 @@ class _StopHoldPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3
         ..strokeCap = StrokeCap.round
-        ..color = GoColors.ink.withValues(alpha: .45),
+        ..color = color,
     );
   }
 

@@ -27,24 +27,25 @@ class GoSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final roles = GoRoles.of(context);
     final items = <Widget>[];
     for (var i = 0; i < labels.length; i++) {
       if (i > 0) items.add(const SizedBox(width: _gap));
-      items.add(Expanded(child: _item(i)));
+      items.add(Expanded(child: _item(roles, i)));
     }
     return Container(
       height: height,
       padding: const EdgeInsets.all(_inset),
       decoration: BoxDecoration(
-        color: GoColors.surface,
+        color: roles.surface,
         borderRadius: BorderRadius.circular(GoRadius.sm),
-        border: Border.all(color: GoColors.line, width: GoStroke.card),
+        border: Border.all(color: roles.line, width: GoStroke.card),
       ),
       child: Row(children: items),
     );
   }
 
-  Widget _item(int i) {
+  Widget _item(GoRoles roles, int i) {
     final active = i == index;
     return Semantics(
       selected: active,
@@ -58,8 +59,8 @@ class GoSegment extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: active
-                ? (pressed ? GoColors.inkPressed : GoColors.ink)
-                : (pressed ? GoColors.pressOverlay : Colors.transparent),
+                ? (pressed ? roles.dark.pressed : roles.dark.bg)
+                : (pressed ? roles.pressOverlay : Colors.transparent),
             borderRadius: BorderRadius.circular(_itemRadius),
           ),
           child: child,
@@ -70,7 +71,7 @@ class GoSegment extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: active ? GoColors.paper : GoColors.mid,
+              color: active ? roles.dark.fg : roles.textSecondary,
             ),
           child: Text(labels[i]),
         ),

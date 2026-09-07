@@ -190,8 +190,10 @@ class _FinishScreenState extends State<FinishScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final roles = GoRoles.of(context);
+    // 밝은 바탕 위 라임 원색은 금지 조합 — 완료 화면 바탕은 파인(actionComplete.bg)
     return Scaffold(
-      backgroundColor: GoColors.lime,
+      backgroundColor: roles.actionComplete.bg,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(28, 10, 28, 24),
@@ -200,30 +202,30 @@ class _FinishScreenState extends State<FinishScreen> {
             RepaintBoundary(
               key: _cardKey,
               child: Container(
-                color: GoColors.lime,
+                color: roles.actionComplete.bg,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Column(children: [
                   BrandMark.compact(),
                   const SizedBox(height: GoSpace.m),
                   Text('나 & ${widget.partnerName}\n$_title',
                       textAlign: TextAlign.center,
-                      style: GoText.title),
+                      style: GoText.title.copyWith(color: roles.textOnDark)),
                   const SizedBox(height: 20),
                   // 함께 합산 블록 (fin-together)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(GoSpace.card),
                     decoration: BoxDecoration(
-                      color: GoColors.surface,
+                      color: roles.surface,
                       borderRadius: BorderRadius.circular(GoRadius.md),
                       boxShadow: GoShadow.card,
                     ),
                     child: Column(children: [
-                      const Text('함께 달린 것',
+                      Text('함께 달린 것',
                           style: TextStyle(fontSize: 10,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.2,
-                              color: GoColors.mid)),
+                              color: roles.textSecondary)),
                       const SizedBox(height: GoSpace.m),
                       Row(children: [
                         _togetherStat(_fmt(widget.mySeconds), '내가 달린 시간'),
@@ -247,33 +249,33 @@ class _FinishScreenState extends State<FinishScreen> {
                           _waiting
                               ? '${widget.partnerName}의 기록이 도착하면 합쳐져요'
                               : '둘의 기록을 합친 값이에요',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 11,
-                              color: GoColors.mid)),
+                              color: roles.textSecondary)),
                     ]),
                   ),
                   const SizedBox(height: 8),
                   Text('goingon · 멀리 있어도, 함께',
-                      style: GoTheme.serif(12, color: GoColors.mid)),
+                      style: GoTheme.serif(12, color: roles.textOnDark)),
                 ]),
               ),
             ),
             const SizedBox(height: 14),
             // ── 개인 기록 (fin-ind-row) ──
-            const Align(
+            Align(
               alignment: Alignment.centerLeft,
               child: Text('개인 기록',
                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
                       letterSpacing: 1.2,
-                      color: GoColors.mid)),
+                      color: roles.textOnDark)),
             ),
             const SizedBox(height: 8),
             Row(children: [
-              _personalCard('나', widget.myKm, GoColors.limeDark,
+              _personalCard('나', widget.myKm, roles.self,
                   mood: widget.myMood),
               const SizedBox(width: 10),
               _personalCard(widget.partnerName,
-                  _waiting ? null : _partnerKm, GoColors.coralDark,
+                  _waiting ? null : _partnerKm, roles.partner,
                   mood: _waiting ? null : _partnerResult?['mood'] as String?),
             ]),
             if (_waiting) ...[
@@ -282,8 +284,8 @@ class _FinishScreenState extends State<FinishScreen> {
                   _longWait
                       ? "${widget.partnerName}의 기록이 도착하면 '우리' 탭에 합산될 거예요. 먼저 쉬고 있어요."
                       : '${widget.partnerName}는 아직 달리는 중이에요',
-                  style: const TextStyle(
-                      fontSize: 11, color: GoColors.mid)),
+                  style: TextStyle(
+                      fontSize: 11, color: roles.textOnDark)),
             ],
             const SizedBox(height: 18),
             // ── CTA ──
@@ -296,6 +298,7 @@ class _FinishScreenState extends State<FinishScreen> {
             GoButton('오늘의 순간 공유하기',
                 key: _shareButtonKey,
                 kind: GoButtonKind.text,
+                onDark: true, // 파인 바탕 위
                 size: GoButtonSize.md,
                 onTap: _shareCard),
           ]),
@@ -305,26 +308,28 @@ class _FinishScreenState extends State<FinishScreen> {
   }
 
   Widget _togetherStat(String v, String label) {
+    final roles = GoRoles.of(context);
     return Expanded(
       child: Column(children: [
-        Text(v, style: GoTheme.serif(26, color: GoColors.ink)),
+        Text(v, style: GoTheme.serif(26, color: roles.textPrimary)),
         const SizedBox(height: 2),
         Text(label,
-            style: const TextStyle(fontSize: 10, letterSpacing: .8,
-                color: GoColors.mid)),
+            style: TextStyle(fontSize: 10, letterSpacing: .8,
+                color: roles.textSecondary)),
       ]),
     );
   }
 
   Widget _tDivider() =>
-      Container(width: 1, height: 32, color: GoColors.lineStrong);
+      Container(width: 1, height: 32, color: GoRoles.of(context).lineStrong);
 
   Widget _personalCard(String who, double? km, Color color, {String? mood}) {
+    final roles = GoRoles.of(context);
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: GoColors.surface,
+          color: roles.surface,
           borderRadius: BorderRadius.circular(GoRadius.sm),
           boxShadow: GoShadow.card,
         ),
@@ -337,9 +342,9 @@ class _FinishScreenState extends State<FinishScreen> {
               style: km == null
                   ? GoText.secondary
                   : GoTheme.serif(22)),
-          const Text('개인 총 거리',
+          Text('개인 총 거리',
               style: TextStyle(
-                  fontSize: 10, color: GoColors.mid)),
+                  fontSize: 10, color: roles.textSecondary)),
           if (mood != null) ...[
             const SizedBox(height: 4),
             Text("'$mood'",

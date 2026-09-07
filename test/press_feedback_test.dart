@@ -19,7 +19,7 @@ void main() {
       home: Scaffold(body: Center(child: GoButton('달리기', onTap: () {}))),
     ));
     final before = animatedDecorationOf(tester).color;
-    expect(before, GoColors.ink);
+    expect(before, GoRoles.light.actionPrimary.bg);
 
     final gesture =
         await tester.startGesture(tester.getCenter(find.byType(GoButton)));
