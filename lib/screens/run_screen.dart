@@ -25,9 +25,9 @@ import '../services/sound/run_briefing.dart';
 import '../services/sound/soloud_sound_engine.dart';
 import '../services/sound_settings.dart';
 import '../theme.dart';
+import '../widgets/go_button.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
-import '../widgets/pressable.dart';
 import '../widgets/resonance_canvas.dart';
 import 'finish_screen.dart';
 
@@ -496,38 +496,24 @@ class _RunScreenState extends State<RunScreen>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('오늘 러닝, 어땠어요?', style: GoTheme.serif(20)),
+              const Text('오늘 러닝, 어땠어요?', style: GoText.heading),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: moods
-                    .map((m) => Pressable(
-                          onTap: () => Navigator.pop(ctx, m),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              border:
-                                  Border.all(color: GoColors.line, width: GoStroke.card),
-                            ),
-                            child: Text(m,
-                                style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: GoColors.ink)),
-                          ),
-                        ))
+                    .map((m) => GoButton(m,
+                        kind: GoButtonKind.secondary,
+                        size: GoButtonSize.md,
+                        onTap: () => Navigator.pop(ctx, m)))
                     .toList(),
               ),
               const SizedBox(height: GoSpace.m),
               Center(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(ctx, null),
-                  child: const Text('건너뛰기',
-                      style: TextStyle(color: GoColors.mid, fontSize: 13)),
-                ),
+                child: GoButton('건너뛰기',
+                    kind: GoButtonKind.text,
+                    size: GoButtonSize.md,
+                    onTap: () => Navigator.pop(ctx, null)),
               ),
             ]),
       ),
@@ -547,7 +533,7 @@ class _RunScreenState extends State<RunScreen>
           child: Padding(
             padding: const EdgeInsets.all(32),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Text('위치 권한이 필요해요', style: GoTheme.serif(24)),
+              const Text('위치 권한이 필요해요', style: GoText.heading),
               const SizedBox(height: 10),
               const Text('설정 > GoingOn > 위치에서 허용해 주세요.',
                   textAlign: TextAlign.center,
@@ -575,7 +561,7 @@ class _RunScreenState extends State<RunScreen>
   /// 캡션 라벨 — 이 화면에서 34px 미만이 허용되는 **유일한** 글자.
   /// 달리는 사람은 3초 이상 화면을 못 본다는 전제에서, 값은 크게 두고
   /// 값이 무엇인지 알려주는 꼬리표만 작게 남긴다
-  Widget _caption(String text, {Color color = GoColors.dim}) => Text(
+  Widget _caption(String text, {Color color = GoColors.mid}) => Text(
         text,
         textAlign: TextAlign.center,
         style: TextStyle(
@@ -628,7 +614,8 @@ class _RunScreenState extends State<RunScreen>
             duration: const Duration(milliseconds: 400),
             child: Text(_stateWord,
                 key: ValueKey(_stateWord),
-                style: GoTheme.serif(44, color: _stateColor)
+                style: TextStyle(
+                    fontSize: 44, fontWeight: FontWeight.w700, color: _stateColor)
                     .copyWith(height: 1.2)),
           ),
           // ── 겹치는 두 원 (탭·스와이프·길게 누르기로 신호) ──

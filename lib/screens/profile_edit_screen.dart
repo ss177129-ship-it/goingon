@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../services/auth_service.dart';
 import '../services/avatar_service.dart';
 import '../theme.dart';
+import '../widgets/go_button.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
 import '../widgets/initial_avatar.dart';
@@ -220,7 +221,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: GoColors.paper,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text(title, style: GoTheme.serif(20)),
+        title: Text(title, style: GoText.heading),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,15 +249,13 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('취소', style: TextStyle(color: GoColors.mid)),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: GoColors.ink),
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: Text('저장', style: GoTheme.serif(15, color: GoColors.lime)),
-          ),
+          GoButton('취소',
+              kind: GoButtonKind.text,
+              size: GoButtonSize.md,
+              onTap: () => Navigator.pop(ctx)),
+          GoButton('저장',
+              size: GoButtonSize.md,
+              onTap: () => Navigator.pop(ctx, controller.text.trim())),
         ],
       ),
     );
@@ -286,7 +285,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 ),
               ),
               const SizedBox(height: 2),
-              Text('프로필 편집', style: GoTheme.serif(28)),
+              const Text('프로필 편집', style: GoText.title),
             ]),
           ),
           const SizedBox(height: 22),
@@ -342,14 +341,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           ]),
         ),
         const SizedBox(height: 10),
-        TextButton(
-          onPressed: _uploading ? null : _tapPhoto,
-          child: Text(_photoUrl == null ? '사진첩에서 고르기' : '사진 바꾸기',
-              style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: GoColors.ink)),
-        ),
+        GoButton(_photoUrl == null ? '사진첩에서 고르기' : '사진 바꾸기',
+            kind: GoButtonKind.text,
+            size: GoButtonSize.md,
+            enabled: !_uploading,
+            onTap: _tapPhoto),
       ]),
     );
   }

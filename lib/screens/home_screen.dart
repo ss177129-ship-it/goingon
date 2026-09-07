@@ -9,6 +9,8 @@ import '../services/auth_service.dart';
 import '../services/friend_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
+import '../widgets/pressable.dart';
+import '../widgets/go_button.dart';
 import '../widgets/friend_search_sheet.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
@@ -191,36 +193,23 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 16),
           Text('$hostName님이\n같이 달리자고 해요',
-              textAlign: TextAlign.center, style: GoTheme.serif(26)),
+              textAlign: TextAlign.center, style: GoText.title),
           const SizedBox(height: GoSpace.section),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: GoColors.lime,
-                padding: const EdgeInsets.symmetric(vertical: 17),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-              ),
-              onPressed: () {
+          GoButton('수락하고 함께 달리기', onTap: () {
+            Navigator.pop(ctx);
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => LobbyScreen(
+                  sessionId: sessionId, partnerName: hostName),
+            ));
+          }),
+          const SizedBox(height: GoSpace.s),
+          GoButton('나중에',
+              kind: GoButtonKind.text,
+              size: GoButtonSize.md,
+              onTap: () {
                 Navigator.pop(ctx);
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => LobbyScreen(
-                      sessionId: sessionId, partnerName: hostName),
-                ));
-              },
-              child: Text('수락하고 함께 달리기',
-                  style: GoTheme.serif(19, color: GoColors.ink)),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _showDeclineOptions(sessionId);
-            },
-            child: const Text('나중에',
-                style: TextStyle(color: GoColors.mid, fontSize: 13)),
-          ),
+                _showDeclineOptions(sessionId);
+              }),
         ]),
       ),
     ).whenComplete(() {
@@ -243,30 +232,16 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('어떻게 전할까요?', style: GoTheme.serif(20)),
+              const Text('어떻게 전할까요?', style: GoText.heading),
               const SizedBox(height: 16),
               ...options.map((o) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: GoColors.line, width: GoStroke.card),
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14)),
-                        ),
-                        onPressed: () {
+                    padding: const EdgeInsets.only(bottom: GoSpace.s),
+                    child: GoButton(o,
+                        kind: GoButtonKind.secondary,
+                        onTap: () {
                           _runs.declineSession(sessionId, o);
                           Navigator.pop(ctx);
-                        },
-                        child: Text(o,
-                            style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: GoColors.ink)),
-                      ),
-                    ),
+                        }),
                   )),
             ]),
       ),
@@ -314,7 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const Spacer(),
             IconButton(
               onPressed: () => showFriendSearchSheet(context),
-              icon: const Icon(Icons.search, color: GoColors.dim),
+              icon: const Icon(Icons.search, color: GoColors.mid),
               tooltip: '페이스메이트 찾기',
             ),
           ]),
@@ -344,20 +319,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _demoLink() {
     return Center(
-      child: TextButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const LobbyScreen(
-                sessionId: 'demo', partnerName: '지수', demo: true),
-          ),
-        ),
-        child: const Text('혼자서 먼저 체험해보기 →',
-            style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: GoColors.limeDark)),
-      ),
+      child: GoButton('혼자서 먼저 체험해보기',
+          kind: GoButtonKind.text,
+          size: GoButtonSize.md,
+          icon: Icons.arrow_forward,
+          iconTrailing: true,
+          onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const LobbyScreen(
+                      sessionId: 'demo', partnerName: '지수', demo: true),
+                ),
+              )),
     );
   }
 
@@ -414,38 +387,18 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: GoSpace.m),
         Row(children: [
           Expanded(
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: GoColors.line, width: GoStroke.card),
-                padding: const EdgeInsets.symmetric(vertical: 11),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () => _respondToRequest(r, accept: false),
-              child: const Text('거절',
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: GoColors.mid)),
-            ),
+            child: GoButton('거절',
+                kind: GoButtonKind.secondary,
+                size: GoButtonSize.md,
+                onTap: () => _respondToRequest(r, accept: false)),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: GoSpace.s),
           Expanded(
             flex: 2,
-            child: FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: GoColors.lime,
-                padding: const EdgeInsets.symmetric(vertical: 11),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () => _respondToRequest(r, accept: true),
-              child: const Text('수락하고 연결',
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: GoColors.ink)),
-            ),
+            child: GoButton('수락하고 연결',
+                kind: GoButtonKind.go,
+                size: GoButtonSize.md,
+                onTap: () => _respondToRequest(r, accept: true)),
           ),
         ]),
       ]),
@@ -492,24 +445,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontSize: 12, height: 1.4, color: GoColors.ink.withValues(alpha: .7)),
           ),
         ),
-        TextButton(
-          onPressed: () {
-            setState(() {
-              _incomingRetries = 0;
-              _friendsRetries = 0;
-              _incomingBroken = false;
-              _friendsError = false;
-            });
-            _listenIncoming();
-            _listenFriends();
-            _load();
-          },
-          child: const Text('다시 시도',
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: GoColors.ink)),
-        ),
+        GoButton('다시 시도',
+            kind: GoButtonKind.text,
+            size: GoButtonSize.md,
+            onTap: () {
+              setState(() {
+                _incomingRetries = 0;
+                _friendsRetries = 0;
+                _incomingBroken = false;
+                _friendsError = false;
+              });
+              _listenIncoming();
+              _listenFriends();
+              _load();
+            }),
       ]),
     );
   }
@@ -541,7 +490,7 @@ class _HomeScreenState extends State<HomeScreen> {
           photoUrl: _me?['photoUrl'] as String?,
         ),
         const SizedBox(height: 8),
-        Text(myName, style: GoTheme.serif(22)),
+        Text(myName, style: GoText.heading),
         const SizedBox(height: 3),
         const Text('함께 달릴 준비 완료',
             style: TextStyle(fontSize: 12, color: GoColors.limeDark)),
@@ -617,16 +566,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(fontSize: 11, color: GoColors.mid)),
                 ]),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: GoColors.lime,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape:
-                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            ),
-            onPressed: () => _sendGo(uid, name),
-            child: Text('GO?', style: GoTheme.serif(18, color: GoColors.ink)),
-          ),
+          GoButton('GO?',
+              kind: GoButtonKind.go,
+              size: GoButtonSize.md,
+              serifLabel: true,
+              onTap: () => _sendGo(uid, name)),
         ]),
       ),
     );
@@ -646,7 +590,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(name, style: GoTheme.serif(20)),
+              Text(name, style: GoText.heading),
               const SizedBox(height: 16),
               _actionTile(
                 label: '연결 끊기',
@@ -677,15 +621,18 @@ class _HomeScreenState extends State<HomeScreen> {
     required VoidCallback onTap,
     bool destructive = false,
   }) {
-    return OutlinedButton(
-      style: OutlinedButton.styleFrom(
-        side: BorderSide(color: GoColors.line, width: GoStroke.card),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        alignment: Alignment.centerLeft,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-      onPressed: onTap,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    // 두 줄(라벨+설명) 타일이라 GoButton(한 줄 라벨)이 아니라 Pressable
+    return Pressable(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: GoSpace.l),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(GoRadius.sm),
+          border: Border.all(color: GoColors.line, width: GoStroke.card),
+        ),
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label,
             style: TextStyle(
                 fontSize: 14,
@@ -696,6 +643,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: const TextStyle(
                 fontSize: 11, height: 1.4, color: GoColors.mid)),
       ]),
+      ),
     );
   }
 
@@ -758,7 +706,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Column(children: [
         Text('아직 페이스메이트가 없어요',
-            style: GoTheme.serif(18, color: GoColors.mid)),
+            style: GoText.heading.copyWith(color: GoColors.mid)),
         const SizedBox(height: 6),
         const Text('한 명만 있으면 고잉온이 시작돼요.',
             style: TextStyle(fontSize: 12, color: GoColors.mid)),

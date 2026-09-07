@@ -7,6 +7,7 @@ import '../services/friend_service.dart';
 import '../services/push_service.dart';
 import '../services/sound_settings.dart';
 import '../theme.dart';
+import '../widgets/go_button.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/initial_avatar.dart';
 import '../widgets/go_toast.dart';
@@ -156,7 +157,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               controller: scrollController,
               padding: const EdgeInsets.fromLTRB(GoSpace.sheet, GoSpace.xl, GoSpace.sheet, GoSpace.sheetBottom),
               children: [
-                Text('차단 목록', style: GoTheme.serif(24)),
+                const Text('차단 목록', style: GoText.heading),
                 const SizedBox(height: 6),
                 const Text('차단한 사람은 나를 검색하거나 요청을 보낼 수 없어요.',
                     style: TextStyle(fontSize: 13, color: GoColors.mid)),
@@ -168,7 +169,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 28),
                     child: Center(
                       child: Text('차단한 사람이 없어요',
-                          style: GoTheme.serif(17, color: GoColors.mid)),
+                          style: GoText.heading.copyWith(color: GoColors.mid)),
                     ),
                   )
                 else
@@ -222,14 +223,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ]),
         ),
-        TextButton(
-          onPressed: () => _unblock(b['uid'] as String, name, friends),
-          child: const Text('차단 해제',
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: GoColors.ink)),
-        ),
+        GoButton('차단 해제',
+            kind: GoButtonKind.text,
+            size: GoButtonSize.md,
+            onTap: () => _unblock(b['uid'] as String, name, friends)),
       ]),
     );
   }
@@ -298,7 +295,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ListView(padding: EdgeInsets.zero, children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 14, 24, 6),
-        child: Text('설정', style: GoTheme.serif(28)),
+        child: const Text('설정', style: GoText.title),
       ),
       // 프로토타입 s-settings의 '프로필 편집' 한 줄. 사진·이름·아이디를
       // 한 화면에서 다루므로 여기서는 지금 상태만 요약해 보여줌

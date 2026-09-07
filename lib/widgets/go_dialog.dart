@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import 'go_button.dart';
 
 /// 앱 전역에서 쓰는 다이얼로그 뼈대 — paper 배경, radius 18, serif 타이틀.
 class GoDialog {
@@ -18,25 +19,23 @@ class GoDialog {
       builder: (ctx) => AlertDialog(
         backgroundColor: GoColors.paper,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text(title, style: GoTheme.serif(20)),
+        title: Text(title, style: GoText.heading),
         content: body == null
             ? null
             : Text(body,
                 style: const TextStyle(
                     fontSize: 13, color: GoColors.mid, height: 1.5)),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child:
-                Text(cancelLabel, style: const TextStyle(color: GoColors.mid)),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-                backgroundColor: destructive ? GoColors.coralDark : GoColors.ink),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(confirmLabel,
-                style: GoTheme.serif(15, color: GoColors.paper)),
-          ),
+          GoButton(cancelLabel,
+              kind: GoButtonKind.text,
+              size: GoButtonSize.md,
+              onTap: () => Navigator.pop(ctx, false)),
+          // destructive는 primary 대신 secondary + coralDark 글자
+          GoButton(confirmLabel,
+              kind: destructive ? GoButtonKind.secondary : GoButtonKind.primary,
+              size: GoButtonSize.md,
+              destructive: destructive,
+              onTap: () => Navigator.pop(ctx, true)),
         ],
       ),
     );
@@ -55,17 +54,13 @@ class GoDialog {
       builder: (ctx) => AlertDialog(
         backgroundColor: GoColors.paper,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text(title, style: GoTheme.serif(20)),
+        title: Text(title, style: GoText.heading),
         content: Text(body,
             style: const TextStyle(
                 fontSize: 15, color: GoColors.ink, height: 1.5)),
         actions: [
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: GoColors.ink),
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(actionLabel,
-                style: GoTheme.serif(15, color: GoColors.paper)),
-          ),
+          GoButton(actionLabel,
+              size: GoButtonSize.md, onTap: () => Navigator.pop(ctx)),
         ],
       ),
     );

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../theme.dart';
+import '../widgets/go_button.dart';
 import '../widgets/brand_mark.dart';
 import '../widgets/go_toast.dart';
 import 'root_screen.dart';
@@ -71,7 +72,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
               Text('goingon', style: GoTheme.serif(20, color: GoColors.mid)),
               const SizedBox(height: 18),
               Text('마지막으로,\n프로필을 만들어요',
-                  textAlign: TextAlign.center, style: GoTheme.serif(30)),
+                  textAlign: TextAlign.center, style: GoText.title),
               const SizedBox(height: 36),
               TextField(
                 controller: _nameController,
@@ -110,24 +111,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
               const Text('영문 소문자·숫자·_ 로 3~20자',
                   style: TextStyle(fontSize: 11, color: GoColors.mid)),
               const SizedBox(height: 36),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: GoColors.ink,
-                    padding: const EdgeInsets.symmetric(vertical: 17),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                  ),
-                  onPressed: _loading ? null : _confirm,
-                  child: _loading
-                      ? const SizedBox(
-                          width: 20, height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : Text('시작하기',
-                          style: GoTheme.serif(19, color: GoColors.paper)),
-                ),
-              ),
+              GoButton('시작하기', loading: _loading, onTap: _confirm),
               const SizedBox(height: GoSpace.section),
             ],
           ),

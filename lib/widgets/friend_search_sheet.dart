@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/friend_service.dart';
 import '../theme.dart';
+import 'go_button.dart';
 import 'initial_avatar.dart';
 import 'go_toast.dart';
 
@@ -151,7 +152,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('페이스메이트 찾기', style: GoTheme.serif(24)),
+            const Text('페이스메이트 찾기', style: GoText.heading),
             const SizedBox(height: 6),
             const Text('아이디로 찾아 요청을 보내면, 상대가 수락했을 때 연결돼요.',
                 style: TextStyle(fontSize: 13, color: GoColors.mid)),
@@ -222,23 +223,10 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
   Widget _actionButton(FriendCandidate? c) {
     final label = c == null ? '찾기' : _actionLabel(c.relation);
     final enabled = !_busy && (c == null || label != null);
-    return FilledButton(
-      style: FilledButton.styleFrom(
-        backgroundColor: GoColors.lime,
-        disabledBackgroundColor: GoColors.lime.withValues(alpha: .35),
-        padding: const EdgeInsets.symmetric(vertical: 15),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-      onPressed: enabled ? (c == null ? _search : _act) : null,
-      child: _busy
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child:
-                  CircularProgressIndicator(strokeWidth: 2, color: GoColors.ink))
-          : Text(label ?? _stateLabel(c!.relation),
-              style: GoTheme.serif(18, color: GoColors.ink)),
-    );
+    return GoButton(label ?? _stateLabel(c!.relation),
+        enabled: enabled,
+        loading: _busy,
+        onTap: c == null ? _search : _act);
   }
 
   /// 누를 수 있는 상태면 버튼 문구, 아니면 null(비활성)

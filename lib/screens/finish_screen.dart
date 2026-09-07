@@ -11,9 +11,9 @@ import 'package:share_plus/share_plus.dart';
 import '../services/auth_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
+import '../widgets/go_button.dart';
 import '../widgets/brand_mark.dart';
 import '../widgets/go_toast.dart';
-import '../widgets/pressable.dart';
 import 'root_screen.dart';
 
 /// 완료 화면 — 프로토타입 s-finish 충실 구현 (라임 배경)
@@ -207,7 +207,7 @@ class _FinishScreenState extends State<FinishScreen> {
                   const SizedBox(height: GoSpace.m),
                   Text('나 & ${widget.partnerName}\n$_title',
                       textAlign: TextAlign.center,
-                      style: GoTheme.serif(28, color: GoColors.ink)),
+                      style: GoText.title),
                   const SizedBox(height: 20),
                   // 함께 합산 블록 (fin-together)
                   Container(
@@ -287,36 +287,17 @@ class _FinishScreenState extends State<FinishScreen> {
             ],
             const SizedBox(height: 18),
             // ── CTA ──
-            Pressable(
-              onTap: () => Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const RootScreen()),
-                  (_) => false),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                decoration: BoxDecoration(
-                  color: GoColors.ink,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Center(
-                  child: Text('다음에 또 함께 달려요',
-                      style: GoTheme.serif(18, color: GoColors.lime)),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Pressable(
-              key: _shareButtonKey,
-              onTap: _shareCard,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                child: Text('오늘의 순간 공유하기',
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: GoColors.ink.withValues(alpha: .4))),
-              ),
-            ),
+            GoButton('다음에 또 함께 달려요',
+                onTap: () => Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const RootScreen()),
+                    (_) => false)),
+            const SizedBox(height: GoSpace.s),
+            GoButton('오늘의 순간 공유하기',
+                key: _shareButtonKey,
+                kind: GoButtonKind.text,
+                size: GoButtonSize.md,
+                onTap: _shareCard),
           ]),
         ),
       ),
@@ -353,7 +334,9 @@ class _FinishScreenState extends State<FinishScreen> {
                   letterSpacing: .8, color: color)),
           const SizedBox(height: 4),
           Text(km == null ? '달리는 중...' : '${km.toStringAsFixed(1)}km',
-              style: GoTheme.serif(km == null ? 14 : 22)),
+              style: km == null
+                  ? GoText.secondary
+                  : GoTheme.serif(22)),
           Text('개인 총 거리',
               style: TextStyle(
                   fontSize: 9, color: GoColors.ink.withValues(alpha: .4))),

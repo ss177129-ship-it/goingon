@@ -80,16 +80,25 @@ class GoSpace {
 /// 텍스트 스타일 7개. 화면에서 fontSize·color를 직접 적지 말고 여기서 고른다.
 ///
 /// - **12px 미만은 없다.** 필요하면 [label]을 쓴다.
-/// - 세리프(이탤릭)는 [title]·[heading]·"GO?"·숫자에만. Instrument Serif에는
-///   한글이 없어서 한글은 NotoSansKR로 넘어가는데, 그 위에 이탤릭이 걸리면
-///   억지로 기울어진다. 버튼 라벨·본문은 산세리프.
+/// - **세리프 이탤릭은 숫자·라틴 문자·"GO?"·워드마크 "goingon"에만.** 한글은
+///   전부 NotoSansKR. Instrument Serif에는 한글이 없어서 한글은 NotoSansKR로
+///   넘어가는데, 그 위에 이탤릭이 걸리면 억지로 기울어진다. 제목·버튼 라벨·
+///   본문은 산세리프. 숫자가 필요하면 [GoTheme.serif]를 직접 쓴다.
 /// - 색을 바꿔야 하면 `.copyWith(color: ...)`, 단 [GoColors]의 글자 허용 색만.
 class GoText {
-  /// 화면 제목
-  static final title = GoTheme.serif(28);
+  /// 화면 제목 (2026-09-07 산세리프로)
+  static const title = TextStyle(
+    fontSize: 28,
+    fontWeight: FontWeight.w700,
+    color: GoColors.ink,
+  );
 
-  /// 카드 제목·이름·큰 숫자
-  static final heading = GoTheme.serif(22);
+  /// 카드 제목·이름 (2026-09-07 산세리프로). 큰 숫자는 [GoTheme.serif]
+  static const heading = TextStyle(
+    fontSize: 22,
+    fontWeight: FontWeight.w700,
+    color: GoColors.ink,
+  );
 
   /// 본문
   static const body = TextStyle(
@@ -206,11 +215,8 @@ class GoTheme {
     );
   }
 
-  /// 세리프 타이틀 (프로토타입의 Instrument Serif italic).
-  ///
-  /// 기존 호출부(`GoTheme.serif(22)`, `serif(19, color: ...)`)는 그대로 동작한다.
-  /// [italic]을 false로 주면 기울임 없이 세리프만 쓴다 — 한글이 많은 제목에서
-  /// 억지 이탤릭이 거슬리면 이쪽. 스크린샷으로 확인한 뒤 기본값을 정할 것
+  /// 세리프 이탤릭 — **숫자·라틴 문자·"GO?"·워드마크 전용.** 한글 문자열에
+  /// 쓰지 말 것(2026-09-07 규칙). 한글 제목은 [GoText.title]/[GoText.heading].
   static TextStyle serif(
     double size, {
     Color color = GoColors.ink,

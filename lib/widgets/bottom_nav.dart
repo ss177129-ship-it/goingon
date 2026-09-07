@@ -31,17 +31,14 @@ class GoBottomNav extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => onChanged(i),
-        child: Opacity(
-          opacity: active ? 1 : .32,
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 24, color: GoColors.ink),
-            const SizedBox(height: 4),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 10, fontWeight: FontWeight.w600,
-                    color: active ? GoColors.limeDark : GoColors.ink)),
-          ]),
-        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 24, color: active ? GoColors.ink : GoColors.mid),
+          const SizedBox(height: 4),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w600,
+                  color: active ? GoColors.limeDark : GoColors.mid)),
+        ]),
       ),
     );
   }

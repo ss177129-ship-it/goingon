@@ -3,8 +3,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../services/app_version_gate.dart';
 import '../theme.dart';
+import '../widgets/go_button.dart';
 import '../widgets/brand_mark.dart';
-import '../widgets/pressable.dart';
 
 /// 업데이트해야만 지나갈 수 있는 벽.
 ///
@@ -77,7 +77,7 @@ class _UpdateRequiredScreenState extends State<UpdateRequiredScreen> {
                 BrandMark.compact(),
                 const SizedBox(height: 28),
                 Text('업데이트가 필요해요',
-                    textAlign: TextAlign.center, style: GoTheme.serif(30)),
+                    textAlign: TextAlign.center, style: GoText.title),
                 const SizedBox(height: GoSpace.m),
                 const Text(
                   '지금 버전으로는 함께 달릴 수 없어요.\n최신 버전으로 업데이트하면 이어서 쓸 수 있어요.',
@@ -92,37 +92,13 @@ class _UpdateRequiredScreenState extends State<UpdateRequiredScreen> {
                           fontSize: 12, color: GoColors.coralDark)),
                 ],
                 const SizedBox(height: 32),
-                Pressable(
-                  onTap: _openTestFlight,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 17),
-                    decoration: BoxDecoration(
-                      color: GoColors.ink,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Center(
-                      child: Text('업데이트하러 가기',
-                          style: GoTheme.serif(19, color: GoColors.lime)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Pressable(
-                  onTap: _checking ? null : _recheck,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: _checking
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: GoColors.mid))
-                        : const Text('업데이트했어요 · 다시 확인',
-                            style:
-                                TextStyle(fontSize: 13, color: GoColors.mid)),
-                  ),
-                ),
+                GoButton('업데이트하러 가기', onTap: _openTestFlight),
+                const SizedBox(height: GoSpace.s),
+                GoButton('업데이트했어요 · 다시 확인',
+                    kind: GoButtonKind.text,
+                    size: GoButtonSize.md,
+                    loading: _checking,
+                    onTap: _recheck),
               ],
             ),
           ),

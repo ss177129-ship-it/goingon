@@ -64,7 +64,12 @@ class InitialAvatar extends StatelessWidget {
     return Center(
       child: showEmptyIcon
           ? Icon(emptyIcon, size: size * .43, color: borderColor)
-          : Text(letter, style: GoTheme.serif(fontSize)),
+          // 이니셜은 한글이 대부분이라 산세리프 (세리프 이탤릭은 숫자·라틴 전용)
+          : Text(letter,
+              style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w700,
+                  color: GoColors.ink)),
     );
   }
 }

@@ -5,6 +5,7 @@ import '../services/friend_service.dart';
 import '../services/run_service.dart';
 import '../services/story_labels.dart';
 import '../theme.dart';
+import '../widgets/go_button.dart';
 import '../widgets/friend_search_sheet.dart';
 import '../widgets/initial_avatar.dart';
 
@@ -126,33 +127,20 @@ class _UsScreenState extends State<UsScreen> {
                   shape: BoxShape.circle,
                   color: Colors.white,
                   border: Border.all(
-                      color: GoColors.mid.withValues(alpha: .4), width: 2),
+                      color: GoColors.line, width: GoStroke.accent),
                 ),
                 child: const Icon(Icons.wifi_off_rounded,
                     size: 28, color: GoColors.mid),
               ),
               const SizedBox(height: 18),
               Text('불러오지 못했어요',
-                  textAlign: TextAlign.center, style: GoTheme.serif(22)),
+                  textAlign: TextAlign.center, style: GoText.heading),
               const SizedBox(height: 8),
               const Text('네트워크 상태를 확인하고 다시 시도해 주세요.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 13, color: GoColors.mid)),
               const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: GoColors.line, width: GoStroke.card),
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                  ),
-                  onPressed: onRetry,
-                  child: Text('다시 시도',
-                      style: GoTheme.serif(18, color: GoColors.ink)),
-                ),
-              ),
+              GoButton('다시 시도', kind: GoButtonKind.secondary, onTap: onRetry),
             ]),
           ),
         ),
@@ -181,33 +169,21 @@ class _UsScreenState extends State<UsScreen> {
                   shape: BoxShape.circle,
                   color: Colors.white,
                   border: Border.all(
-                      color: GoColors.coralDark.withValues(alpha: .4), width: 2),
+                      color: GoColors.coralDark, width: GoStroke.accent),
                 ),
                 child: const Icon(Icons.people_alt_outlined,
                     size: 30, color: GoColors.coralDark),
               ),
               const SizedBox(height: 18),
               Text('아직 함께 뛰는 사람이 없어요',
-                  textAlign: TextAlign.center, style: GoTheme.serif(22)),
+                  textAlign: TextAlign.center, style: GoText.heading),
               const SizedBox(height: 8),
               const Text('아이디로 페이스메이트를 찾으면, 둘만의 여정이 시작돼요.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 13, color: GoColors.mid)),
               const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: GoColors.ink,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                  ),
-                  onPressed: () => showFriendSearchSheet(context),
-                  child: Text('페이스메이트 찾기',
-                      style: GoTheme.serif(18, color: GoColors.paper)),
-                ),
-              ),
+              GoButton('페이스메이트 찾기',
+                  onTap: () => showFriendSearchSheet(context)),
             ]),
           ),
         ),
@@ -236,33 +212,20 @@ class _UsScreenState extends State<UsScreen> {
                   shape: BoxShape.circle,
                   color: Colors.white,
                   border: Border.all(
-                      color: GoColors.limeDark.withValues(alpha: .4), width: 2),
+                      color: GoColors.limeDark, width: GoStroke.accent),
                 ),
                 child: const Icon(Icons.directions_run,
                     size: 30, color: GoColors.limeDark),
               ),
               const SizedBox(height: 18),
               Text('${partner['name']}님과\n아직 함께 달리지 않았어요',
-                  textAlign: TextAlign.center, style: GoTheme.serif(22)),
+                  textAlign: TextAlign.center, style: GoText.heading),
               const SizedBox(height: 8),
               const Text('한 번만 같이 뛰면, 여기에 우리 기록이 쌓여요.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 13, color: GoColors.mid)),
               const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: GoColors.lime,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('GO? 보내러 홈으로',
-                      style: GoTheme.serif(18, color: GoColors.ink)),
-                ),
-              ),
+              GoButton('GO? 보내러 홈으로', onTap: () => Navigator.pop(context)),
             ]),
           ),
         ),
@@ -341,7 +304,7 @@ class _UsScreenState extends State<UsScreen> {
       ),
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 2, 24, 0),
-        child: Text('나 & $partnerName', style: GoTheme.serif(28)),
+        child: Text('나 & $partnerName', style: GoText.title),
       ),
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
@@ -400,13 +363,15 @@ class _UsScreenState extends State<UsScreen> {
                     fontSize: 11, color: GoColors.paper.withValues(alpha: .5))),
           ),
           const SizedBox(height: 14),
+          // 한글은 산세리프, 숫자만 세리프 이탤릭
           Text.rich(TextSpan(children: [
             const TextSpan(text: '함께 달린 '),
             TextSpan(
                 text: '${totalKm.toStringAsFixed(1)}km',
-                style: const TextStyle(color: GoColors.lime)),
+                style: GoTheme.serif(26, color: GoColors.lime)),
             const TextSpan(text: '를\n만들었어요.'),
-          ]), style: GoTheme.serif(23, color: GoColors.paper)),
+          ]), style: const TextStyle(
+              fontSize: 23, fontWeight: FontWeight.w700, color: GoColors.paper)),
         ]),
       ),
       // ── 스트릭 ──
@@ -480,20 +445,7 @@ class _UsScreenState extends State<UsScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: GoColors.lime,
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                ),
-                onPressed: () => Navigator.pop(context),
-                child: Text('GO? 보내러 홈으로',
-                    style: GoTheme.serif(17, color: GoColors.ink)),
-              ),
-            ),
+            GoButton('GO? 보내러 홈으로', onTap: () => Navigator.pop(context)),
           ],
         ]),
       ),

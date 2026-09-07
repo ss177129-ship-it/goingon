@@ -4,6 +4,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../services/auth_service.dart';
 import '../theme.dart';
+import '../widgets/go_button.dart';
 import '../widgets/brand_mark.dart';
 import '../widgets/go_toast.dart';
 import 'nickname_screen.dart';
@@ -88,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text('goingon', style: GoTheme.serif(20, color: GoColors.mid)),
                     const SizedBox(height: 18),
                     Text('멀리 있어도,\n함께 달려요',
-                        textAlign: TextAlign.center, style: GoTheme.serif(30)),
+                        textAlign: TextAlign.center, style: GoText.title),
                     const SizedBox(height: 8),
                     const Text('소중한 사람과 발을 맞추는 곳',
                         style: TextStyle(fontSize: 13, color: GoColors.mid)),
@@ -106,28 +107,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: GoSpace.m),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    side: const BorderSide(color: GoColors.line, width: GoStroke.card),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                  ),
-                  onPressed: _loading ? null : _continueWithGoogle,
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    const Text('G',
-                        style: TextStyle(fontWeight: FontWeight.w700,
-                            fontSize: 16, color: Color(0xFF4285F4))),
-                    const SizedBox(width: 9),
-                    Text('Google로 계속하기',
-                        style: TextStyle(fontSize: 15,
-                            fontWeight: FontWeight.w600, color: GoColors.ink)),
-                  ]),
-                ),
-              ),
+              GoButton('Google로 계속하기',
+                  kind: GoButtonKind.secondary,
+                  enabled: !_loading,
+                  onTap: _continueWithGoogle),
               // **이용약관·개인정보처리방침 고지를 뺐다**(2026-09-01).
               //
               // 예전에는 "계속하면 이용약관과 개인정보처리방침에 동의하는

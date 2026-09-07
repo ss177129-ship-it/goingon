@@ -8,6 +8,7 @@ import '../services/active_run_guard.dart';
 import '../services/auth_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
+import '../widgets/go_button.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
 import '../widgets/pressable.dart';
@@ -303,7 +304,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                       _meReady && _partnerReady
                           ? '출발 준비 완료'
                           : '함께 달릴 준비',
-                      style: GoTheme.serif(26)),
+                      style: GoText.title),
                 ]),
           ),
           // ── 러너 행 ──
@@ -405,19 +406,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(GoRadius.sm),
-                            border: Border.all(color: GoColors.line, width: GoStroke.card),
-                          ),
-                          child: Text(_meReady ? '취소' : '다음 →',
-                              style: const TextStyle(fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: GoColors.ink)),
-                        ),
+                        // 칩 대신 화살표만 — 카드 자체가 눌린다(2026-09-07)
+                        Icon(_meReady ? Icons.close : Icons.arrow_forward,
+                            size: 20, color: GoColors.ink),
                       ],
                     ),
                   ],
@@ -429,8 +420,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
           if (!_meReady) ...[
             const SizedBox(height: 10),
             Center(
-              child: TextButton(
-                onPressed: () async {
+              child: GoButton(_isLate ? '늦음 취소' : '조금 늦을 것 같아요',
+                kind: GoButtonKind.text,
+                size: GoButtonSize.md,
+                onTap: () async {
                   final next = !_isLate;
                   setState(() => _isLate = next);
                   if (widget.demo) return;
@@ -443,11 +436,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
                     GoToast.error(context, '상태를 전달하지 못했어요. 다시 시도해 주세요.');
                   }
                 },
-                child: Text(_isLate ? '늦음 취소' : '조금 늦을 것 같아요',
-                    style: TextStyle(fontSize: 11,
-                        fontWeight:
-                            _isLate ? FontWeight.w600 : FontWeight.normal,
-                        color: _isLate ? GoColors.amber : GoColors.dim)),
               ),
             ),
           ],
@@ -460,7 +448,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.touch_app_outlined,
-                      size: 14, color: GoColors.dim),
+                      size: 14, color: GoColors.mid),
                   SizedBox(width: 6),
                   Flexible(
                     child: Text('달리는 중엔 화면을 탭·스와이프·길게 눌러 신호를 보낼 수 있어요',
@@ -486,20 +474,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   Widget _actionButton() {
     if (!_meReady) {
-      return Pressable(
-        onTap: _jumpToReady,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          decoration: BoxDecoration(
-            color: GoColors.ink,
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Center(
-            child:
-                Text('준비완료 →', style: GoTheme.serif(20, color: GoColors.paper)),
-          ),
-        ),
-      );
+      return GoButton('준비완료',
+          icon: Icons.arrow_forward, iconTrailing: true, onTap: _jumpToReady);
     }
     // 나는 준비됨 → 파트너 대기
     return Container(
@@ -519,7 +495,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
             _partnerJoined
                 ? '${widget.partnerName} 준비 중'
                 : '${widget.partnerName} 기다리는 중',
-            style: GoTheme.serif(20, color: GoColors.mid)),
+            style: GoText.heading.copyWith(color: GoColors.mid)),
       ]),
     );
   }
@@ -541,33 +517,17 @@ class _LobbyScreenState extends State<LobbyScreen> {
         const SizedBox(height: 10),
         Row(children: [
           Expanded(
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: GoColors.line, width: GoStroke.card),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape:
-                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: _notifyPartner,
-              child: const Text('카카오톡으로 알리기',
-                  style: TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w600, color: GoColors.ink)),
-            ),
+            child: GoButton('카카오톡으로 알리기',
+                kind: GoButtonKind.secondary,
+                size: GoButtonSize.md,
+                onTap: _notifyPartner),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: GoSpace.s),
           Expanded(
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: GoColors.line, width: GoStroke.card),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape:
-                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () => Navigator.pop(context),
-              child: const Text('다음에 다시',
-                  style: TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w600, color: GoColors.mid)),
-            ),
+            child: GoButton('다음에 다시',
+                kind: GoButtonKind.text,
+                size: GoButtonSize.md,
+                onTap: () => Navigator.pop(context)),
           ),
         ]),
       ]),
@@ -588,7 +548,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
           color: Colors.white,
           border: Border.all(color: ready ? line : GoColors.line, width: GoStroke.accent),
         ),
-        child: Center(child: Text(name[0], style: GoTheme.serif(24))),
+        child: Center(
+            child: Text(name[0],
+                style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: GoColors.ink))),
       ),
       const SizedBox(height: 7),
       Text(name,
