@@ -121,7 +121,7 @@ Flutter + Firebase(Apple 로그인, Firestore, Storage, Cloud Messaging) + Cloud
 1. `flutter analyze` — 에러 0, 새로 추가된 워닝 0
 2. `flutter test` — 전부 통과 (테스트를 통과시키려고 테스트를 약화·삭제하는 것 금지)
 3. 빌드가 실제로 됨 — 시뮬레이터에서 앱이 크래시 없이 해당 화면까지 도달
-4. 화면 작업이면: `xcrun simctl io booted screenshot /tmp/check.png`로 스크린샷을 찍어 **직접 보고** 무엇이 의도대로고 무엇이 다른지 명시할 것 ("확인했음" 한 줄 금지)
+4. 화면 작업이면: 시뮬레이터에서 **그 화면까지 직접 들어가** `xcrun simctl io booted screenshot /tmp/check.png`로 찍고 무엇이 의도대로고 무엇이 다른지 명시할 것 ("확인했음" 한 줄 금지). 탭·버튼은 접근성 클릭으로 누른다(TODO §5.1) — "탭을 못 해서 못 봤다"는 이유는 없다
 5. **보안 규칙을 만졌으면** `cd test_rules && npm test` — 에뮬레이터 회귀 21개. 규칙은 틀려도 조용해서(느슨하면 아무도 모르고, 빡빡하면 목록이 그냥 빈다) 눈으로는 못 잡는다
 6. 실패하면: 원인 분석 → 수정 → 1번부터 다시. 우회 금지
 

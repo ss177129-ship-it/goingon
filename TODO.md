@@ -47,9 +47,9 @@
 
 ---
 
-## 2. 사람 손이 필요한 검증
+## 2. 아직 안 끝난 검증
 
-시뮬레이터 자동 조작이 불가능하고(§5.1) 계정이 둘 필요한 것들이라, **코드로는 여기까지가 끝**이다.
+시뮬레이터 화면은 접근성 클릭(§5.1)으로 직접 눌러 확인한다. 아래는 그걸로도 안 되는 것들 — 실기기·계정 2개·시스템 UI가 필요하다.
 
 ### 2.1 푸시 알림 — 마지막 한 걸음
 Blaze·APNs 키·Functions 배포·서명 검증·TestFlight 업로드는 전부 끝났다.
@@ -62,7 +62,7 @@ Blaze·APNs 키·Functions 배포·서명 검증·TestFlight 업로드는 전부
 - [ ] 실제 발송: `... push-check.js send <uid>` → **앱을 완전히 종료한 상태**에서 잠금화면에 뜨는지
 - [ ] 실제 트리거도 확인 (`firebase functions:log --project goingon-c12f3`)
 
-### 2.2 프로필 사진 (업로드 경로는 검증됨, 손으로 눌러야 하는 것만 남음)
+### 2.2 프로필 사진 (업로드 경로는 검증됨, 사진첩 picker는 시스템 UI라 접근성 클릭 밖)
 - [ ] 설정 → 프로필 편집 → 사진첩에서 한 장 골라 아바타가 바뀌는지
 - [ ] 그 사진이 홈(내 카드)·우리 탭 짝 아바타에도 반영되는지
 - [ ] '사진 지우기' 후 이름 첫 글자 아바타로 돌아오는지
@@ -120,30 +120,25 @@ Blaze·APNs 키·Functions 배포·서명 검증·TestFlight 업로드는 전부
 
 ## 5. 알려진 한계 — 다시 부딪히지 말 것
 
-### 5.1 시뮬레이터 탭 — 접근성 API로는 된다 (2026-09-07 재검증)
-2026-08-15 기록("합성 입력 일절 불가")은 **절반만 맞았다.** CGEvent 계열(`cliclick`, 좌표 클릭)은
-여전히 시뮬레이터가 버린다 — 커서는 옮겨지고 최전면 앱도 안 바뀐다. 그러나 **접근성 API 경유는 통한다**:
+### 5.1 시뮬레이터 화면은 접근성 클릭으로 검증한다
+탭·버튼·행 전부 코드로 누를 수 있다. "탭을 못 해서 못 봤다"는 이유는 성립하지 않는다.
 
 ```bash
-osascript -e 'tell application "System Events" to click at {X, Y}'   # 화면 좌표(pt)
+# 1) 창 위치
+osascript -e 'tell application "System Events" to tell process "Simulator" to get {position, size} of window 1'
+# 2) 창 캡처(2x)로 대상 픽셀 찾기 → 화면 좌표 = 창 원점 + 픽셀/2
+screencapture -x -R X,Y,W,H /tmp/win.png
+# 3) 누르기 (자체 타임아웃 — osascript가 가끔 안 끝난다)
+( osascript -e 'tell application "System Events" to click at {X, Y}' & pid=$!; sleep 8; kill $pid 2>/dev/null )
+# 4) 결과
+xcrun simctl io booted screenshot /tmp/check.png
 ```
 
-시뮬레이터가 iOS 앱의 접근성 트리를 macOS에 노출하고(Flutter 시맨틱스 포함), `click at`은 그 요소를
-직접 누른다. 반환값이 `static text 3 of group … of window "iPhone 16e" of application process Simulator`처럼
-나오면 눌린 것이다. 탭 전환·버튼·행 모두 이 경로로 된다.
-
-**좌표 잡는 법**: `osascript -e 'tell application "System Events" to tell process "Simulator" to get {position, size} of window 1'`로
-창 위치를 얻고 `screencapture -x -R x,y,w,h`로 창을 찍어(2x) 대상 픽셀/2 + 창 원점.
-`osascript`는 가끔 안 끝나므로 `( osascript … & pid=$!; sleep 8; kill $pid )`처럼 자체 타임아웃을 건다.
-
-**왜 8-15에 실패했나**: 손쉬운 사용 권한은 **프로세스 시작 시점에 판정돼 캐시**된다. 그날은 권한을 준 뒤
-터미널을 재시작하지 않았을 가능성이 크다. `tell application "Simulator" to activate`는 Automation 권한
-프롬프트를 띄우며 멈추므로 쓰지 말 것 — System Events만으로 충분하다.
-
-여전히 안 되는 것: 사진 picker 같은 Flutter 밖 시스템 UI는 별개, `idb`는 macOS 26 미지원.
-
-**우회법(여전히 유효)**: `lib/main_*_probe.dart` 임시 진입점으로 특정 경로만 실행. 확인 후 반드시 지울 것.
-**순서 주의**: 설치 → `simctl privacy grant location-always` → 실행.
+- `cliclick`·CGEvent 좌표 클릭은 시뮬레이터가 버린다 — 쓰지 말 것. 접근성 API(System Events)만 통한다
+- `tell application "Simulator" to activate`는 Automation 권한 프롬프트에 걸려 멈춘다 — 필요 없다
+- 손쉬운 사용 권한은 프로세스 시작 시점에 캐시된다. 안 먹으면 터미널을 재시작
+- 사진 picker 같은 **Flutter 밖 시스템 UI**는 이 경로로 못 누른다. `idb`는 macOS 26 미지원
+- 특정 경로만 빨리 띄우려면 `lib/main_*_probe.dart` 임시 진입점(확인 후 삭제). 설치 → `simctl privacy grant location-always` → 실행 순서
 
 ### 5.2 시뮬레이터로 못 보는 것
 - **`horizontalAccuracy`를 조종할 수 없다** — simctl이 노출하지 않는다. 정확도 필터는 단위 테스트 담당
