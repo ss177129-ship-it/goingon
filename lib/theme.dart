@@ -70,6 +70,10 @@ class GoSpace {
   static const xxl = 32.0;
   static const screen = 24.0;
   static const sheet = 28.0;
+  static const card = 16.0;    // 카드 안쪽 패딩
+  static const hero = 20.0;    // 히어로 카드 안쪽 패딩
+  static const section = 24.0; // 섹션 사이
+  static const gutter = 12.0;  // 한 줄에 카드 여럿일 때 사이
 }
 
 /// 텍스트 스타일 7개. 화면에서 fontSize·color를 직접 적지 말고 여기서 고른다.
