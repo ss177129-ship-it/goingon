@@ -112,9 +112,7 @@ class _UsScreenState extends State<UsScreen> {
         padding: const EdgeInsets.fromLTRB(24, 14, 24, 6),
         child: Align(
           alignment: Alignment.centerLeft,
-          child: Text('우리의 여정',
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                  letterSpacing: 1.4, color: GoColors.mid)),
+          child: Text('우리의 여정', style: GoText.label),
         ),
       ),
       Expanded(
@@ -169,9 +167,7 @@ class _UsScreenState extends State<UsScreen> {
         padding: const EdgeInsets.fromLTRB(24, 14, 24, 6),
         child: Align(
           alignment: Alignment.centerLeft,
-          child: Text('우리의 여정',
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                  letterSpacing: 1.4, color: GoColors.mid)),
+          child: Text('우리의 여정', style: GoText.label),
         ),
       ),
       Expanded(
@@ -226,9 +222,7 @@ class _UsScreenState extends State<UsScreen> {
         padding: const EdgeInsets.fromLTRB(24, 14, 24, 6),
         child: Align(
           alignment: Alignment.centerLeft,
-          child: Text('우리의 여정',
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                  letterSpacing: 1.4, color: GoColors.mid)),
+          child: Text('우리의 여정', style: GoText.label),
         ),
       ),
       Expanded(
@@ -343,9 +337,7 @@ class _UsScreenState extends State<UsScreen> {
       // ── 헤더 ──
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
-        child: Text('우리의 여정',
-            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                letterSpacing: 1.4, color: GoColors.mid)),
+        child: Text('우리의 여정', style: GoText.label),
       ),
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 2, 24, 0),
@@ -378,9 +370,7 @@ class _UsScreenState extends State<UsScreen> {
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('멀리 있어도, 함께',
-              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600,
-                  letterSpacing: 1.26,
-                  color: GoColors.paper.withValues(alpha: .4))),
+              style: GoText.label.copyWith(color: GoColors.paper)),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 14),
             child: Row(children: [
@@ -522,9 +512,7 @@ class _UsScreenState extends State<UsScreen> {
       if (achieved.isNotEmpty || nextThreshold != -1) ...[
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
-          child: Text('우리가 함께 넘은 것',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                  letterSpacing: 1.1, color: GoColors.mid)),
+          child: Text('우리가 함께 넘은 것', style: GoText.label),
         ),
         if (achieved.isNotEmpty)
           _milestoneCard(
@@ -548,9 +536,7 @@ class _UsScreenState extends State<UsScreen> {
       // ── 함께한 순간 ──
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
-        child: Text('함께한 순간',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                letterSpacing: 1.1, color: GoColors.mid)),
+        child: Text('함께한 순간', style: GoText.label),
       ),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -604,9 +590,7 @@ class _UsScreenState extends State<UsScreen> {
         child: Column(children: [
           Text(value, style: GoTheme.serif(22)),
           const SizedBox(height: 3),
-          Text(label,
-              style: const TextStyle(fontSize: 9, letterSpacing: .5,
-                  color: GoColors.mid)),
+          Text(label, style: GoText.label),
         ]),
       ),
     );

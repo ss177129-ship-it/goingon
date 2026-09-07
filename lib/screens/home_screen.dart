@@ -328,12 +328,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // ── 같이 뛰는 사람들 ──
         const Padding(
           padding: EdgeInsets.fromLTRB(22, 18, 22, 8),
-          child: Text('페이스메이트',
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                  color: GoColors.mid)),
+          child: Text('페이스메이트', style: GoText.label),
         ),
         if (friends.isEmpty)
           _noFriendsYet()
@@ -372,12 +367,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return [
       const Padding(
         padding: EdgeInsets.fromLTRB(22, 14, 22, 8),
-        child: Text('나에게 온 요청',
-            style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.2,
-                color: GoColors.mid)),
+        child: Text('나에게 온 요청', style: GoText.label),
       ),
       ..._requests.map(_requestRow),
     ];
@@ -581,9 +571,7 @@ class _HomeScreenState extends State<HomeScreen> {
               style: const TextStyle(fontSize: 11, color: GoColors.mid)),
         ])),
         const SizedBox(height: 2),
-        Text(label,
-            style: const TextStyle(fontSize: 9, letterSpacing: .54,
-                color: GoColors.mid)),
+        Text(label, style: GoText.label),
       ]),
     );
   }

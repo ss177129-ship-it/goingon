@@ -242,9 +242,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
         backgroundColor: GoColors.canvas,
         body: Center(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Text('함께 달리기 시작',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                    letterSpacing: 1.4, color: GoColors.mid)),
+            const Text('함께 달리기 시작', style: GoText.label),
             const SizedBox(height: 10),
             Text('$_countdown', style: GoTheme.serif(128)),
             const SizedBox(height: 10),
@@ -389,10 +387,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                 _isLate
                                     ? '늦는 중'
                                     : '단계 ${_step + 1} / ${_steps.length}',
-                                style: const TextStyle(fontSize: 9,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 1,
-                                    color: GoColors.mid)),
+                                style: GoText.label),
                             const SizedBox(height: 3),
                             Text(_isLate ? '조금 늦어요' : step.text,
                                 style: TextStyle(fontSize: 16,
