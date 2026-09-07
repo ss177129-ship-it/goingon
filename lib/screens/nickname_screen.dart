@@ -110,7 +110,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
               ),
               const SizedBox(height: 8),
               Text('영문 소문자·숫자·_ 로 3~20자',
-                  style: TextStyle(fontSize: 11, color: roles.textSecondary)),
+                  style: TextStyle(fontSize: 12, color: roles.textSecondary)),
               const SizedBox(height: 36),
               GoButton('시작하기', loading: _loading, onTap: _confirm),
               const SizedBox(height: GoSpace.section),

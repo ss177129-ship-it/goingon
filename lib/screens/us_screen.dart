@@ -391,7 +391,7 @@ class _UsScreenState extends State<UsScreen> {
           Center(
             child: Text('$partnerName님과 함께',
                 style: TextStyle(
-                    fontSize: 11, color: roles.textOnDark.withValues(alpha: .5))),
+                    fontSize: 12, color: roles.textOnDark.withValues(alpha: .5))),
           ),
           const SizedBox(height: 14),
           // 한글은 산세리프, 숫자만 세리프 이탤릭
@@ -446,9 +446,16 @@ class _UsScreenState extends State<UsScreen> {
                       : null,
                   boxShadow: GoShadow.card,
                 ),
-                child: Text(_kWeekdayLabels[i],
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                        color: done ? roles.statusOnline.fg : roles.textSecondary)),
+                // 완료는 색만이 아니라 체크로도 말한다
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  if (done) ...[
+                    Icon(Icons.check, size: 12, color: roles.statusOnline.fg),
+                    const SizedBox(width: 2),
+                  ],
+                  Text(_kWeekdayLabels[i],
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                          color: done ? roles.statusOnline.fg : roles.textSecondary)),
+                ]),
               ),
             );
           })),
@@ -469,7 +476,7 @@ class _UsScreenState extends State<UsScreen> {
                             horizontal: 12, vertical: 10),
                         child: Text(
                             '이번 주는 아직 함께 달리지 않았어요. 지금 GO?를 보내볼까요?',
-                            style: TextStyle(fontSize: 11, color: roles.statusOnline.fg,
+                            style: TextStyle(fontSize: 12, color: roles.statusOnline.fg,
                                 height: 1.5)),
                       ),
                     ),
@@ -541,7 +548,7 @@ class _UsScreenState extends State<UsScreen> {
         child: Text('우리 둘이 함께 쌓아온 기록이에요.\n여기, 우리 사이에만 있어요.',
             textAlign: TextAlign.center,
             style: TextStyle(
-                fontSize: 11, color: roles.partner, height: 1.6)),
+                fontSize: 12, color: roles.partner, height: 1.6)),
       ),
     ]);
   }
@@ -608,7 +615,7 @@ class _UsScreenState extends State<UsScreen> {
                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 1),
             Text(subtitle,
-                style: TextStyle(fontSize: 11, color: roles.textSecondary)),
+                style: TextStyle(fontSize: 12, color: roles.textSecondary)),
           ]),
         ),
       ]),
@@ -643,7 +650,7 @@ class _UsScreenState extends State<UsScreen> {
             Text(day, style: GoTheme.serif(19)),
             const SizedBox(height: 2),
             Text(month,
-                style: TextStyle(fontSize: 9, color: roles.textSecondary)),
+                style: TextStyle(fontSize: 12, color: roles.textSecondary)),
           ]),
         ),
         const SizedBox(width: 14),
@@ -659,7 +666,7 @@ class _UsScreenState extends State<UsScreen> {
                   borderRadius: BorderRadius.circular(GoRadius.sm),
                 ),
                 child: Text(storyLabel,
-                    style: TextStyle(fontSize: 9,
+                    style: TextStyle(fontSize: 12,
                         fontWeight: FontWeight.w600, color: roles.statusOnline.fg)),
               ),
             ],
@@ -668,11 +675,11 @@ class _UsScreenState extends State<UsScreen> {
                     fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 3),
             Text('${km.toStringAsFixed(1)}km · $timeOfDay',
-                style: TextStyle(fontSize: 11, color: roles.textSecondary)),
+                style: TextStyle(fontSize: 12, color: roles.textSecondary)),
             if (moodLine.isNotEmpty) ...[
               const SizedBox(height: 3),
               Text(moodLine,
-                  style: TextStyle(fontSize: 10, color: roles.partner)),
+                  style: TextStyle(fontSize: 12, color: roles.partner)),
             ],
           ]),
         ),

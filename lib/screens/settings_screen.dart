@@ -223,7 +223,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 1),
                   Text('@$username',
                       style:
-                          TextStyle(fontSize: 11, color: roles.textSecondary)),
+                          TextStyle(fontSize: 12, color: roles.textSecondary)),
                 ],
               ]),
         ),
@@ -310,7 +310,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         leading: InitialAvatar(
           letter: _myName.isEmpty ? '' : _myName[0],
           size: 24,
-          fontSize: 11,
+          fontSize: 12,
           borderColor: roles.self,
           borderWidth: 1.2,
           emptyIcon: Icons.person_outline,
@@ -433,7 +433,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (subtitle != null && subtitle.isNotEmpty) ...[
                 const SizedBox(height: 1),
                 Text(subtitle,
-                    style: TextStyle(fontSize: 11, color: roles.textSecondary)),
+                    style: TextStyle(fontSize: 12, color: roles.textSecondary)),
               ],
             ]),
           ),

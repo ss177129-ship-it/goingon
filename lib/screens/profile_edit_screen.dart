@@ -259,7 +259,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             if (helper != null) ...[
               const SizedBox(height: 6),
               Text(helper,
-                  style: TextStyle(fontSize: 11, color: roles.textSecondary)),
+                  style: TextStyle(fontSize: 12, color: roles.textSecondary)),
             ],
           ],
         ),
@@ -322,7 +322,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text('이름과 사진은 페이스메이트와 나에게 온 요청 목록에 보여요.',
-                style: TextStyle(fontSize: 11, color: roles.textSecondary, height: 1.6)),
+                style: TextStyle(fontSize: 12, color: roles.textSecondary, height: 1.6)),
           ),
           const SizedBox(height: 40),
         ]),

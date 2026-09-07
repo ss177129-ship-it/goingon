@@ -222,7 +222,7 @@ class _FinishScreenState extends State<FinishScreen> {
                     ),
                     child: Column(children: [
                       Text('함께 달린 것',
-                          style: TextStyle(fontSize: 10,
+                          style: TextStyle(fontSize: 12,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.2,
                               color: roles.textSecondary)),
@@ -250,7 +250,7 @@ class _FinishScreenState extends State<FinishScreen> {
                               ? '${widget.partnerName}의 기록이 도착하면 합쳐져요'
                               : '둘의 기록을 합친 값이에요',
                           style: TextStyle(
-                              fontSize: 11,
+                              fontSize: 12,
                               color: roles.textSecondary)),
                     ]),
                   ),
@@ -265,7 +265,7 @@ class _FinishScreenState extends State<FinishScreen> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text('개인 기록',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
                       letterSpacing: 1.2,
                       color: roles.textOnDark)),
             ),
@@ -285,7 +285,7 @@ class _FinishScreenState extends State<FinishScreen> {
                       ? "${widget.partnerName}의 기록이 도착하면 '우리' 탭에 합산될 거예요. 먼저 쉬고 있어요."
                       : '${widget.partnerName}는 아직 달리는 중이에요',
                   style: TextStyle(
-                      fontSize: 11, color: roles.textOnDark)),
+                      fontSize: 12, color: roles.textOnDark)),
             ],
             const SizedBox(height: 18),
             // ── CTA ──
@@ -314,7 +314,7 @@ class _FinishScreenState extends State<FinishScreen> {
         Text(v, style: GoTheme.serif(26, color: roles.textPrimary)),
         const SizedBox(height: 2),
         Text(label,
-            style: TextStyle(fontSize: 10, letterSpacing: .8,
+            style: TextStyle(fontSize: 12, letterSpacing: .8,
                 color: roles.textSecondary)),
       ]),
     );
@@ -335,7 +335,7 @@ class _FinishScreenState extends State<FinishScreen> {
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(who,
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
                   letterSpacing: .8, color: color)),
           const SizedBox(height: 4),
           Text(km == null ? '달리는 중...' : '${km.toStringAsFixed(1)}km',
@@ -344,12 +344,12 @@ class _FinishScreenState extends State<FinishScreen> {
                   : GoTheme.serif(22)),
           Text('개인 총 거리',
               style: TextStyle(
-                  fontSize: 10, color: roles.textSecondary)),
+                  fontSize: 12, color: roles.textSecondary)),
           if (mood != null) ...[
             const SizedBox(height: 4),
             Text("'$mood'",
                 style: TextStyle(
-                    fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+                    fontSize: 12, fontWeight: FontWeight.w600, color: color)),
           ],
         ]),
       ),

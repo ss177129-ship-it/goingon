@@ -50,7 +50,13 @@ class GoSelectChip extends StatelessWidget {
           ),
           child: child,
         ),
-        child: AnimatedDefaultTextStyle(
+        // 선택은 면 색만이 아니라 체크로도 말한다 (Color Usage Rules §5)
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (selected) ...[
+            Icon(Icons.check, size: 14, color: roles.dark.fg),
+            const SizedBox(width: 4),
+          ],
+          AnimatedDefaultTextStyle(
             duration: GoMotion.select,
             curve: GoMotion.curve,
             style: TextStyle(
@@ -58,8 +64,9 @@ class GoSelectChip extends StatelessWidget {
               fontWeight: FontWeight.w600,
               color: selected ? roles.dark.fg : roles.textPrimary,
             ),
-          child: Text(label),
-        ),
+            child: Text(label),
+          ),
+        ]),
       ),
     );
   }

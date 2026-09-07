@@ -281,7 +281,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
                   const SizedBox(height: 4),
                   Text(status,
                       style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: roles.textSecondary)),
                 ],

@@ -189,7 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(GoRadius.sm),
             ),
             child: Text('함께 달리기 요청',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
                     color: roles.statusRunning.fg, letterSpacing: 1.2)),
           ),
           const SizedBox(height: 18),
@@ -445,7 +445,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 1),
                     Text('@${r.username}',
                         style: TextStyle(
-                            fontSize: 11, color: roles.textSecondary)),
+                            fontSize: 12, color: roles.textSecondary)),
                   ],
                 ]),
           ),
@@ -461,8 +461,9 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(width: GoSpace.s),
           Expanded(
             flex: 2,
+            // 홈의 주 색은 GO? 하나. 수락은 "연결을 완성한다"이므로 complete
             child: GoButton('수락하고 연결',
-                kind: GoButtonKind.primary,
+                kind: GoButtonKind.complete,
                 size: GoButtonSize.md,
                 onTap: () => _respondToRequest(r, accept: true)),
           ),
@@ -594,7 +595,7 @@ class _HomeScreenState extends State<HomeScreen> {
           TextSpan(text: v, style: GoTheme.serif(19)),
           TextSpan(
               text: unit,
-              style: TextStyle(fontSize: 11, color: roles.textSecondary)),
+              style: TextStyle(fontSize: 12, color: roles.textSecondary)),
         ])),
         const SizedBox(height: 2),
         Text(label, style: GoText.label),
@@ -640,7 +641,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: roles.textPrimary)),
                   const SizedBox(height: 1),
                   Text('멀리 있어도, 함께',
-                      style: TextStyle(fontSize: 11, color: roles.textSecondary)),
+                      style: TextStyle(fontSize: 12, color: roles.textSecondary)),
                 ]),
           ),
           Pressable(
@@ -730,7 +731,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 2),
         Text(note,
             style: TextStyle(
-                fontSize: 11, height: 1.4, color: roles.textSecondary)),
+                fontSize: 12, height: 1.4, color: roles.textSecondary)),
       ]),
       ),
     );

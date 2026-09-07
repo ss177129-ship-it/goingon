@@ -53,7 +53,7 @@
 - **Flutter가 그리지 않는 문자열은 예외** — 공유 시트 텍스트, 푸시 알림 본문 등은 받는 쪽이 시스템 폰트로 렌더하므로 이모지를 써도 된다 (`finish_screen.dart`의 공유 문구가 이 경우)
 - 굳이 이모지가 필요하면 남은 길은 이모지 폰트를 함께 번들하는 것뿐인데, IPA가 30%가량 커진다
 
-색·타이포 토큰의 소스는 `lib/theme.dart`의 `GoColors`/`GoTheme`다. 값 자체는 판단이므로 바꿀 수 있지만, **바꾼다면 한 곳(theme.dart)에서** 바꾼다.
+색·타이포 토큰의 소스는 `lib/theme.dart`다 — 팔레트 `GoColors`, 역할 토큰 `GoRoles`(ThemeExtension), 글자 `GoText`/`GoTheme`. 화면·위젯은 `GoRoles.of(context)`로만 색을 얻고 팔레트나 hex를 직접 쓰지 않는다. 색을 어디에 어떻게 쓰는지의 규칙(Color Usage Rules — 위계·가시성 우선·색만으로 전하지 않기)은 `GoRoles`의 doc 주석이 유일한 출처다. 값 자체는 판단이므로 바꿀 수 있지만, **바꾼다면 한 곳(theme.dart)에서** 바꾼다.
 
 ## 아키텍처
 

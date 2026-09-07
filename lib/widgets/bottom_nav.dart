@@ -50,10 +50,11 @@ class GoBottomNav extends StatelessWidget {
     );
   }
 
-  /// 선택 인디케이터 — 아이콘 뒤의 알약(56×32, radius 16). 틴트가 아니라
-  /// **ink 면 + paper 아이콘**으로 뒤집는다(GoSegment와 같은 문법). 페이퍼
-  /// 위의 반투명 틴트는 사라지지만, 잉크 면은 어디서든 가장 어두운 것이라
-  /// 시선이 먼저 간다. 비선택은 아이콘·라벨 모두 mid로 한 단 내려간다
+  /// 선택 인디케이터 — 아이콘 뒤의 알약(56×32, radius 16). **주 색(primary)
+  /// 면 + 흰 아이콘.** 현재 선택된 내비게이션은 주 색을 쓴다는 규칙(theme.dart
+  /// Color Usage Rules §1). 색만이 아니라 알약이라는 *형태*가 함께 말하므로
+  /// 색을 못 보는 사람에게도 어느 탭인지 읽힌다(§5). 비선택은 textSecondary —
+  /// 덜 중요할 뿐 덜 보여서는 안 된다(§4)
   static const _pillWidth = 56.0;
   static const _pillHeight = 32.0;
 
@@ -61,7 +62,8 @@ class GoBottomNav extends StatelessWidget {
       {int badge = 0}) {
     final active = i == index;
     final iconWidget = Icon(icon,
-        size: 24, color: active ? roles.dark.fg : roles.textSecondary);
+        size: 24,
+        color: active ? roles.actionPrimary.fg : roles.textSecondary);
     return Expanded(
       // 탭바는 모든 화면에 붙어 있어서, 여기가 반응하지 않으면 앱 전체가
       // 둔하게 느껴진다. 축소는 0.92 — 아이콘 하나짜리 작은 표적이라
@@ -85,7 +87,9 @@ class GoBottomNav extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: active
-                      ? (pressed ? roles.dark.pressed : roles.dark.bg)
+                      ? (pressed
+                          ? roles.actionPrimary.pressed
+                          : roles.actionPrimary.bg)
                       : (pressed ? roles.pressOverlay : Colors.transparent),
                   borderRadius: BorderRadius.circular(GoRadius.md),
                 ),
@@ -99,7 +103,7 @@ class GoBottomNav extends StatelessWidget {
             duration: GoMotion.select,
             curve: GoMotion.curve,
             style: TextStyle(
-                fontSize: 10, fontWeight: FontWeight.w600,
+                fontSize: 12, fontWeight: FontWeight.w600,
                 color: active ? roles.textPrimary : roles.textSecondary),
             child: Text(label),
           ),

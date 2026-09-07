@@ -580,7 +580,7 @@ class _RunScreenState extends State<RunScreen>
         text,
         textAlign: TextAlign.center,
         style: TextStyle(
-          fontSize: 11,
+          fontSize: 12,
           height: 1.3,
           fontWeight: FontWeight.w600,
           letterSpacing: 1.2,

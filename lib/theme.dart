@@ -100,6 +100,29 @@ class GoRole {
 ///
 /// 팔레트([GoColors])는 값이고 역할은 뜻이다. "코랄"이 아니라 "주 액션",
 /// "올리브"가 아니라 "리워드 글자". 값이 바뀌어도 화면 코드는 그대로다.
+///
+/// ## Color Usage Rules (2026-09-08)
+///
+/// 색은 장식이 아니라 **정보 위계·행동의 중요도·상태**를 전하는 수단이다.
+///
+/// 1. **Primary**([actionPrimary]) — 가장 중요하거나 가장 먼저 해야 하는 행동.
+///    핵심 CTA, 주요 기능, **현재 선택된 내비게이션**, 중요한 상태·강조.
+///    한 화면에서 주 색이 여럿이면 우선순위가 흩어진다 — 화면당 하나를 원칙으로
+/// 2. **Secondary**([actionSecondary]·[actionComplete]) — 우선순위가 낮은 보조
+///    행동. 보조 CTA, 기록 보기, 필터, 공유, 부가 기능. **덜 중요한 색이 아니라
+///    덜 중요한 역할의 색이다.** 대비와 인지 가능성은 primary와 같아야 한다
+/// 3. **Tertiary / Neutral**([textSecondary]·text 버튼) — 메타 정보, 취소/닫기.
+///    강조는 줄이되 **가독성과 인터랙션 인지는 줄이지 않는다**
+/// 4. **Visibility First** — 모든 색 선택의 첫 기준은 가시성·가독성.
+///    "Primary는 잘 보이고, Secondary는 덜 보이고, Tertiary는 거의 안 보임"으로
+///    구현하지 않는다. 그래서 [textSecondary]는 페이퍼 위 5:1을 지키고, 글자는
+///    12px 아래로 내려가지 않는다
+/// 5. **Do Not Rely on Color Alone** — 선택·오류·성공·중요도를 색 하나로
+///    전하지 않는다. 아이콘·인디케이터·형태·크기·텍스트·모션을 함께 쓴다.
+///    (탭바의 알약, 체크박스의 체크, 스트릭 요일의 체크, 토스트의 아이콘)
+///
+/// **Color establishes hierarchy, but hierarchy must never compromise
+/// visibility, readability, or usability.**
 class GoRoles extends ThemeExtension<GoRoles> {
   const GoRoles({
     required this.background,
@@ -456,7 +479,7 @@ class GoTheme {
         labelLarge: GoText.button,
         labelMedium: GoText.label,
       ),
-      // 아이콘 기본색. 화면에서 dim을 넘기던 곳은 그 지정을 지우면 이 값을 받는다
+      // 아이콘 기본색(textPrimary). 화면에서 색을 안 넘기면 이 값을 받는다
       iconTheme: const IconThemeData(color: GoColors.ink),
 
       // 버튼 기본값. 화면이 padding·shape를 직접 넘기면 그쪽이 이기지만,

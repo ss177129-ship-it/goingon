@@ -257,7 +257,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text('+',
-                    style: TextStyle(fontSize: 11, color: roles.textSecondary)),
+                    style: TextStyle(fontSize: 12, color: roles.textSecondary)),
               ),
               _cdDot(roles.partner),
             ]),
@@ -473,7 +473,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text('달리는 중엔 화면을 탭·스와이프·길게 눌러 신호를 보낼 수 있어요',
-                        style: TextStyle(fontSize: 11, color: roles.textSecondary)),
+                        style: TextStyle(fontSize: 12, color: roles.textSecondary)),
                   ),
                 ]),
           ),
@@ -606,7 +606,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                 : isLate
                     ? '조금 늦어요'
                     : waitingText,
-            style: TextStyle(fontSize: 10,
+            style: TextStyle(fontSize: 12,
                 fontWeight: ready ? FontWeight.w600 : FontWeight.normal,
                 color: ready
                     ? line
