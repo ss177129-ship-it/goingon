@@ -37,7 +37,7 @@ class GoBottomNav extends StatelessWidget {
                     color: GoColors.line, width: GoStroke.rule)),
             boxShadow: GoShadow.bar,
           ),
-          padding: const EdgeInsets.fromLTRB(28, 10, 28, 6),
+          padding: const EdgeInsets.fromLTRB(28, 6, 28, 6),
           child: Row(children: [
             _item(0, Icons.home_rounded, '홈'),
             _item(1, Icons.people_alt_outlined, '우리', badge: requestCount),
@@ -48,25 +48,51 @@ class GoBottomNav extends StatelessWidget {
     );
   }
 
+  /// 선택 인디케이터 — 아이콘 뒤의 알약(56×32, radius 16). 틴트가 아니라
+  /// **ink 면 + paper 아이콘**으로 뒤집는다(GoSegment와 같은 문법). 페이퍼
+  /// 위의 반투명 틴트는 사라지지만, 잉크 면은 어디서든 가장 어두운 것이라
+  /// 시선이 먼저 간다. 비선택은 아이콘·라벨 모두 mid로 한 단 내려간다
+  static const _pillWidth = 56.0;
+  static const _pillHeight = 32.0;
+
   Widget _item(int i, IconData icon, String label, {int badge = 0}) {
     final active = i == index;
     final iconWidget =
-        Icon(icon, size: 24, color: active ? GoColors.ink : GoColors.mid);
+        Icon(icon, size: 24, color: active ? GoColors.paper : GoColors.mid);
     return Expanded(
       // 탭바는 모든 화면에 붙어 있어서, 여기가 반응하지 않으면 앱 전체가
       // 둔하게 느껴진다. 축소는 0.92 — 아이콘 하나짜리 작은 표적이라
       // 버튼(0.97)보다 크게 줄여야 눈에 보인다
-      child: Pressable(
-        scale: .92,
-        onTap: () => onChanged(i),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          GoCountBadge(count: badge, child: iconWidget),
-          const SizedBox(height: 4),
-          Text(label,
+      child: Semantics(
+        selected: active,
+        button: true,
+        child: Pressable(
+          scale: .92,
+          onTap: () => onChanged(i),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            AnimatedContainer(
+              duration: GoMotion.select,
+              curve: GoMotion.curve,
+              width: _pillWidth,
+              height: _pillHeight,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: active ? GoColors.ink : Colors.transparent,
+                borderRadius: BorderRadius.circular(GoRadius.md),
+              ),
+              child: GoCountBadge(count: badge, child: iconWidget),
+            ),
+            const SizedBox(height: 4),
+            AnimatedDefaultTextStyle(
+              duration: GoMotion.select,
+              curve: GoMotion.curve,
               style: TextStyle(
                   fontSize: 10, fontWeight: FontWeight.w600,
-                  color: active ? GoColors.limeDark : GoColors.mid)),
-        ]),
+                  color: active ? GoColors.ink : GoColors.mid),
+              child: Text(label),
+            ),
+          ]),
+        ),
       ),
     );
   }

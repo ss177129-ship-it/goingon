@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goingon/theme.dart';
+import 'package:goingon/widgets/bottom_nav.dart';
 import 'package:goingon/widgets/go_badge.dart';
 import 'package:goingon/widgets/go_checkbox.dart';
 import 'package:goingon/widgets/go_chip.dart';
@@ -233,6 +234,31 @@ void main() {
       expect(sizes, contains(const Size(64, 44)));
       expect(find.byType(AnimatedContainer), findsNothing);
       expect(find.byType(AnimatedOpacity), findsNothing);
+    });
+  });
+
+  group('GoBottomNav', () {
+    testWidgets('선택된 탭만 ink 알약 + paper 아이콘, 나머지는 mid', (tester) async {
+      int? got;
+      await tester.pumpWidget(host(SizedBox(
+        width: 390,
+        child: GoBottomNav(index: 1, onChanged: (i) => got = i, requestCount: 3),
+      )));
+      await tester.pumpAndSettle();
+      final pills = tester
+          .widgetList<AnimatedContainer>(inside<AnimatedContainer>(GoBottomNav))
+          .map((c) => (c.decoration as BoxDecoration).color)
+          .toList();
+      expect(pills, [Colors.transparent, GoColors.ink, Colors.transparent]);
+      final icons = tester
+          .widgetList<Icon>(inside<Icon>(GoBottomNav))
+          .map((i) => i.color)
+          .toList();
+      expect(icons, [GoColors.mid, GoColors.paper, GoColors.mid]);
+      expect(find.text('3'), findsOneWidget, reason: '배지는 알약 위에도 남는다');
+
+      await tester.tap(find.text('설정'));
+      expect(got, 2);
     });
   });
 }
