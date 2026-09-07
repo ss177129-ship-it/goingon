@@ -372,7 +372,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   borderRadius: BorderRadius.circular(GoRadius.md),
                   border: Border.all(
                       color: _meReady ? GoColors.limeDark : GoColors.line,
-                      width: _meReady ? 2 : 1.5),
+                      width: _meReady ? GoStroke.accent : GoStroke.card),
                 ),
                 child: Column(children: [
                   Row(children: [
@@ -416,7 +416,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(GoRadius.sm),
-                            border: Border.all(color: GoColors.line),
+                            border: Border.all(color: GoColors.line, width: GoStroke.card),
                           ),
                           child: Text(_meReady ? '취소' : '다음 →',
                               style: const TextStyle(fontSize: 10,
@@ -512,7 +512,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(GoRadius.md),
-        border: Border.all(color: GoColors.line, width: 1.5),
+        border: Border.all(color: GoColors.line, width: GoStroke.card),
       ),
       child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
         const SizedBox(
@@ -537,7 +537,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(GoRadius.md),
-        border: Border.all(color: GoColors.amberDark, width: 2),
+        border: Border.all(color: GoColors.amberDark, width: GoStroke.accent),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('아직 응답이 없어요. 앱을 안 보고 있을 수 있어요.',
@@ -548,7 +548,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
           Expanded(
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
-                side: BorderSide(color: GoColors.line, width: 1.5),
+                side: BorderSide(color: GoColors.line, width: GoStroke.card),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape:
                     RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -563,7 +563,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
           Expanded(
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
-                side: BorderSide(color: GoColors.line, width: 1.5),
+                side: BorderSide(color: GoColors.line, width: GoStroke.card),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape:
                     RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -591,7 +591,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.white,
-          border: Border.all(color: ready ? line : GoColors.line, width: 2),
+          border: Border.all(color: ready ? line : GoColors.line, width: GoStroke.accent),
         ),
         child: Center(child: Text(name[0], style: GoTheme.serif(24))),
       ),
@@ -611,7 +611,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   : ready
                       ? line
                       : GoColors.line,
-              width: (ready || isLate) ? 2 : 1),
+              width: (ready || isLate) ? GoStroke.accent : GoStroke.rule),
         ),
         child: Text(
             ready
@@ -635,7 +635,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.white,
-          border: Border.all(color: line, width: 2.5),
+          border: Border.all(color: line, width: GoStroke.accent),
         ),
       );
 }

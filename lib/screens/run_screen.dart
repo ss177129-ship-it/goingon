@@ -510,7 +510,7 @@ class _RunScreenState extends State<RunScreen>
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(20),
                               border:
-                                  Border.all(color: GoColors.line, width: 1.5),
+                                  Border.all(color: GoColors.line, width: GoStroke.card),
                             ),
                             child: Text(m,
                                 style: const TextStyle(
@@ -656,7 +656,7 @@ class _RunScreenState extends State<RunScreen>
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: GoColors.line),
+                border: Border.all(color: GoColors.line, width: GoStroke.card),
                 boxShadow: [
                   BoxShadow(
                       color: Colors.black.withValues(alpha: .05),
@@ -719,7 +719,7 @@ class _RunScreenState extends State<RunScreen>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
-              border: Border.all(color: GoColors.line),
+              border: Border.all(color: GoColors.line, width: GoStroke.card),
             ),
           ),
           // 링은 누르는 동안에만 그린다. 색은 ink 계열 — lime(나)도

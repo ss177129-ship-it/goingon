@@ -175,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(GoRadius.sm),
-              border: Border.all(color: GoColors.coralDark, width: 2),
+              border: Border.all(color: GoColors.coralDark, width: GoStroke.accent),
             ),
             child: const Text('함께 달리기 요청',
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
@@ -251,7 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: double.infinity,
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: GoColors.line, width: 1.5),
+                          side: BorderSide(color: GoColors.line, width: GoStroke.card),
                           padding: const EdgeInsets.symmetric(vertical: 15),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14)),
@@ -391,7 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(GoRadius.md),
-        border: Border.all(color: GoColors.coralDark, width: 2),
+        border: Border.all(color: GoColors.coralDark, width: GoStroke.accent),
       ),
       child: Column(children: [
         Row(children: [
@@ -426,7 +426,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
-                side: BorderSide(color: GoColors.line, width: 1.5),
+                side: BorderSide(color: GoColors.line, width: GoStroke.card),
                 padding: const EdgeInsets.symmetric(vertical: 11),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
@@ -488,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(GoRadius.md),
-        border: Border.all(color: GoColors.amberDark, width: 2),
+        border: Border.all(color: GoColors.amberDark, width: GoStroke.accent),
       ),
       child: Row(children: [
         const Icon(Icons.wifi_off, size: 18, color: GoColors.amber),
@@ -539,7 +539,7 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: GoColors.line),
+        border: Border.all(color: GoColors.line, width: GoStroke.card),
       ),
       child: Column(children: [
         InitialAvatar(
@@ -602,7 +602,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onLongPress: () => _showFriendActions(uid, name),
       child: Container(
         decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: GoColors.line)),
+          border: Border(top: BorderSide(color: GoColors.line, width: GoStroke.rule)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
         child: Row(children: [
@@ -691,7 +691,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     return OutlinedButton(
       style: OutlinedButton.styleFrom(
-        side: BorderSide(color: GoColors.line, width: 1.5),
+        side: BorderSide(color: GoColors.line, width: GoStroke.card),
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
         alignment: Alignment.centerLeft,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -766,7 +766,7 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: .5),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: GoColors.line, width: 1.5),
+        border: Border.all(color: GoColors.line, width: GoStroke.card),
       ),
       child: Column(children: [
         Text('아직 페이스메이트가 없어요',

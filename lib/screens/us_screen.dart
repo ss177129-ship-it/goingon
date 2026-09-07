@@ -145,7 +145,7 @@ class _UsScreenState extends State<UsScreen> {
                 width: double.infinity,
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: GoColors.line, width: 1.5),
+                    side: BorderSide(color: GoColors.line, width: GoStroke.card),
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
@@ -425,7 +425,7 @@ class _UsScreenState extends State<UsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(color: GoColors.amberDark, width: 2),
+          border: Border.all(color: GoColors.amberDark, width: GoStroke.accent),
           borderRadius: BorderRadius.circular(GoRadius.md),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -455,8 +455,8 @@ class _UsScreenState extends State<UsScreen> {
                   color: done ? GoColors.amber : Colors.white,
                   borderRadius: BorderRadius.circular(GoRadius.sm),
                   border: isToday && !done
-                      ? Border.all(color: GoColors.limeDark, width: 2)
-                      : Border.all(color: GoColors.line),
+                      ? Border.all(color: GoColors.limeDark, width: GoStroke.accent)
+                      : Border.all(color: GoColors.line, width: GoStroke.card),
                 ),
                 child: Text(_kWeekdayLabels[i],
                     style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
@@ -598,7 +598,7 @@ class _UsScreenState extends State<UsScreen> {
         padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 6),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(color: GoColors.line),
+          border: Border.all(color: GoColors.line, width: GoStroke.card),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(children: [
@@ -625,7 +625,7 @@ class _UsScreenState extends State<UsScreen> {
         color: Colors.white,
         border: Border.all(
             color: isNext ? GoColors.line : GoColors.limeDark,
-            width: isNext ? 1 : 2),
+            width: isNext ? GoStroke.rule : GoStroke.accent),
         borderRadius: BorderRadius.circular(GoRadius.md),
       ),
       child: Row(children: [
@@ -665,7 +665,7 @@ class _UsScreenState extends State<UsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 13),
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: GoColors.line)),
+        border: Border(top: BorderSide(color: GoColors.line, width: GoStroke.rule)),
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         SizedBox(
@@ -687,7 +687,7 @@ class _UsScreenState extends State<UsScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(GoRadius.sm),
-                  border: Border.all(color: GoColors.limeDark, width: 2),
+                  border: Border.all(color: GoColors.limeDark, width: GoStroke.accent),
                 ),
                 child: Text(storyLabel,
                     style: const TextStyle(fontSize: 9,

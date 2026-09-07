@@ -85,7 +85,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: GoColors.line),
+                    borderSide: BorderSide(color: GoColors.line, width: GoStroke.card),
                   ),
                 ),
               ),
@@ -101,7 +101,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: GoColors.line),
+                    borderSide: BorderSide(color: GoColors.line, width: GoStroke.card),
                   ),
                 ),
                 onSubmitted: (_) => _confirm(),

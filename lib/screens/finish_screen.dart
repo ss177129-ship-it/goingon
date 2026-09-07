@@ -216,7 +216,7 @@ class _FinishScreenState extends State<FinishScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(GoRadius.md),
-                      border: Border.all(color: GoColors.line),
+                      border: Border.all(color: GoColors.line, width: GoStroke.card),
                     ),
                     child: Column(children: [
                       Text('함께 달린 것',
@@ -345,7 +345,7 @@ class _FinishScreenState extends State<FinishScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(GoRadius.sm),
-          border: Border.all(color: GoColors.line),
+          border: Border.all(color: GoColors.line, width: GoStroke.card),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(who,

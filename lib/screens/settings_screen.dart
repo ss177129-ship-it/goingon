@@ -193,7 +193,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: GoColors.line),
+        border: Border.all(color: GoColors.line, width: GoStroke.card),
       ),
       child: Row(children: [
         InitialAvatar(
@@ -407,7 +407,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: GoColors.rule)),
+          border: Border(top: BorderSide(color: GoColors.rule, width: GoStroke.rule)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
         child: Row(children: [

@@ -236,7 +236,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: GoColors.line),
+                  borderSide: const BorderSide(color: GoColors.line, width: GoStroke.card),
                 ),
               ),
             ),
@@ -359,7 +359,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       onTap: onTap,
       child: Container(
         decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: GoColors.rule)),
+          border: Border(top: BorderSide(color: GoColors.rule, width: GoStroke.rule)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
         child: Row(children: [

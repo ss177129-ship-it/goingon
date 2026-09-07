@@ -53,6 +53,13 @@ class GoRadius {
   static const lg = 24.0; // 시트
 }
 
+/// 선 굵기 3단계
+class GoStroke {
+  static const rule = 1.0;   // 섹션 구분선 (GoColors.rule)
+  static const card = 1.5;   // 카드 테두리 (GoColors.line)
+  static const accent = 2.0; // 강조 카드 테두리 (coral / lime)
+}
+
 /// 간격. 화면 좌우 여백은 [screen], 시트 안은 [sheet]
 class GoSpace {
   static const xs = 4.0;
