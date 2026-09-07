@@ -302,6 +302,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       // 프로토타입 s-settings의 '프로필 편집' 한 줄. 사진·이름·아이디를
       // 한 화면에서 다루므로 여기서는 지금 상태만 요약해 보여줌
+      _groupRule(),
       _row(
         leading: InitialAvatar(
           letter: _myName.isEmpty ? '' : _myName[0],
@@ -352,6 +353,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         onTap: _soundOn ? () => _setBriefing(!_briefingOn) : null,
       ),
+      _groupRule(),
       _row(
         icon: Icons.block,
         title: '차단 목록',
@@ -372,6 +374,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
       ),
+      _groupRule(),
       _row(
         icon: Icons.logout,
         title: '로그아웃',
@@ -383,6 +386,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         titleColor: GoColors.coralDark,
         onTap: _busy ? null : _deleteAccount,
       ),
+      _groupRule(),
       _row(
         icon: Icons.info_outline,
         title: '버전',
@@ -392,6 +396,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       const SizedBox(height: 12),
     ]);
   }
+
+  /// 그룹 사이 구분선 — 신문처럼 잉크 100%. 행 사이는 line
+  Widget _groupRule() => Container(height: GoStroke.rule, color: GoColors.rule);
 
   Widget _row({
     IconData? icon,
@@ -407,7 +414,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: GoColors.rule, width: GoStroke.rule)),
+          border: Border(top: BorderSide(color: GoColors.line, width: GoStroke.rule)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
         child: Row(children: [

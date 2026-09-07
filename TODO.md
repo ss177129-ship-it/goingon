@@ -120,14 +120,30 @@ Blaze·APNs 키·Functions 배포·서명 검증·TestFlight 업로드는 전부
 
 ## 5. 알려진 한계 — 다시 부딪히지 말 것
 
-### 5.1 시뮬레이터 자동 조작은 불가능하다 (2026-08-15 검증)
-**macOS 26의 시뮬레이터는 합성 입력(synthetic event)을 일절 받지 않는다.** `cliclick`(단발·분리 클릭 모두)·AXPress·`osascript` 키보드 전부 무반응, `idb`는 macOS 26 미지원으로 설치 자체가 실패. macOS 레벨 클릭은 되므로 손쉬운 사용 권한 문제가 아니다.
+### 5.1 시뮬레이터 탭 — 접근성 API로는 된다 (2026-09-07 재검증)
+2026-08-15 기록("합성 입력 일절 불가")은 **절반만 맞았다.** CGEvent 계열(`cliclick`, 좌표 클릭)은
+여전히 시뮬레이터가 버린다 — 커서는 옮겨지고 최전면 앱도 안 바뀐다. 그러나 **접근성 API 경유는 통한다**:
 
-부수적으로: 손쉬운 사용 권한은 **프로세스 시작 시점에 판정돼 캐시**된다. 앱이 켜진 상태에서 권한을 주면 하위 프로세스는 재시작 전까지 계속 거부된다(커서는 움직이는데 클릭만 안 먹는 증상).
+```bash
+osascript -e 'tell application "System Events" to click at {X, Y}'   # 화면 좌표(pt)
+```
 
-**우회법**: `lib/main_*_probe.dart` 형태의 임시 엔트리포인트로 **앱 시작과 동시에 특정 경로만 실행**시키고 스크린샷으로 읽는다. 확인 후 반드시 지울 것.
+시뮬레이터가 iOS 앱의 접근성 트리를 macOS에 노출하고(Flutter 시맨틱스 포함), `click at`은 그 요소를
+직접 누른다. 반환값이 `static text 3 of group … of window "iPhone 16e" of application process Simulator`처럼
+나오면 눌린 것이다. 탭 전환·버튼·행 모두 이 경로로 된다.
 
-**순서 주의**: 설치 → `simctl privacy grant location-always` → 실행. 실행 뒤에 권한을 주면 다이얼로그가 뜨는데 탭을 못 해서 거기서 막힌다.
+**좌표 잡는 법**: `osascript -e 'tell application "System Events" to tell process "Simulator" to get {position, size} of window 1'`로
+창 위치를 얻고 `screencapture -x -R x,y,w,h`로 창을 찍어(2x) 대상 픽셀/2 + 창 원점.
+`osascript`는 가끔 안 끝나므로 `( osascript … & pid=$!; sleep 8; kill $pid )`처럼 자체 타임아웃을 건다.
+
+**왜 8-15에 실패했나**: 손쉬운 사용 권한은 **프로세스 시작 시점에 판정돼 캐시**된다. 그날은 권한을 준 뒤
+터미널을 재시작하지 않았을 가능성이 크다. `tell application "Simulator" to activate`는 Automation 권한
+프롬프트를 띄우며 멈추므로 쓰지 말 것 — System Events만으로 충분하다.
+
+여전히 안 되는 것: 사진 picker 같은 Flutter 밖 시스템 UI는 별개, `idb`는 macOS 26 미지원.
+
+**우회법(여전히 유효)**: `lib/main_*_probe.dart` 임시 진입점으로 특정 경로만 실행. 확인 후 반드시 지울 것.
+**순서 주의**: 설치 → `simctl privacy grant location-always` → 실행.
 
 ### 5.2 시뮬레이터로 못 보는 것
 - **`horizontalAccuracy`를 조종할 수 없다** — simctl이 노출하지 않는다. 정확도 필터는 단위 테스트 담당

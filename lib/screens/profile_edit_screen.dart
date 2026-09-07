@@ -292,6 +292,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           const SizedBox(height: 22),
           _photoBlock(),
           const SizedBox(height: 22),
+          Container(height: GoStroke.rule, color: GoColors.rule),
           _row('이름', _name.isEmpty ? '설정 안 함' : _name, _editName),
           _row('아이디', username.isEmpty ? '설정 안 함' : '@$username',
               _editUsername),
@@ -359,7 +360,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       onTap: onTap,
       child: Container(
         decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: GoColors.rule, width: GoStroke.rule)),
+          border: Border(top: BorderSide(color: GoColors.line, width: GoStroke.rule)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
         child: Row(children: [
