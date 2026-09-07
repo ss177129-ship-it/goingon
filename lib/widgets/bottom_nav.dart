@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import 'go_badge.dart';
 import 'pressable.dart';
 
 /// 하단 탭 — 홈 / 우리 / 설정 (프로토타입 .nav-bar)
@@ -10,7 +11,15 @@ class GoBottomNav extends StatelessWidget {
   final int index;
   final ValueChanged<int> onChanged;
 
-  const GoBottomNav({super.key, required this.index, required this.onChanged});
+  /// '우리' 탭 아이콘에 얹을 수 — 나에게 온 친구 요청. 0이면 배지 없음
+  final int requestCount;
+
+  const GoBottomNav({
+    super.key,
+    required this.index,
+    required this.onChanged,
+    this.requestCount = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +40,7 @@ class GoBottomNav extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(28, 10, 28, 6),
           child: Row(children: [
             _item(0, Icons.home_rounded, '홈'),
-            _item(1, Icons.people_alt_outlined, '우리'),
+            _item(1, Icons.people_alt_outlined, '우리', badge: requestCount),
             _item(2, Icons.settings_outlined, '설정'),
           ]),
         ),
@@ -39,8 +48,10 @@ class GoBottomNav extends StatelessWidget {
     );
   }
 
-  Widget _item(int i, IconData icon, String label) {
+  Widget _item(int i, IconData icon, String label, {int badge = 0}) {
     final active = i == index;
+    final iconWidget =
+        Icon(icon, size: 24, color: active ? GoColors.ink : GoColors.mid);
     return Expanded(
       // 탭바는 모든 화면에 붙어 있어서, 여기가 반응하지 않으면 앱 전체가
       // 둔하게 느껴진다. 축소는 0.92 — 아이콘 하나짜리 작은 표적이라
@@ -49,7 +60,7 @@ class GoBottomNav extends StatelessWidget {
         scale: .92,
         onTap: () => onChanged(i),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 24, color: active ? GoColors.ink : GoColors.mid),
+          GoCountBadge(count: badge, child: iconWidget),
           const SizedBox(height: 4),
           Text(label,
               style: TextStyle(

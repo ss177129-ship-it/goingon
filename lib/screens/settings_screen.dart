@@ -8,6 +8,7 @@ import '../services/push_service.dart';
 import '../services/sound_settings.dart';
 import '../theme.dart';
 import '../widgets/go_group.dart';
+import '../widgets/go_switch.dart';
 import '../widgets/go_button.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/initial_avatar.dart';
@@ -334,20 +335,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         icon: _soundOn ? Icons.volume_up_outlined : Icons.volume_off_outlined,
         title: '사운드',
         subtitle: _soundOn ? '공명할 때 소리로도 알려줘요' : '소리를 내지 않아요',
-        trailing: Switch(
-          value: _soundOn,
-          activeThumbColor: GoColors.limeDark,
-          onChanged: _setSound,
-        ),
+        trailing: GoSwitch(value: _soundOn, onChanged: _setSound),
         onTap: () => _setSound(!_soundOn),
       ),
       _row(
         icon: _briefingOn ? Icons.record_voice_over_outlined : Icons.voice_over_off_outlined,
         title: '음성 브리핑',
         subtitle: _briefingOn ? '1km마다 짧게 알려줘요' : '말로 알려주지 않아요',
-        trailing: Switch(
+        trailing: GoSwitch(
           value: _briefingOn,
-          activeThumbColor: GoColors.limeDark,
           onChanged: _soundOn ? _setBriefing : null,
         ),
         onTap: _soundOn ? () => _setBriefing(!_briefingOn) : null,

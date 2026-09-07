@@ -106,6 +106,23 @@ class GoShadow {
   static const bar = [
     BoxShadow(color: Color(0x144A3A24), blurRadius: 16, offset: Offset(0, -4)),
   ];
+
+  /// 스위치 손잡이 — 트랙 위에 얹힌 작은 원. 잉크 25%, 1px 아래
+  static const thumb = [
+    BoxShadow(color: Color(0x401A1A16), blurRadius: 3, offset: Offset(0, 1)),
+  ];
+}
+
+/// 상태 전환 시간. 눌림(즉시 / 90ms 복귀)은 [Pressable]이 갖고, 여기는
+/// **값이 바뀐 뒤** 모양이 따라오는 시간이다. 곡선은 전부 easeOut
+class GoMotion {
+  /// 스위치 — 손잡이가 실제로 이동하므로 조금 길게
+  static const toggle = Duration(milliseconds: 150);
+
+  /// 체크·라디오·탭·세그먼트·칩 — 색·테두리만 바뀌는 것
+  static const select = Duration(milliseconds: 120);
+
+  static const curve = Curves.easeOut;
 }
 
 /// 모서리 3단계. 이 밖의 값(14·18·20·22)은 쓰지 않는다

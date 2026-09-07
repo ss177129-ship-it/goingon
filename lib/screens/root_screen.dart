@@ -4,6 +4,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../services/friend_service.dart';
 import '../services/location_service.dart';
 import '../services/push_service.dart';
 import '../services/run_recovery.dart';
@@ -30,12 +31,27 @@ class RootScreen extends StatefulWidget {
 class _RootScreenState extends State<RootScreen> {
   int _index = 0;
   StreamSubscription? _pushTapSub;
+  StreamSubscription? _requestsSub;
+
+  /// 나에게 온 친구 요청 수 — '우리' 탭 배지. 홈이 같은 스트림을 따로
+  /// 구독하지만, 배지는 어느 탭에 있든 보여야 하므로 셸이 갖는다
+  int _requestCount = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _offerRecovery());
     _startPush();
+    _requestsSub =
+        FriendService().incomingRequestsStream(AuthService().uid).listen(
+      (list) {
+        if (mounted) setState(() => _requestCount = list.length);
+      },
+      onError: (e, stack) {
+        // 배지가 없어도 앱은 동작한다
+        FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+      },
+    );
   }
 
   /// 프로필이 준비된 뒤(= 여기까지 왔으면 항상 준비됨)에야 알림 권한을 물음.
@@ -62,6 +78,7 @@ class _RootScreenState extends State<RootScreen> {
   @override
   void dispose() {
     _pushTapSub?.cancel();
+    _requestsSub?.cancel();
     super.dispose();
   }
 
@@ -127,6 +144,7 @@ class _RootScreenState extends State<RootScreen> {
           ),
           GoBottomNav(
             index: _index,
+            requestCount: _requestCount,
             onChanged: (i) => setState(() => _index = i),
           ),
         ]),
