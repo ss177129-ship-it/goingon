@@ -339,8 +339,6 @@ class _HomeScreenState extends State<HomeScreen> {
           _noFriendsYet()
         else
           ...friends.map(_friendRow),
-        // ── 초대 히어로 ──
-        _inviteHero(),
         // 친구가 없어도 전체 흐름을 체험할 수 있는 통로. 심사관이 로비·러닝·
         // 완료 화면을 볼 유일한 방법이라 반드시 눈에 띄는 곳에 있어야 함
         if (friends.isEmpty) _demoLink(),
@@ -777,50 +775,6 @@ class _HomeScreenState extends State<HomeScreen> {
         const Text('한 명만 있으면 고잉온이 시작돼요.',
             style: TextStyle(fontSize: 12, color: GoColors.mid)),
       ]),
-    );
-  }
-
-  /// 친구 찾기 히어로 — 프로토타입의 검은 카드
-  Widget _inviteHero() {
-    return GestureDetector(
-      onTap: () => showFriendSearchSheet(context),
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(22, 16, 22, 6),
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: GoColors.ink,
-          borderRadius: BorderRadius.circular(22),
-        ),
-        child: Column(children: [
-          Icon(Icons.search,
-              size: 34, color: GoColors.paper.withValues(alpha: .8)),
-          const SizedBox(height: 8),
-          Text('함께 달리고 싶은\n사람이 있나요?',
-              textAlign: TextAlign.center,
-              style: GoTheme.serif(21, color: GoColors.paper)),
-          const SizedBox(height: 6),
-          Text('아이디로 찾아 요청을 보내요.',
-              style: TextStyle(
-                  fontSize: 12, color: GoColors.paper.withValues(alpha: .55))),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: GoColors.lime,
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-              ),
-              onPressed: () => showFriendSearchSheet(context),
-              child: const Text('페이스메이트 찾기',
-                  style: TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600,
-                      color: GoColors.ink)),
-            ),
-          ),
-        ]),
-      ),
     );
   }
 }
