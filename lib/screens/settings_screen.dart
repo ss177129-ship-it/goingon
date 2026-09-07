@@ -407,7 +407,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: GoColors.line)),
+          border: Border(top: BorderSide(color: GoColors.rule)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
         child: Row(children: [

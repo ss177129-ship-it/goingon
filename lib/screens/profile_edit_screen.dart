@@ -360,7 +360,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       onTap: onTap,
       child: Container(
         decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: GoColors.line)),
+          border: Border(top: BorderSide(color: GoColors.rule)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
         child: Row(children: [
