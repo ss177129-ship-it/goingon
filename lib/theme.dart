@@ -74,6 +74,7 @@ class GoSpace {
   static const hero = 20.0;    // 히어로 카드 안쪽 패딩
   static const section = 24.0; // 섹션 사이
   static const gutter = 12.0;  // 한 줄에 카드 여럿일 때 사이
+  static const sheetBottom = 40.0; // 시트 하단(홈 인디케이터 위)
 }
 
 /// 텍스트 스타일 7개. 화면에서 fontSize·color를 직접 적지 말고 여기서 고른다.

@@ -204,7 +204,7 @@ class _FinishScreenState extends State<FinishScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Column(children: [
                   BrandMark.compact(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: GoSpace.m),
                   Text('나 & ${widget.partnerName}\n$_title',
                       textAlign: TextAlign.center,
                       style: GoTheme.serif(28, color: GoColors.ink)),
@@ -212,7 +212,7 @@ class _FinishScreenState extends State<FinishScreen> {
                   // 함께 합산 블록 (fin-together)
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(GoSpace.card),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(GoRadius.md),
@@ -224,7 +224,7 @@ class _FinishScreenState extends State<FinishScreen> {
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.2,
                               color: GoColors.ink.withValues(alpha: .4))),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: GoSpace.m),
                       Row(children: [
                         _togetherStat(_fmt(widget.mySeconds), '내가 달린 시간'),
                         _tDivider(),

@@ -73,12 +73,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const SizedBox(height: 12),
+          const SizedBox(height: GoSpace.m),
           _sheetAction(ctx, Icons.photo_library_outlined, '사진첩에서 고르기',
               _pickPhoto),
           _sheetAction(ctx, Icons.delete_outline, '사진 지우기', _removePhoto,
               color: GoColors.coralDark),
-          const SizedBox(height: 12),
+          const SizedBox(height: GoSpace.m),
         ]),
       ),
     );
@@ -296,7 +296,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           _row('이름', _name.isEmpty ? '설정 안 함' : _name, _editName),
           _row('아이디', username.isEmpty ? '설정 안 함' : '@$username',
               _editUsername),
-          const SizedBox(height: 24),
+          const SizedBox(height: GoSpace.section),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 24),
             child: Text('이름과 사진은 페이스메이트와 나에게 온 요청 목록에 보여요.',

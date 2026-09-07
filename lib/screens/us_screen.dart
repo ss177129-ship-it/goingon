@@ -368,7 +368,7 @@ class _UsScreenState extends State<UsScreen> {
       // ── 합산 거리 카드 ──
       Container(
         margin: const EdgeInsets.fromLTRB(22, 12, 22, 0),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(GoSpace.hero),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.topLeft, end: Alignment.bottomRight,
@@ -441,7 +441,7 @@ class _UsScreenState extends State<UsScreen> {
                   style: TextStyle(fontSize: 12, color: GoColors.mid)),
             ),
           ]),
-          const SizedBox(height: 12),
+          const SizedBox(height: GoSpace.m),
           Row(children: List.generate(7, (i) {
             final day = thisMonday.add(Duration(days: i));
             final done = daysDone.contains(day);
@@ -465,7 +465,7 @@ class _UsScreenState extends State<UsScreen> {
             );
           })),
           if (!daysDone.contains(today)) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: GoSpace.gutter),
             // 틴트 대신 왼쪽 세로 바(4px)로 "다른 카드"를 말한다
             ClipRRect(
               borderRadius: BorderRadius.circular(GoRadius.sm),
@@ -630,7 +630,7 @@ class _UsScreenState extends State<UsScreen> {
       ),
       child: Row(children: [
         Icon(icon, size: 20, color: isNext ? GoColors.dim : GoColors.limeDark),
-        const SizedBox(width: 12),
+        const SizedBox(width: GoSpace.m),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(title,
@@ -663,7 +663,7 @@ class _UsScreenState extends State<UsScreen> {
     ].join(' · ');
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 13),
+      padding: const EdgeInsets.symmetric(vertical: GoSpace.m),
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: GoColors.line, width: GoStroke.rule)),
       ),

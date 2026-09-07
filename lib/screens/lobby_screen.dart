@@ -310,7 +310,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
           ),
           // ── 러너 행 ──
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 28),
+            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: GoSpace.screen),
             child: Row(children: [
               Expanded(
                   child: _runner('나', _meReady,
@@ -329,7 +329,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
           ),
           // ── 스텝 도트 ──
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
+            padding: const EdgeInsets.symmetric(horizontal: GoSpace.screen),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(_steps.length * 2 - 1, (i) {
@@ -362,11 +362,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
           const SizedBox(height: 14),
           // ── 상태 카드 (탭해서 단계 진행) ──
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
+            padding: const EdgeInsets.symmetric(horizontal: GoSpace.screen),
             child: Pressable(
               onTap: _advanceStep,
               child: Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(GoSpace.hero),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(GoRadius.md),
@@ -460,7 +460,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
           // 러닝 화면에서 옮겨온 안내 — 달리는 중에는 안내문이 읽히지 않는다.
           // 손이 비어 있고 화면을 보고 있는 지금이 이 문장의 자리다
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 28),
+            padding: EdgeInsets.symmetric(horizontal: GoSpace.screen),
             child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -479,7 +479,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
             child: Column(children: [
               SizedBox(width: double.infinity, child: _actionButton()),
               if (_showTimeoutHelp && !_partnerReady) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: GoSpace.gutter),
                 _timeoutHelp(),
               ],
             ]),
@@ -533,7 +533,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
   Widget _timeoutHelp() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(GoSpace.card),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(GoRadius.md),

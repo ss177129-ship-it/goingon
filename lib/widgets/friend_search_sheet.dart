@@ -261,7 +261,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
   Widget _foundCard(FriendCandidate c) {
     final status = _relationNote(c.relation);
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(GoSpace.card),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),

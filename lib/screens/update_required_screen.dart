@@ -78,7 +78,7 @@ class _UpdateRequiredScreenState extends State<UpdateRequiredScreen> {
                 const SizedBox(height: 28),
                 Text('업데이트가 필요해요',
                     textAlign: TextAlign.center, style: GoTheme.serif(30)),
-                const SizedBox(height: 12),
+                const SizedBox(height: GoSpace.m),
                 const Text(
                   '지금 버전으로는 함께 달릴 수 없어요.\n최신 버전으로 업데이트하면 이어서 쓸 수 있어요.',
                   textAlign: TextAlign.center,

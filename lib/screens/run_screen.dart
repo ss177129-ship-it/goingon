@@ -491,7 +491,7 @@ class _RunScreenState extends State<RunScreen>
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(28, 24, 28, 40),
+        padding: const EdgeInsets.fromLTRB(GoSpace.sheet, GoSpace.xl, GoSpace.sheet, GoSpace.sheetBottom),
         child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -521,7 +521,7 @@ class _RunScreenState extends State<RunScreen>
                         ))
                     .toList(),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: GoSpace.m),
               Center(
                 child: TextButton(
                   onPressed: () => Navigator.pop(ctx, null),
@@ -685,7 +685,7 @@ class _RunScreenState extends State<RunScreen>
                   color: GoColors.amber.withValues(alpha: .9)),
             ),
           ],
-          const SizedBox(height: 24),
+          const SizedBox(height: GoSpace.section),
         ]),
       ),
     );

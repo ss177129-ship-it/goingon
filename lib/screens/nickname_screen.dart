@@ -62,7 +62,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
+          padding: const EdgeInsets.symmetric(horizontal: GoSpace.screen),
           child: Column(
             children: [
               const SizedBox(height: 40),
@@ -89,7 +89,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: GoSpace.m),
               TextField(
                 controller: _usernameController,
                 textAlign: TextAlign.center,
@@ -128,7 +128,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
                           style: GoTheme.serif(19, color: GoColors.paper)),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: GoSpace.section),
             ],
           ),
         ),

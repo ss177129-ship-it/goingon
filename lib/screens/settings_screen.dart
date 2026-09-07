@@ -154,7 +154,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             final blocked = snap.data ?? const [];
             return ListView(
               controller: scrollController,
-              padding: const EdgeInsets.fromLTRB(28, 24, 28, 40),
+              padding: const EdgeInsets.fromLTRB(GoSpace.sheet, GoSpace.xl, GoSpace.sheet, GoSpace.sheetBottom),
               children: [
                 Text('차단 목록', style: GoTheme.serif(24)),
                 const SizedBox(height: 6),
@@ -204,7 +204,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           borderWidth: 1.5,
           photoUrl: b['photoUrl'] as String?,
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: GoSpace.m),
         Expanded(
           child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,7 +393,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         trailing: Text(_appVersion,
             style: const TextStyle(fontSize: 13, color: GoColors.mid)),
       ),
-      const SizedBox(height: 12),
+      const SizedBox(height: GoSpace.m),
     ]);
   }
 

@@ -192,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 16),
           Text('$hostName님이\n같이 달리자고 해요',
               textAlign: TextAlign.center, style: GoTheme.serif(26)),
-          const SizedBox(height: 24),
+          const SizedBox(height: GoSpace.section),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
@@ -238,7 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(28, 24, 28, 40),
+        padding: const EdgeInsets.fromLTRB(GoSpace.sheet, GoSpace.xl, GoSpace.sheet, GoSpace.sheetBottom),
         child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -342,7 +342,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // 친구가 없어도 전체 흐름을 체험할 수 있는 통로. 심사관이 로비·러닝·
         // 완료 화면을 볼 유일한 방법이라 반드시 눈에 띄는 곳에 있어야 함
         if (friends.isEmpty) _demoLink(),
-        const SizedBox(height: 12),
+        const SizedBox(height: GoSpace.m),
       ],
     );
   }
@@ -402,7 +402,7 @@ class _HomeScreenState extends State<HomeScreen> {
             borderColor: GoColors.coralDark,
             photoUrl: r.photoUrl,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: GoSpace.m),
           Expanded(
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,7 +421,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ]),
           ),
         ]),
-        const SizedBox(height: 12),
+        const SizedBox(height: GoSpace.m),
         Row(children: [
           Expanded(
             child: OutlinedButton(
@@ -492,7 +492,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Row(children: [
         const Icon(Icons.wifi_off, size: 18, color: GoColors.amber),
-        const SizedBox(width: 12),
+        const SizedBox(width: GoSpace.m),
         Expanded(
           child: Text(
             _incomingBroken
@@ -557,7 +557,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(fontSize: 12, color: GoColors.limeDark)),
         const SizedBox(height: 14),
         Container(height: 1, color: GoColors.line),
-        const SizedBox(height: 12),
+        const SizedBox(height: GoSpace.m),
         IntrinsicHeight(
           child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             _stat(monthKm.toStringAsFixed(1), 'km', '이번 달'),
@@ -604,7 +604,7 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: const BoxDecoration(
           border: Border(top: BorderSide(color: GoColors.line, width: GoStroke.rule)),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: GoSpace.m),
         child: Row(children: [
           InitialAvatar(
             letter: name[0],
@@ -614,7 +614,7 @@ class _HomeScreenState extends State<HomeScreen> {
             borderWidth: 1.5,
             photoUrl: f['photoUrl'] as String?,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: GoSpace.m),
           Expanded(
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -653,7 +653,7 @@ class _HomeScreenState extends State<HomeScreen> {
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(28, 24, 28, 40),
+        padding: const EdgeInsets.fromLTRB(GoSpace.sheet, GoSpace.xl, GoSpace.sheet, GoSpace.sheetBottom),
         child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,

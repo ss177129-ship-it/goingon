@@ -105,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   text: 'Apple로 계속하기',
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: GoSpace.m),
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -137,7 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
               //
               // 문서를 만들고 링크를 붙일 때 이 자리에 다시 넣는다 —
               // 그때는 **누를 수 있는 링크**여야 한다(TODO 심사 준비).
-              const SizedBox(height: 24),
+              const SizedBox(height: GoSpace.section),
             ],
           ),
         ),
