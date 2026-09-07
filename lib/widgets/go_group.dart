@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 
 import '../theme.dart';
+import 'pressable.dart';
 
 /// iOS 설정 앱의 그룹 목록. 그룹 하나가 둥근 면 하나이고, 안의 행은
 /// **왼쪽을 들여쓴 헤어라인**으로만 나뉜다. 행마다 카드를 만들지 않는다 —
@@ -86,12 +87,14 @@ class _GoGroupRowState extends State<GoGroupRow> {
 
   @override
   Widget build(BuildContext context) {
-    final row = Container(
+    // 눌리는 것은 즉시, 놓는 것만 90ms — 손을 뗐을 때 색이 뚝 끊기면
+    // 깜빡임으로 보인다
+    final row = AnimatedContainer(
+      duration: _down ? Duration.zero : Pressable.releaseDuration,
+      curve: Curves.easeOut,
       width: double.infinity,
       padding: widget.padding,
-      color: _down
-          ? Color.lerp(GoColors.surface, GoColors.ink, .07)
-          : GoColors.surface,
+      color: _down ? GoColors.surfacePressed : GoColors.surface,
       child: widget.child,
     );
     if (!_pressable) return row;

@@ -59,9 +59,7 @@ class _GoCardState extends State<GoCard> {
       margin: widget.margin,
       padding: widget.padding,
       decoration: BoxDecoration(
-        color: _down
-            ? Color.lerp(GoColors.surface, GoColors.ink, .06)
-            : GoColors.surface,
+        color: _down ? GoColors.surfacePressed : GoColors.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
         border: accent == null
             ? null

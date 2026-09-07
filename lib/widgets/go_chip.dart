@@ -31,21 +31,25 @@ class GoSelectChip extends StatelessWidget {
       button: onTap != null,
       child: Pressable(
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: GoMotion.select,
+        builder: (context, pressed, child) => AnimatedContainer(
+          duration: pressed ? Duration.zero : GoMotion.select,
           curve: GoMotion.curve,
           height: height,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? GoColors.ink : GoColors.surface,
+            color: selected
+                ? (pressed ? GoColors.inkPressed : GoColors.ink)
+                : (pressed ? GoColors.surfacePressed : GoColors.surface),
             borderRadius: BorderRadius.circular(GoRadius.sm),
             border: Border.all(
               color: selected ? GoColors.ink : GoColors.line,
               width: GoStroke.card,
             ),
           ),
-          child: AnimatedDefaultTextStyle(
+          child: child,
+        ),
+        child: AnimatedDefaultTextStyle(
             duration: GoMotion.select,
             curve: GoMotion.curve,
             style: TextStyle(
@@ -53,8 +57,7 @@ class GoSelectChip extends StatelessWidget {
               fontWeight: FontWeight.w600,
               color: selected ? GoColors.paper : GoColors.ink,
             ),
-            child: Text(label),
-          ),
+          child: Text(label),
         ),
       ),
     );

@@ -10,6 +10,7 @@ import '../widgets/go_button.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
 import '../widgets/initial_avatar.dart';
+import '../widgets/pressable.dart';
 
 /// '설정 → 프로필 편집' — 프로토타입 s-setdetail의 '프로필' 항목.
 ///
@@ -89,14 +90,21 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   Widget _sheetAction(
       BuildContext sheetContext, IconData icon, String label, Future<void> Function() action,
       {Color? color}) {
-    return InkWell(
+    // 시트의 행 — 목록 행과 같은 눌림(축소 없이 면이 가라앉는다)
+    return Pressable(
+      scale: 1,
       onTap: () {
         Navigator.pop(sheetContext);
         action();
       },
-      child: Padding(
+      builder: (context, pressed, child) => AnimatedContainer(
+        duration: pressed ? Duration.zero : Pressable.releaseDuration,
+        curve: GoMotion.curve,
+        color: pressed ? GoColors.surfacePressed : Colors.transparent,
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-        child: Row(children: [
+        child: child,
+      ),
+      child: Row(children: [
           Icon(icon, size: 20, color: color ?? GoColors.ink),
           const SizedBox(width: 14),
           Text(label,
@@ -105,7 +113,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   fontWeight: FontWeight.w600,
                   color: color ?? GoColors.ink)),
         ]),
-      ),
     );
   }
 
@@ -279,9 +286,14 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              GestureDetector(
+              Pressable(
                 onTap: () => Navigator.pop(context),
-                behavior: HitTestBehavior.opaque,
+                // 글자만 있는 링크 — 눌리면 잠깐 옅어진다(GoTabs와 같은 반응)
+                builder: (context, pressed, child) => AnimatedOpacity(
+                  duration: pressed ? Duration.zero : Pressable.releaseDuration,
+                  opacity: pressed ? .6 : 1,
+                  child: child,
+                ),
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 4),
                   child: Text('← 설정으로',
@@ -315,7 +327,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   Widget _photoBlock() {
     return Center(
       child: Column(children: [
-        GestureDetector(
+        // 사진은 버튼처럼 눌린다 — 0.97 축소 + 햅틱
+        Pressable(
           onTap: _tapPhoto,
           child: Stack(alignment: Alignment.center, children: [
             InitialAvatar(

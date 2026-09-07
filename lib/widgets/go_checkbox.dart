@@ -32,40 +32,47 @@ class GoCheckbox extends StatelessWidget {
   static Widget note(String text) => Text(text,
       style: const TextStyle(fontSize: 12, color: GoColors.mid));
 
+  /// 원의 색. 눌려 있는 동안은 면이 가라앉는다 — 행 전체가 탭 영역이라
+  /// 손끝이 원을 가리지 않으므로, 원이 반응하는 것이 곧 보인다
+  Color _fill(bool pressed) {
+    if (value) return pressed ? GoColors.limePressed : GoColors.lime;
+    return pressed ? GoColors.surfacePressed : GoColors.surface;
+  }
+
+  Widget _box(bool pressed) => AnimatedContainer(
+        duration: pressed ? Duration.zero : GoMotion.select,
+        curve: GoMotion.curve,
+        width: _size,
+        height: _size,
+        decoration: BoxDecoration(
+          color: _fill(pressed),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: value ? GoColors.lime : GoColors.line,
+            width: GoStroke.card,
+          ),
+        ),
+        child: value
+            ? const Icon(Icons.check, size: 16, color: GoColors.ink)
+            : null,
+      );
+
   @override
   Widget build(BuildContext context) {
-    final box = AnimatedContainer(
-      duration: GoMotion.select,
-      curve: GoMotion.curve,
-      width: _size,
-      height: _size,
-      decoration: BoxDecoration(
-        color: value ? GoColors.lime : GoColors.surface,
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: value ? GoColors.lime : GoColors.line,
-          width: GoStroke.card,
-        ),
-      ),
-      child: value
-          ? const Icon(Icons.check, size: 16, color: GoColors.ink)
-          : null,
-    );
-
     return Semantics(
       checked: value,
       child: Pressable(
+        scale: 1, // 행 전체가 줄면 글줄이 흔들린다 — 원만 반응한다
         onTap: () => onChanged(!value),
-        child: ConstrainedBox(
+        builder: (context, pressed, child) => ConstrainedBox(
           constraints: const BoxConstraints(minHeight: minHeight),
           child: Row(children: [
-            box,
+            _box(pressed),
             const SizedBox(width: GoSpace.m),
-            Expanded(
-              child: DefaultTextStyle.merge(style: GoText.body, child: label),
-            ),
+            Expanded(child: child),
           ]),
         ),
+        child: DefaultTextStyle.merge(style: GoText.body, child: label),
       ),
     );
   }

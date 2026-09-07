@@ -51,15 +51,20 @@ class GoSegment extends StatelessWidget {
       button: true,
       child: Pressable(
         onTap: () => onChanged(i),
-        child: AnimatedContainer(
-          duration: GoMotion.select,
+        // 활성 항목은 잉크가 가라앉고, 비활성은 잉크 8%가 잠깐 깔린다
+        builder: (context, pressed, child) => AnimatedContainer(
+          duration: pressed ? Duration.zero : GoMotion.select,
           curve: GoMotion.curve,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: active ? GoColors.ink : Colors.transparent,
+            color: active
+                ? (pressed ? GoColors.inkPressed : GoColors.ink)
+                : (pressed ? GoColors.pressOverlay : Colors.transparent),
             borderRadius: BorderRadius.circular(_itemRadius),
           ),
-          child: AnimatedDefaultTextStyle(
+          child: child,
+        ),
+        child: AnimatedDefaultTextStyle(
             duration: GoMotion.select,
             curve: GoMotion.curve,
             style: TextStyle(
@@ -67,8 +72,7 @@ class GoSegment extends StatelessWidget {
               fontWeight: FontWeight.w600,
               color: active ? GoColors.paper : GoColors.mid,
             ),
-            child: Text(labels[i]),
-          ),
+          child: Text(labels[i]),
         ),
       ),
     );

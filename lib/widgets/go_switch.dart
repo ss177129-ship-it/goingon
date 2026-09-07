@@ -26,42 +26,51 @@ class GoSwitch extends StatelessWidget {
 
   bool get _enabled => onChanged != null;
 
-  @override
-  Widget build(BuildContext context) {
-    final track = AnimatedContainer(
-      duration: GoMotion.toggle,
-      curve: GoMotion.curve,
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: value ? GoColors.limeDark : GoColors.dim,
-        borderRadius: BorderRadius.circular(GoRadius.md),
-      ),
-      child: AnimatedAlign(
+  /// 손가락이 닿아 있는 동안 손잡이가 옆으로 늘어난다(iOS와 같은 반응).
+  /// 축소가 아니라 늘어남인 이유: 스위치는 작아서 0.97 축소가 보이지
+  /// 않고, 손잡이가 움직일 방향으로 늘어나는 것이 "곧 넘어간다"를 말해준다
+  static const _thumbStretch = 4.0;
+
+  Widget _track(bool pressed) => AnimatedContainer(
         duration: GoMotion.toggle,
         curve: GoMotion.curve,
-        alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          width: _thumb,
-          height: _thumb,
-          margin: const EdgeInsets.symmetric(horizontal: _inset),
-          decoration: const BoxDecoration(
-            color: GoColors.surfaceHigh,
-            shape: BoxShape.circle,
-            boxShadow: GoShadow.thumb,
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: value ? GoColors.limeDark : GoColors.dim,
+          borderRadius: BorderRadius.circular(GoRadius.md),
+        ),
+        child: AnimatedAlign(
+          duration: GoMotion.toggle,
+          curve: GoMotion.curve,
+          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+          child: AnimatedContainer(
+            duration: pressed ? Duration.zero : Pressable.releaseDuration,
+            curve: GoMotion.curve,
+            width: pressed ? _thumb + _thumbStretch : _thumb,
+            height: _thumb,
+            margin: const EdgeInsets.symmetric(horizontal: _inset),
+            decoration: BoxDecoration(
+              color: GoColors.surfaceHigh,
+              borderRadius: BorderRadius.circular(_thumb / 2),
+              boxShadow: GoShadow.thumb,
+            ),
           ),
         ),
-      ),
-    );
+      );
 
+  @override
+  Widget build(BuildContext context) {
     return Semantics(
       toggled: value,
       enabled: _enabled,
       child: Opacity(
         opacity: _enabled ? 1 : .4,
         child: Pressable(
+          scale: 1, // 축소 대신 손잡이 늘어남
           onTap: _enabled ? () => onChanged!(!value) : null,
-          child: track,
+          builder: (context, pressed, _) => _track(pressed),
+          child: const SizedBox.shrink(),
         ),
       ),
     );

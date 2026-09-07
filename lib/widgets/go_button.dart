@@ -78,34 +78,32 @@ class GoButton extends StatelessWidget {
     final Color bg;
     final Color fg;
     final BoxBorder? border;
-    // 눌렸을 때의 배경. 면이 있는 버튼은 **어두워지고**, 면이 없는 버튼은
-    // 잉크가 옅게 깔린다 — 투명한 버튼에 색을 씌우려 하면 배경이 뭐든
-    // 상관없이 지저분해지므로 잉크 6%만 얹는다
+    // 눌렸을 때의 배경 — 값은 GoColors의 *Pressed 토큰
     final Color bgDown;
     final List<BoxShadow>? shadow;
     switch (kind) {
       case GoButtonKind.primary:
         bg = GoColors.ink;
         fg = GoColors.paper;
-        bgDown = const Color(0xFF35342C); // ink를 밝히는 쪽으로 — 이미 거의 검정
+        bgDown = GoColors.inkPressed;
         border = null;
         shadow = GoShadow.raised;
       case GoButtonKind.go:
         bg = GoColors.lime;
         fg = GoColors.ink;
-        bgDown = const Color(0xFFAFC935); // lime을 한 단 낮춘 값
+        bgDown = GoColors.limePressed;
         border = null;
         shadow = GoShadow.raised;
       case GoButtonKind.secondary:
         bg = GoColors.surface;
         fg = destructive ? GoColors.coralDark : GoColors.ink;
-        bgDown = const Color(0xFFEDE7DE);
+        bgDown = GoColors.surfacePressed;
         border = Border.all(color: GoColors.line, width: GoStroke.card);
         shadow = GoShadow.card;
       case GoButtonKind.text:
         bg = Colors.transparent;
         fg = destructive ? GoColors.coralDark : GoColors.ink;
-        bgDown = const Color(0x141A1A16); // ink 8%
+        bgDown = GoColors.pressOverlay;
         border = null;
         shadow = null;
     }

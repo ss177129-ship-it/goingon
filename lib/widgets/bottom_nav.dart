@@ -69,29 +69,37 @@ class GoBottomNav extends StatelessWidget {
         child: Pressable(
           scale: .92,
           onTap: () => onChanged(i),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            AnimatedContainer(
-              duration: GoMotion.select,
-              curve: GoMotion.curve,
-              width: _pillWidth,
-              height: _pillHeight,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: active ? GoColors.ink : Colors.transparent,
-                borderRadius: BorderRadius.circular(GoRadius.md),
+          // 눌려 있는 동안: 활성 알약은 잉크가 가라앉고, 비활성 자리에는
+          // 잉크 8% 알약이 잠깐 나타난다 — "여기가 눌리고 있다"를 자리로 말한다
+          builder: (context, pressed, child) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: pressed ? Duration.zero : GoMotion.select,
+                curve: GoMotion.curve,
+                width: _pillWidth,
+                height: _pillHeight,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: active
+                      ? (pressed ? GoColors.inkPressed : GoColors.ink)
+                      : (pressed ? GoColors.pressOverlay : Colors.transparent),
+                  borderRadius: BorderRadius.circular(GoRadius.md),
+                ),
+                child: GoCountBadge(count: badge, child: iconWidget),
               ),
-              child: GoCountBadge(count: badge, child: iconWidget),
-            ),
-            const SizedBox(height: 4),
-            AnimatedDefaultTextStyle(
-              duration: GoMotion.select,
-              curve: GoMotion.curve,
-              style: TextStyle(
-                  fontSize: 10, fontWeight: FontWeight.w600,
-                  color: active ? GoColors.ink : GoColors.mid),
-              child: Text(label),
-            ),
-          ]),
+              const SizedBox(height: 4),
+              child,
+            ],
+          ),
+          child: AnimatedDefaultTextStyle(
+            duration: GoMotion.select,
+            curve: GoMotion.curve,
+            style: TextStyle(
+                fontSize: 10, fontWeight: FontWeight.w600,
+                color: active ? GoColors.ink : GoColors.mid),
+            child: Text(label),
+          ),
         ),
       ),
     );

@@ -49,6 +49,13 @@ class GoTabs extends StatelessWidget {
       button: true,
       child: Pressable(
         onTap: () => onChanged(i),
+        // 면이 없는 항목이라 색을 깔 곳이 없다 — 글자가 잠깐 옅어지는 것으로
+        builder: (context, pressed, child) => AnimatedOpacity(
+          duration: pressed ? Duration.zero : Pressable.releaseDuration,
+          curve: GoMotion.curve,
+          opacity: pressed ? .6 : 1,
+          child: child,
+        ),
         child: Container(
           // 밑줄(2px)이 바닥선(1px)을 덮도록 1px 아래로 내민다
           transform: Matrix4.translationValues(0, GoStroke.rule, 0),

@@ -10,6 +10,7 @@ import '../services/friend_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
 import '../widgets/go_group.dart';
+import '../widgets/go_icon_button.dart';
 import '../widgets/pressable.dart';
 import '../widgets/go_button.dart';
 import '../widgets/friend_search_sheet.dart';
@@ -305,9 +306,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 style:
                     GoTheme.serif(13, color: GoColors.mid)),
             const Spacer(),
-            IconButton(
-              onPressed: () => showFriendSearchSheet(context),
-              icon: const Icon(Icons.search, color: GoColors.mid),
+            GoIconButton(
+              icon: Icons.search,
+              color: GoColors.mid,
+              onTap: () => showFriendSearchSheet(context),
               tooltip: '페이스메이트 찾기',
             ),
           ]),

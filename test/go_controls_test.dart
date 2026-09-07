@@ -5,6 +5,7 @@ import 'package:goingon/widgets/bottom_nav.dart';
 import 'package:goingon/widgets/go_badge.dart';
 import 'package:goingon/widgets/go_checkbox.dart';
 import 'package:goingon/widgets/go_chip.dart';
+import 'package:goingon/widgets/go_icon_button.dart';
 import 'package:goingon/widgets/go_radio.dart';
 import 'package:goingon/widgets/go_segment.dart';
 import 'package:goingon/widgets/go_skeleton.dart';
@@ -43,15 +44,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.getSize(find.byType(GoSwitch)), const Size(51, 31));
       expect(
-          fillOf(tester,
-              find.descendant(of: find.byType(GoSwitch), matching: find.byType(AnimatedContainer))),
+          fillOf(tester, inside<AnimatedContainer>(GoSwitch).first),
           GoColors.limeDark);
 
       await tester.pumpWidget(host(GoSwitch(value: false, onChanged: (_) {})));
       await tester.pumpAndSettle();
       expect(
-          fillOf(tester,
-              find.descendant(of: find.byType(GoSwitch), matching: find.byType(AnimatedContainer))),
+          fillOf(tester, inside<AnimatedContainer>(GoSwitch).first),
           GoColors.dim);
     });
 
@@ -63,8 +62,7 @@ void main() {
       expect(got, isTrue);
       // controlled — 부모가 value를 안 바꿨으니 여전히 끔
       expect(
-          fillOf(tester,
-              find.descendant(of: find.byType(GoSwitch), matching: find.byType(AnimatedContainer))),
+          fillOf(tester, inside<AnimatedContainer>(GoSwitch).first),
           GoColors.dim);
     });
 
@@ -259,6 +257,101 @@ void main() {
 
       await tester.tap(find.text('설정'));
       expect(got, 2);
+    });
+  });
+
+  /// 손가락이 닿아 있는 동안만 보이는 눌림 상태. 스크린샷으로는 못 잡는다
+  group('눌림 반응', () {
+    Future<TestGesture> press(WidgetTester tester, Finder f) async {
+      final g = await tester.startGesture(tester.getCenter(f));
+      await tester.pump();
+      return g;
+    }
+
+    testWidgets('GoSwitch: 눌려 있는 동안 손잡이가 4px 늘어난다', (tester) async {
+      await tester.pumpWidget(host(GoSwitch(value: false, onChanged: (_) {})));
+      await tester.pumpAndSettle();
+      AnimatedContainer thumb() => tester
+          .widgetList<AnimatedContainer>(inside<AnimatedContainer>(GoSwitch))
+          .last;
+      expect(thumb().constraints?.maxWidth, 27);
+      final g = await press(tester, find.byType(GoSwitch));
+      expect(thumb().constraints?.maxWidth, 31);
+      await g.up();
+      await tester.pumpAndSettle();
+      expect(thumb().constraints?.maxWidth, 27);
+    });
+
+    testWidgets('GoSegment: 비활성 항목을 누르면 잉크 8%가 깔린다', (tester) async {
+      await tester.pumpWidget(host(SizedBox(
+        width: 300,
+        child: GoSegment(labels: const ['a', 'b'], index: 0, onChanged: (_) {}),
+      )));
+      await tester.pumpAndSettle();
+      final g = await press(tester, find.text('b'));
+      final fills = tester
+          .widgetList<AnimatedContainer>(inside<AnimatedContainer>(GoSegment))
+          .map((c) => (c.decoration as BoxDecoration).color)
+          .toList();
+      expect(fills, [GoColors.ink, GoColors.pressOverlay]);
+      await g.up();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('GoBottomNav: 활성 알약은 가라앉고 비활성 자리엔 알약이 뜬다', (tester) async {
+      await tester.pumpWidget(host(SizedBox(
+        width: 390,
+        child: GoBottomNav(index: 0, onChanged: (_) {}),
+      )));
+      await tester.pumpAndSettle();
+      List<Color?> pills() => tester
+          .widgetList<AnimatedContainer>(inside<AnimatedContainer>(GoBottomNav))
+          .map((c) => (c.decoration as BoxDecoration).color)
+          .toList();
+      final g1 = await press(tester, find.text('홈'));
+      expect(pills()[0], GoColors.inkPressed);
+      await g1.up();
+      await tester.pumpAndSettle();
+      final g2 = await press(tester, find.text('설정'));
+      expect(pills()[2], GoColors.pressOverlay);
+      await g2.up();
+      await tester.pumpAndSettle();
+      expect(pills(), [GoColors.ink, Colors.transparent, Colors.transparent]);
+    });
+
+    testWidgets('GoSelectChip·GoCheckbox: 누르면 면이 가라앉는다', (tester) async {
+      await tester.pumpWidget(host(Column(mainAxisSize: MainAxisSize.min, children: [
+        GoSelectChip(label: '5km', selected: false, onTap: () {}),
+        SizedBox(
+          width: 300,
+          child: GoCheckbox(value: true, onChanged: (_) {}, label: const Text('동의')),
+        ),
+      ])));
+      await tester.pumpAndSettle();
+      final g1 = await press(tester, find.text('5km'));
+      expect(fillOf(tester, inside<AnimatedContainer>(GoSelectChip)),
+          GoColors.surfacePressed);
+      await g1.up();
+      final g2 = await press(tester, find.text('동의'));
+      expect(fillOf(tester, inside<AnimatedContainer>(GoCheckbox)),
+          GoColors.limePressed);
+      await g2.up();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('GoIconButton: 44 표적, 누르면 잉크 8% 원 + 0.92 축소', (tester) async {
+      await tester.pumpWidget(host(GoIconButton(icon: Icons.search, onTap: () {})));
+      expect(tester.getSize(find.byType(GoIconButton)), const Size(44, 44));
+      final g = await press(tester, find.byType(GoIconButton));
+      expect(fillOf(tester, inside<AnimatedContainer>(GoIconButton)),
+          GoColors.pressOverlay);
+      expect(
+          tester
+              .widget<AnimatedScale>(inside<AnimatedScale>(GoIconButton))
+              .scale,
+          .92);
+      await g.up();
+      await tester.pumpAndSettle();
     });
   });
 }

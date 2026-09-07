@@ -71,6 +71,23 @@ class GoColors {
 
   /// 섹션 사이 1px 구분선. 신문처럼 잉크 100%. 카드 테두리엔 쓰지 않는다
   static const rule = ink;
+
+  // ── 눌림 색 ──
+  // 축소(Pressable)만으로는 손끝에 가려 안 보인다. 면이 있는 것은 **색이
+  // 가라앉고**, 면이 없는 것은 잉크가 옅게 깔린다. 손가락이 닿아 있는
+  // 동안만 보이는 색이라 대비 규칙(글자 금지 등)과는 무관하다
+
+  /// 잉크 면이 눌린 색 — 이미 거의 검정이라 밝히는 쪽으로
+  static const inkPressed = Color(0xFF35342C);
+
+  /// 라임 면이 눌린 색 — 한 단 낮춘 값
+  static const limePressed = Color(0xFFAFC935);
+
+  /// 흰 면(surface)이 눌린 색 — 잉크 6%를 섞은 값
+  static const surfacePressed = Color(0xFFEDE7DE);
+
+  /// 면이 없는 것(텍스트 버튼·아이콘·투명 항목)이 눌렸을 때 얹는 잉크 8%
+  static const pressOverlay = Color(0x141A1A16);
 }
 
 /// 높이 3단계. 그림자는 **두 겹**이다 — 붙어 있는 접촉 그림자 하나와
