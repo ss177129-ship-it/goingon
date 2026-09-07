@@ -38,7 +38,10 @@ class GoColors {
   /// 선·비활성·플레이스홀더 전용. 글자 금지
   static const dim = Color(0xFFB0ACA6);
 
-  static const line = Color(0x171A1A16); // ink 9% opacity
+  static const line = Color(0x291A1A16); // ink 16% — 페이퍼 위에서 보이는 최소치
+
+  /// 섹션 사이 1px 구분선. 신문처럼 잉크 100%. 카드 테두리엔 쓰지 않는다
+  static const rule = ink;
 }
 
 /// 모서리 3단계. 이 밖의 값(14·18·20·22)은 쓰지 않는다
