@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../services/auth_service.dart';
 import '../services/avatar_service.dart';
 import '../theme.dart';
+import '../widgets/go_card.dart';
 import '../widgets/go_button.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
@@ -291,7 +292,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           const SizedBox(height: 22),
           _photoBlock(),
           const SizedBox(height: 22),
-          Container(height: GoStroke.rule, color: GoColors.rule),
           _row('이름', _name.isEmpty ? '설정 안 함' : _name, _editName),
           _row('아이디', username.isEmpty ? '설정 안 함' : '@$username',
               _editUsername),
@@ -350,16 +350,15 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     );
   }
 
-  /// 프로토타입 .sd-row — 좌우 24, 상하 15, 상단 라인
+  /// 편집 행 하나 = 독립 카드 하나
   Widget _row(String title, String value, VoidCallback onTap) {
-    return InkWell(
+    return GoCard(
       onTap: onTap,
-      child: Container(
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: GoColors.line, width: GoStroke.rule)),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
-        child: Row(children: [
+      margin: const EdgeInsets.fromLTRB(
+          GoSpace.screen, 0, GoSpace.screen, GoSpace.gutter),
+      padding: const EdgeInsets.symmetric(
+          horizontal: GoSpace.card, vertical: GoSpace.l),
+      child: Row(children: [
           Expanded(
             child: Text(title,
                 style: const TextStyle(
@@ -372,7 +371,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           const SizedBox(width: 6),
           const Icon(Icons.chevron_right, size: 18, color: GoColors.dim),
         ]),
-      ),
     );
   }
 }

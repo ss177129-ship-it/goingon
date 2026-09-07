@@ -8,6 +8,7 @@ import '../services/active_run_guard.dart';
 import '../services/auth_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
+import '../widgets/go_card.dart';
 import '../widgets/go_button.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
@@ -312,18 +313,23 @@ class _LobbyScreenState extends State<LobbyScreen> {
             padding: const EdgeInsets.symmetric(vertical: 18, horizontal: GoSpace.screen),
             child: Row(children: [
               Expanded(
-                  child: _runner('나', _meReady,
-                      isLate: _isLate,
-                      fill: GoColors.lime, line: GoColors.limeDark)),
-              Container(width: 1, height: 48, color: GoColors.line),
+                  child: GoCard(
+                      borderColor: _meReady ? GoColors.limeDark : GoColors.line,
+                      child: _runner('나', _meReady,
+                          isLate: _isLate,
+                          fill: GoColors.lime, line: GoColors.limeDark))),
+              const SizedBox(width: GoSpace.gutter),
               Expanded(
-                  child: _runner(widget.partnerName, _partnerReady,
+                  child: GoCard(
+                      borderColor:
+                          _partnerReady ? GoColors.coralDark : GoColors.line,
+                      child: _runner(widget.partnerName, _partnerReady,
                       isLate: _partnerLate,
                       fill: GoColors.coral, line: GoColors.coralDark,
                       // 상대가 앱을 안 켠 건지, 수락하고 준비 중인 건지
                       // 구분해서 보여줌 — 예전엔 둘 다 똑같이 보였음
                       waitingText:
-                          _partnerJoined ? '함께 준비 중' : '기다리는 중')),
+                          _partnerJoined ? '함께 준비 중' : '기다리는 중'))),
             ]),
           ),
           // ── 스텝 도트 ──

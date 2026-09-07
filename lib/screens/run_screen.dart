@@ -25,6 +25,7 @@ import '../services/sound/run_briefing.dart';
 import '../services/sound/soloud_sound_engine.dart';
 import '../services/sound_settings.dart';
 import '../theme.dart';
+import '../widgets/go_card.dart';
 import '../widgets/go_button.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
@@ -600,23 +601,42 @@ class _RunScreenState extends State<RunScreen>
         child: Column(children: [
           const SizedBox(height: 8),
           // ── 내 페이스 — 곁눈으로 0.5초 안에 읽혀야 하는 단 하나의 숫자 ──
-          _caption('나 · 페이스',
-              color: GoColors.limeDark.withValues(alpha: .6)),
-          Text(LocationService.pace(_km, _seconds),
-              style: GoTheme.serif(68, color: GoColors.limeDark)
-                  .copyWith(height: 1.1)),
-          _caption('km당'),
-          const SizedBox(height: 14),
+          // 나(limeDark)와 상대(coralDark)는 각각 독립된 카드. 색은 테두리에만
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: GoCard(
+              borderColor: GoColors.limeDark,
+              padding: const EdgeInsets.symmetric(vertical: GoSpace.m),
+              child: Column(children: [
+                _caption('나 · 페이스', color: GoColors.limeDark),
+                Text(LocationService.pace(_km, _seconds),
+                    style: GoTheme.serif(68, color: GoColors.limeDark)
+                        .copyWith(height: 1.1)),
+                _caption('km당'),
+              ]),
+            ),
+          ),
+          const SizedBox(height: GoSpace.gutter),
           // ── 상대 상태어 ──
-          _caption('${widget.partnerName} · 상태',
-              color: GoColors.coralDark.withValues(alpha: .6)),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 400),
-            child: Text(_stateWord,
-                key: ValueKey(_stateWord),
-                style: TextStyle(
-                    fontSize: 44, fontWeight: FontWeight.w700, color: _stateColor)
-                    .copyWith(height: 1.2)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: GoCard(
+              borderColor: GoColors.coralDark,
+              padding: const EdgeInsets.symmetric(vertical: GoSpace.m),
+              child: Column(children: [
+                _caption('${widget.partnerName} · 상태', color: GoColors.coralDark),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 400),
+                  child: Text(_stateWord,
+                      key: ValueKey(_stateWord),
+                      style: TextStyle(
+                          fontSize: 44,
+                          fontWeight: FontWeight.w700,
+                          color: _stateColor)
+                          .copyWith(height: 1.2)),
+                ),
+              ]),
+            ),
           ),
           // ── 겹치는 두 원 (탭·스와이프·길게 누르기로 신호) ──
           // 신호에는 글자가 붙지 않는다 — 보낸 것은 잔상으로, 받은 것은

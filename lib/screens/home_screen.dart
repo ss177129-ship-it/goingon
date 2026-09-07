@@ -9,6 +9,7 @@ import '../services/auth_service.dart';
 import '../services/friend_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
+import '../widgets/go_card.dart';
 import '../widgets/pressable.dart';
 import '../widgets/go_button.dart';
 import '../widgets/friend_search_sheet.dart';
@@ -535,19 +536,18 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _friendRow(Map<String, dynamic> f) {
     final name = _displayName(f['name']);
     final uid = f['uid'] as String;
-    return GestureDetector(
+    // 페이스메이트 한 명 = 카드 하나. 상대 역할색(coralDark)은 아바타 링에만
+    return GoCard(
       onLongPress: () => _showFriendActions(uid, name),
-      child: Container(
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: GoColors.line, width: GoStroke.rule)),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: GoSpace.m),
-        child: Row(children: [
+      margin: const EdgeInsets.fromLTRB(22, 0, 22, GoSpace.gutter),
+      padding: const EdgeInsets.symmetric(
+          horizontal: GoSpace.card, vertical: GoSpace.m),
+      child: Row(children: [
           InitialAvatar(
             letter: name[0],
             size: 44,
             fontSize: 18,
-            borderColor: GoColors.line,
+            borderColor: GoColors.coralDark,
             borderWidth: 1.5,
             photoUrl: f['photoUrl'] as String?,
           ),
@@ -572,7 +572,6 @@ class _HomeScreenState extends State<HomeScreen> {
               serifLabel: true,
               onTap: () => _sendGo(uid, name)),
         ]),
-      ),
     );
   }
 
@@ -698,10 +697,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _noFriendsYet() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 22),
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: GoSpace.xl, horizontal: GoSpace.hero),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .5),
-        borderRadius: BorderRadius.circular(18),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(GoRadius.md),
         border: Border.all(color: GoColors.line, width: GoStroke.card),
       ),
       child: Column(children: [

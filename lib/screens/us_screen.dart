@@ -5,6 +5,7 @@ import '../services/friend_service.dart';
 import '../services/run_service.dart';
 import '../services/story_labels.dart';
 import '../theme.dart';
+import '../widgets/go_card.dart';
 import '../widgets/go_button.dart';
 import '../widgets/friend_search_sheet.dart';
 import '../widgets/initial_avatar.dart';
@@ -537,7 +538,7 @@ class _UsScreenState extends State<UsScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(color: GoColors.line, width: GoStroke.card),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(GoRadius.md),
         ),
         child: Column(children: [
           Text(value, style: GoTheme.serif(22)),
@@ -598,11 +599,11 @@ class _UsScreenState extends State<UsScreen> {
       if (partnerMood != null) "$partnerName '$partnerMood'",
     ].join(' · ');
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: GoSpace.m),
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: GoColors.line, width: GoStroke.rule)),
-      ),
+    // 순간 하나 = 카드 하나
+    return GoCard(
+      margin: const EdgeInsets.only(bottom: GoSpace.gutter),
+      padding: const EdgeInsets.symmetric(
+          horizontal: GoSpace.card, vertical: GoSpace.m),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         SizedBox(
           width: 40,

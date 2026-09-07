@@ -7,6 +7,7 @@ import '../services/friend_service.dart';
 import '../services/push_service.dart';
 import '../services/sound_settings.dart';
 import '../theme.dart';
+import '../widgets/go_card.dart';
 import '../widgets/go_button.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/initial_avatar.dart';
@@ -189,11 +190,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         : '이름 없음';
     final username = b['username'] as String?;
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.only(bottom: GoSpace.gutter),
+      padding: const EdgeInsets.symmetric(horizontal: GoSpace.card, vertical: GoSpace.m),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(GoRadius.md),
         border: Border.all(color: GoColors.line, width: GoStroke.card),
       ),
       child: Row(children: [
@@ -299,7 +300,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       // 프로토타입 s-settings의 '프로필 편집' 한 줄. 사진·이름·아이디를
       // 한 화면에서 다루므로 여기서는 지금 상태만 요약해 보여줌
-      _groupRule(),
       _row(
         leading: InitialAvatar(
           letter: _myName.isEmpty ? '' : _myName[0],
@@ -323,7 +323,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             : Icons.notifications_off_outlined,
         title: '알림',
         subtitle: _pushStatus,
-        titleColor: _pushRegistered ? null : GoColors.amber,
+        titleColor: _pushRegistered ? null : GoColors.amberDark,
         onTap: _retryPush,
       ),
       // 사운드는 러닝 화면에서만 나는데 끄는 자리가 여기밖에 없다.
@@ -350,7 +350,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         onTap: _soundOn ? () => _setBriefing(!_briefingOn) : null,
       ),
-      _groupRule(),
+      const SizedBox(height: GoSpace.section - GoSpace.gutter),
       _row(
         icon: Icons.block,
         title: '차단 목록',
@@ -371,7 +371,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
       ),
-      _groupRule(),
+      const SizedBox(height: GoSpace.section - GoSpace.gutter),
       _row(
         icon: Icons.logout,
         title: '로그아웃',
@@ -383,7 +383,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         titleColor: GoColors.coralDark,
         onTap: _busy ? null : _deleteAccount,
       ),
-      _groupRule(),
+      const SizedBox(height: GoSpace.section - GoSpace.gutter),
       _row(
         icon: Icons.info_outline,
         title: '버전',
@@ -394,9 +394,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ]);
   }
 
-  /// 그룹 사이 구분선 — 신문처럼 잉크 100%. 행 사이는 line
-  Widget _groupRule() => Container(height: GoStroke.rule, color: GoColors.rule);
-
+  /// 설정 행 하나 = 독립 카드 하나. 색은 테두리·아이콘에만(역할색), 배경은 흰색
   Widget _row({
     IconData? icon,
     Widget? leading,
@@ -407,14 +405,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     VoidCallback? onTap,
   }) {
     assert(icon != null || leading != null);
-    return InkWell(
+    return GoCard(
       onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: GoColors.line, width: GoStroke.rule)),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
-        child: Row(children: [
+      borderColor: titleColor ?? GoColors.line,
+      margin: const EdgeInsets.fromLTRB(
+          GoSpace.screen, 0, GoSpace.screen, GoSpace.gutter),
+      padding: const EdgeInsets.symmetric(
+          horizontal: GoSpace.card, vertical: GoSpace.m),
+      child: Row(children: [
           SizedBox(
             width: 24,
             child: leading ??
@@ -438,7 +436,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ? const Icon(Icons.chevron_right, size: 20, color: GoColors.dim)
                   : const SizedBox.shrink()),
         ]),
-      ),
     );
   }
 }
