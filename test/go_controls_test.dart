@@ -250,13 +250,13 @@ void main() {
           .widgetList<AnimatedContainer>(inside<AnimatedContainer>(GoBottomNav))
           .map((c) => (c.decoration as BoxDecoration).color)
           .toList();
-      // 선택된 내비게이션은 주 색(Color Usage Rules §1)
-      expect(pills, [Colors.transparent, R.actionPrimary.bg, Colors.transparent]);
+      // 선택된 탭은 잉크 그림자 알약(selection) — 주 색은 화면의 CTA에 양보
+      expect(pills, [Colors.transparent, R.selection.bg, Colors.transparent]);
       final icons = tester
           .widgetList<Icon>(inside<Icon>(GoBottomNav))
           .map((i) => i.color)
           .toList();
-      expect(icons, [R.textSecondary, R.actionPrimary.fg, R.textSecondary]);
+      expect(icons, [R.textSecondary, R.selection.fg, R.textSecondary]);
       expect(find.text('3'), findsOneWidget, reason: '배지는 알약 위에도 남는다');
 
       await tester.tap(find.text('설정'));
@@ -313,14 +313,14 @@ void main() {
           .map((c) => (c.decoration as BoxDecoration).color)
           .toList();
       final g1 = await press(tester, find.text('홈'));
-      expect(pills()[0], R.actionPrimary.pressed);
+      expect(pills()[0], R.selection.pressed);
       await g1.up();
       await tester.pumpAndSettle();
       final g2 = await press(tester, find.text('설정'));
       expect(pills()[2], R.pressOverlay);
       await g2.up();
       await tester.pumpAndSettle();
-      expect(pills(), [R.actionPrimary.bg, Colors.transparent, Colors.transparent]);
+      expect(pills(), [R.selection.bg, Colors.transparent, Colors.transparent]);
     });
 
     testWidgets('GoSelectChip·GoCheckbox: 누르면 면이 가라앉는다', (tester) async {

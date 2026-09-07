@@ -76,6 +76,10 @@ class GoColors {
   static const pinePressed = Color(0xFF174A3B);
   static const surfacePressed = Color(0xFFEDE7DE);
   static const pressOverlay = Color(0x141A1A16); // ink 8%
+
+  /// 선택된 자리에 드리우는 잉크 그림자(탭바 알약). 12% / 눌림 18%
+  static const inkVeil = Color(0x1F1A1A16);
+  static const inkVeilPressed = Color(0x2E1A1A16);
 }
 
 /// 면 + 글자(+테두리) 한 세트. 역할 하나가 곧 조합 하나다
@@ -106,8 +110,10 @@ class GoRole {
 /// 색은 장식이 아니라 **정보 위계·행동의 중요도·상태**를 전하는 수단이다.
 ///
 /// 1. **Primary**([actionPrimary]) — 가장 중요하거나 가장 먼저 해야 하는 행동.
-///    핵심 CTA, 주요 기능, **현재 선택된 내비게이션**, 중요한 상태·강조.
-///    한 화면에서 주 색이 여럿이면 우선순위가 흩어진다 — 화면당 하나를 원칙으로
+///    핵심 CTA, 주요 기능, 중요한 상태·강조. 한 화면에서 주 색이 여럿이면
+///    우선순위가 흩어진다 — 화면당 하나를 원칙으로. 현재 선택된 탭바 항목은
+///    주 색이 아니라 [selection](잉크 그림자 알약)으로 표시한다 — 탭바는 모든
+///    화면에 붙어 있어 여기에 주 색을 쓰면 화면의 CTA와 매번 경쟁한다
 /// 2. **Secondary**([actionSecondary]·[actionComplete]) — 우선순위가 낮은 보조
 ///    행동. 보조 CTA, 기록 보기, 필터, 공유, 부가 기능. **덜 중요한 색이 아니라
 ///    덜 중요한 역할의 색이다.** 대비와 인지 가능성은 primary와 같아야 한다
@@ -146,6 +152,7 @@ class GoRoles extends ThemeExtension<GoRoles> {
     required this.statusOnline,
     required this.reward,
     required this.dark,
+    required this.selection,
     required this.self,
     required this.partner,
     required this.selfOnDark,
@@ -203,8 +210,12 @@ class GoRoles extends ThemeExtension<GoRoles> {
   /// 코인·적립 전용. **리워드 외 사용 금지**
   final GoRole reward;
 
-  /// 잉크 면(히어로 카드·선택 알약·세그먼트 활성)
+  /// 잉크 면(히어로 카드·세그먼트 활성)
   final GoRole dark;
+
+  /// 선택된 자리의 표시 — 잉크를 옅게 드리운 그림자 면 + 잉크 글자.
+  /// 탭바의 선택 알약(2026-09-08 결정: 주 색이 아니라 그림자 느낌으로)
+  final GoRole selection;
 
   // 관계색 — 아바타 테두리·점. paper 위에서는 다크 앵커
   final Color self;
@@ -270,6 +281,11 @@ class GoRoles extends ThemeExtension<GoRoles> {
       bg: GoColors.ink,
       fg: GoColors.paper,
       pressed: GoColors.inkPressed,
+    ),
+    selection: GoRole(
+      bg: GoColors.inkVeil,
+      fg: GoColors.ink,
+      pressed: GoColors.inkVeilPressed,
     ),
     self: GoColors.olive,
     partner: GoColors.rust,
