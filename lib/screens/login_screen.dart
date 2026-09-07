@@ -112,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     backgroundColor: Colors.white,
-                    side: BorderSide(color: GoColors.ink.withValues(alpha: .15)),
+                    side: const BorderSide(color: GoColors.line),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
                   ),

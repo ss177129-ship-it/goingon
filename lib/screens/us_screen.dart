@@ -425,8 +425,8 @@ class _UsScreenState extends State<UsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(color: GoColors.amber.withValues(alpha: .22), width: 1.5),
-          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: GoColors.amberDark, width: 2),
+          borderRadius: BorderRadius.circular(GoRadius.md),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
@@ -452,33 +452,42 @@ class _UsScreenState extends State<UsScreen> {
                 height: 28,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: done
-                      ? GoColors.amber.withValues(alpha: .16)
-                      : GoColors.ink.withValues(alpha: .04),
-                  borderRadius: BorderRadius.circular(8),
+                  color: done ? GoColors.amber : Colors.white,
+                  borderRadius: BorderRadius.circular(GoRadius.sm),
                   border: isToday && !done
-                      ? Border.all(
-                          color: GoColors.limeDark.withValues(alpha: .4), width: 1.5)
-                      : null,
+                      ? Border.all(color: GoColors.limeDark, width: 2)
+                      : Border.all(color: GoColors.line),
                 ),
                 child: Text(_kWeekdayLabels[i],
                     style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                        color: done ? GoColors.amber : GoColors.dim)),
+                        color: done ? GoColors.ink : GoColors.mid)),
               ),
             );
           })),
           if (!daysDone.contains(today)) ...[
             const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: GoColors.lime.withValues(alpha: .1),
-                borderRadius: BorderRadius.circular(12),
+            // 틴트 대신 왼쪽 세로 바(4px)로 "다른 카드"를 말한다
+            ClipRRect(
+              borderRadius: BorderRadius.circular(GoRadius.sm),
+              child: Container(
+                width: double.infinity,
+                color: Colors.white,
+                child: IntrinsicHeight(
+                  child: Row(children: [
+                    Container(width: 4, color: GoColors.limeDark),
+                    const Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        child: Text(
+                            '이번 주는 아직 함께 달리지 않았어요. 지금 GO?를 보내볼까요?',
+                            style: TextStyle(fontSize: 11, color: GoColors.limeDark,
+                                height: 1.5)),
+                      ),
+                    ),
+                  ]),
+                ),
               ),
-              child: Text('이번 주는 아직 함께 달리지 않았어요. 지금 GO?를 보내볼까요?',
-                  style: TextStyle(fontSize: 11, color: GoColors.limeDark,
-                      height: 1.5)),
             ),
             const SizedBox(height: 10),
             SizedBox(
@@ -613,11 +622,11 @@ class _UsScreenState extends State<UsScreen> {
       margin: const EdgeInsets.fromLTRB(22, 0, 22, 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: isNext ? Colors.white : GoColors.lime.withValues(alpha: .1),
+        color: Colors.white,
         border: Border.all(
-            color: isNext ? GoColors.line : GoColors.limeDark.withValues(alpha: .16),
-            width: isNext ? 1 : 1),
-        borderRadius: BorderRadius.circular(14),
+            color: isNext ? GoColors.line : GoColors.limeDark,
+            width: isNext ? 1 : 2),
+        borderRadius: BorderRadius.circular(GoRadius.md),
       ),
       child: Row(children: [
         Icon(icon, size: 20, color: isNext ? GoColors.dim : GoColors.limeDark),
@@ -676,8 +685,9 @@ class _UsScreenState extends State<UsScreen> {
                 margin: const EdgeInsets.only(bottom: 5),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: GoColors.lime.withValues(alpha: .15),
-                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(GoRadius.sm),
+                  border: Border.all(color: GoColors.limeDark, width: 2),
                 ),
                 child: Text(storyLabel,
                     style: const TextStyle(fontSize: 9,

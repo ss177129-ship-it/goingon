@@ -317,7 +317,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               letter: _name.isEmpty ? '' : _name[0],
               size: 96,
               fontSize: 40,
-              fill: GoColors.lime.withValues(alpha: .18),
               borderColor: GoColors.limeDark,
               emptyIcon: Icons.person_outline,
               photoUrl: _photoUrl,

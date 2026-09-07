@@ -173,8 +173,9 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
-              color: GoColors.coral.withValues(alpha: .1),
-              borderRadius: BorderRadius.circular(20),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(GoRadius.sm),
+              border: Border.all(color: GoColors.coralDark, width: 2),
             ),
             child: const Text('함께 달리기 요청',
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
@@ -185,7 +186,6 @@ class _HomeScreenState extends State<HomeScreen> {
             letter: hostName[0],
             size: 88,
             fontSize: 36,
-            fill: GoColors.coral.withValues(alpha: .12),
             borderColor: GoColors.coralDark,
             photoUrl: hostPhotoUrl,
           ),
@@ -310,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Row(children: [
             Text('goingon',
                 style:
-                    GoTheme.serif(13, color: GoColors.ink.withValues(alpha: .3))),
+                    GoTheme.serif(13, color: GoColors.mid)),
             const Spacer(),
             IconButton(
               onPressed: () => showFriendSearchSheet(context),
@@ -391,9 +391,9 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.fromLTRB(22, 0, 22, 8),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
-        color: GoColors.coral.withValues(alpha: .07),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: GoColors.coral.withValues(alpha: .25), width: 1.5),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(GoRadius.md),
+        border: Border.all(color: GoColors.coralDark, width: 2),
       ),
       child: Column(children: [
         Row(children: [
@@ -401,7 +401,6 @@ class _HomeScreenState extends State<HomeScreen> {
             letter: name[0],
             size: 40,
             fontSize: 17,
-            fill: GoColors.coral.withValues(alpha: .12),
             borderColor: GoColors.coralDark,
             photoUrl: r.photoUrl,
           ),
@@ -489,9 +488,9 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.fromLTRB(22, 6, 22, 0),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: GoColors.amber.withValues(alpha: .08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: GoColors.amber.withValues(alpha: .25)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(GoRadius.md),
+        border: Border.all(color: GoColors.amberDark, width: 2),
       ),
       child: Row(children: [
         const Icon(Icons.wifi_off, size: 18, color: GoColors.amber),
@@ -549,7 +548,6 @@ class _HomeScreenState extends State<HomeScreen> {
           letter: myName.isEmpty ? '' : myName[0],
           size: 60,
           fontSize: 26,
-          fill: GoColors.lime.withValues(alpha: .18),
           borderColor: GoColors.limeDark,
           emptyIcon: Icons.person_outline,
           photoUrl: _me?['photoUrl'] as String?,

@@ -214,8 +214,9 @@ class _FinishScreenState extends State<FinishScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: GoColors.ink.withValues(alpha: .08),
-                      borderRadius: BorderRadius.circular(16),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(GoRadius.md),
+                      border: Border.all(color: GoColors.line),
                     ),
                     child: Column(children: [
                       Text('함께 달린 것',
@@ -253,8 +254,7 @@ class _FinishScreenState extends State<FinishScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text('goingon · 멀리 있어도, 함께',
-                      style: GoTheme.serif(12,
-                          color: GoColors.ink.withValues(alpha: .35))),
+                      style: GoTheme.serif(12, color: GoColors.mid)),
                 ]),
               ),
             ),
@@ -336,15 +336,16 @@ class _FinishScreenState extends State<FinishScreen> {
   }
 
   Widget _tDivider() =>
-      Container(width: 1, height: 32, color: GoColors.ink.withValues(alpha: .12));
+      Container(width: 1, height: 32, color: GoColors.line);
 
   Widget _personalCard(String who, double? km, Color color, {String? mood}) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: GoColors.ink.withValues(alpha: .07),
-          borderRadius: BorderRadius.circular(12),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(GoRadius.sm),
+          border: Border.all(color: GoColors.line),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(who,

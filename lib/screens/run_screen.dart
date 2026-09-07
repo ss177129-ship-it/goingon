@@ -718,8 +718,8 @@ class _RunScreenState extends State<RunScreen>
           Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: GoColors.ink.withValues(alpha: .07),
-              border: Border.all(color: GoColors.ink.withValues(alpha: .1)),
+              color: Colors.white,
+              border: Border.all(color: GoColors.line),
             ),
           ),
           // 링은 누르는 동안에만 그린다. 색은 ink 계열 — lime(나)도

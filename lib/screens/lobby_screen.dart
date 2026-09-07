@@ -338,9 +338,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   return Container(
                       width: 32, height: 1,
                       margin: const EdgeInsets.symmetric(horizontal: 4),
-                      color: done
-                          ? GoColors.limeDark
-                          : GoColors.ink.withValues(alpha: .1));
+                      color: done ? GoColors.limeDark : GoColors.line);
                 }
                 final idx = i ~/ 2;
                 final done = idx < _step;
@@ -355,7 +353,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                         ? GoColors.limeDark
                         : active
                             ? GoColors.ink
-                            : GoColors.ink.withValues(alpha: .12),
+                            : GoColors.dim,
                   ),
                 );
               }),
@@ -370,15 +368,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: _meReady
-                      ? GoColors.lime.withValues(alpha: .08)
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(GoRadius.md),
                   border: Border.all(
-                      color: _meReady
-                          ? GoColors.lime.withValues(alpha: .5)
-                          : GoColors.line,
-                      width: 1.5),
+                      color: _meReady ? GoColors.limeDark : GoColors.line,
+                      width: _meReady ? 2 : 1.5),
                 ),
                 child: Column(children: [
                   Row(children: [
@@ -420,8 +414,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: GoColors.ink.withValues(alpha: .06),
-                            borderRadius: BorderRadius.circular(20),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(GoRadius.sm),
+                            border: Border.all(color: GoColors.line),
                           ),
                           child: Text(_meReady ? '취소' : '다음 →',
                               style: const TextStyle(fontSize: 10,
@@ -515,8 +510,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 18),
       decoration: BoxDecoration(
-        color: GoColors.ink.withValues(alpha: .06),
-        borderRadius: BorderRadius.circular(18),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(GoRadius.md),
         border: Border.all(color: GoColors.line, width: 1.5),
       ),
       child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -540,9 +535,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: GoColors.amber.withValues(alpha: .08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: GoColors.amber.withValues(alpha: .25)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(GoRadius.md),
+        border: Border.all(color: GoColors.amberDark, width: 2),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('아직 응답이 없어요. 앱을 안 보고 있을 수 있어요.',
@@ -595,12 +590,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
         width: 64, height: 64,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: fill.withValues(alpha: .1),
-          border:
-              Border.all(color: ready ? line : line.withValues(alpha: .3), width: 2),
-          boxShadow: ready
-              ? [BoxShadow(color: fill.withValues(alpha: .2), spreadRadius: 4)]
-              : null,
+          color: Colors.white,
+          border: Border.all(color: ready ? line : GoColors.line, width: 2),
         ),
         child: Center(child: Text(name[0], style: GoTheme.serif(24))),
       ),
@@ -612,16 +603,15 @@ class _LobbyScreenState extends State<LobbyScreen> {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         decoration: BoxDecoration(
-          color: ready
-              ? fill.withValues(alpha: .13)
-              : isLate
-                  ? GoColors.amber.withValues(alpha: .07)
-                  : Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(GoRadius.sm),
           border: Border.all(
               color: isLate
-                  ? GoColors.amber.withValues(alpha: .3)
-                  : GoColors.line),
+                  ? GoColors.amberDark
+                  : ready
+                      ? line
+                      : GoColors.line,
+              width: (ready || isLate) ? 2 : 1),
         ),
         child: Text(
             ready
@@ -644,7 +634,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
         width: 18, height: 18,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: fill.withValues(alpha: .2),
+          color: Colors.white,
           border: Border.all(color: line, width: 2.5),
         ),
       );
