@@ -241,7 +241,7 @@ class _SplashGateState extends State<SplashGate>
               opacity: .75,
               child: const Text('화면을 누르면 시작해요',
                   style: TextStyle(
-                      fontSize: 11, letterSpacing: .5, color: GoColors.dim)),
+                      fontSize: 11, letterSpacing: .5, color: GoColors.mid)),
             ),
           ),
         ]),

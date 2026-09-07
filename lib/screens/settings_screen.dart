@@ -218,7 +218,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 1),
                   Text('@$username',
                       style:
-                          const TextStyle(fontSize: 11, color: GoColors.dim)),
+                          const TextStyle(fontSize: 11, color: GoColors.mid)),
                 ],
               ]),
         ),

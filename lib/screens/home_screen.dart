@@ -333,7 +333,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.2,
-                  color: GoColors.dim)),
+                  color: GoColors.mid)),
         ),
         if (friends.isEmpty)
           _noFriendsYet()
@@ -379,7 +379,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 1.2,
-                color: GoColors.dim)),
+                color: GoColors.mid)),
       ),
       ..._requests.map(_requestRow),
     ];
@@ -587,7 +587,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 2),
         Text(label,
             style: const TextStyle(fontSize: 9, letterSpacing: .54,
-                color: GoColors.dim)),
+                color: GoColors.mid)),
       ]),
     );
   }
@@ -777,7 +777,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: GoTheme.serif(18, color: GoColors.mid)),
         const SizedBox(height: 6),
         const Text('한 명만 있으면 고잉온이 시작돼요.',
-            style: TextStyle(fontSize: 12, color: GoColors.dim)),
+            style: TextStyle(fontSize: 12, color: GoColors.mid)),
       ]),
     );
   }

@@ -114,7 +114,7 @@ class _UsScreenState extends State<UsScreen> {
           alignment: Alignment.centerLeft,
           child: Text('우리의 여정',
               style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                  letterSpacing: 1.4, color: GoColors.dim)),
+                  letterSpacing: 1.4, color: GoColors.mid)),
         ),
       ),
       Expanded(
@@ -171,7 +171,7 @@ class _UsScreenState extends State<UsScreen> {
           alignment: Alignment.centerLeft,
           child: Text('우리의 여정',
               style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                  letterSpacing: 1.4, color: GoColors.dim)),
+                  letterSpacing: 1.4, color: GoColors.mid)),
         ),
       ),
       Expanded(
@@ -228,7 +228,7 @@ class _UsScreenState extends State<UsScreen> {
           alignment: Alignment.centerLeft,
           child: Text('우리의 여정',
               style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                  letterSpacing: 1.4, color: GoColors.dim)),
+                  letterSpacing: 1.4, color: GoColors.mid)),
         ),
       ),
       Expanded(
@@ -345,7 +345,7 @@ class _UsScreenState extends State<UsScreen> {
         padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
         child: Text('우리의 여정',
             style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                letterSpacing: 1.4, color: GoColors.dim)),
+                letterSpacing: 1.4, color: GoColors.mid)),
       ),
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 2, 24, 0),
@@ -515,7 +515,7 @@ class _UsScreenState extends State<UsScreen> {
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
           child: Text('우리가 함께 넘은 것',
               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                  letterSpacing: 1.1, color: GoColors.dim)),
+                  letterSpacing: 1.1, color: GoColors.mid)),
         ),
         if (achieved.isNotEmpty)
           _milestoneCard(
@@ -541,7 +541,7 @@ class _UsScreenState extends State<UsScreen> {
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
         child: Text('함께한 순간',
             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                letterSpacing: 1.1, color: GoColors.dim)),
+                letterSpacing: 1.1, color: GoColors.mid)),
       ),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -554,7 +554,7 @@ class _UsScreenState extends State<UsScreen> {
         padding: const EdgeInsets.fromLTRB(0, 14, 0, 4),
         child: Text('$count개의 순간을 함께 쌓았어요',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, color: GoColors.dim)),
+            style: const TextStyle(fontSize: 12, color: GoColors.mid)),
       ),
       Padding(
         padding: const EdgeInsets.fromLTRB(32, 0, 32, 20),
@@ -597,7 +597,7 @@ class _UsScreenState extends State<UsScreen> {
           const SizedBox(height: 3),
           Text(label,
               style: const TextStyle(fontSize: 9, letterSpacing: .5,
-                  color: GoColors.dim)),
+                  color: GoColors.mid)),
         ]),
       ),
     );
@@ -665,7 +665,7 @@ class _UsScreenState extends State<UsScreen> {
             Text(day, style: GoTheme.serif(19)),
             const SizedBox(height: 2),
             Text(month,
-                style: const TextStyle(fontSize: 9, color: GoColors.dim)),
+                style: const TextStyle(fontSize: 9, color: GoColors.mid)),
           ]),
         ),
         const SizedBox(width: 14),

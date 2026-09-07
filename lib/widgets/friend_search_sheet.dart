@@ -167,7 +167,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(children: [
-                Text('@', style: GoTheme.serif(24, color: GoColors.dim)),
+                Text('@', style: GoTheme.serif(24, color: GoColors.mid)),
                 const SizedBox(width: 2),
                 Expanded(
                   child: TextField(
@@ -289,7 +289,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
                         color: GoColors.ink)),
                 const SizedBox(height: 2),
                 Text('@${c.username}',
-                    style: const TextStyle(fontSize: 12, color: GoColors.dim)),
+                    style: const TextStyle(fontSize: 12, color: GoColors.mid)),
                 if (status != null) ...[
                   const SizedBox(height: 4),
                   Text(status,

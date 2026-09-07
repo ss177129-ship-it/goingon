@@ -68,7 +68,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
               const SizedBox(height: 40),
               BrandMark.standard(),
               const SizedBox(height: 16),
-              Text('goingon', style: GoTheme.serif(20, color: GoColors.dim)),
+              Text('goingon', style: GoTheme.serif(20, color: GoColors.mid)),
               const SizedBox(height: 18),
               Text('마지막으로,\n프로필을 만들어요',
                   textAlign: TextAlign.center, style: GoTheme.serif(30)),
@@ -108,7 +108,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
               ),
               const SizedBox(height: 8),
               const Text('영문 소문자·숫자·_ 로 3~20자',
-                  style: TextStyle(fontSize: 11, color: GoColors.dim)),
+                  style: TextStyle(fontSize: 11, color: GoColors.mid)),
               const SizedBox(height: 36),
               SizedBox(
                 width: double.infinity,

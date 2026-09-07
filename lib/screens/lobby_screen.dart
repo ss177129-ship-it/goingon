@@ -244,7 +244,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             const Text('함께 달리기 시작',
                 style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                    letterSpacing: 1.4, color: GoColors.dim)),
+                    letterSpacing: 1.4, color: GoColors.mid)),
             const SizedBox(height: 10),
             Text('$_countdown', style: GoTheme.serif(128)),
             const SizedBox(height: 10),
@@ -256,7 +256,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8),
                 child: Text('+',
-                    style: TextStyle(fontSize: 11, color: GoColors.dim)),
+                    style: TextStyle(fontSize: 11, color: GoColors.mid)),
               ),
               _cdDot(GoColors.coral, GoColors.coralDark),
             ]),
@@ -298,7 +298,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                     onTap: () => Navigator.pop(context),
                     child: const Text('← 홈으로',
                         style:
-                            TextStyle(fontSize: 11, color: GoColors.dim)),
+                            TextStyle(fontSize: 11, color: GoColors.mid)),
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -398,7 +398,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                 style: const TextStyle(fontSize: 9,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 1,
-                                    color: GoColors.dim)),
+                                    color: GoColors.mid)),
                             const SizedBox(height: 3),
                             Text(_isLate ? '조금 늦어요' : step.text,
                                 style: TextStyle(fontSize: 16,

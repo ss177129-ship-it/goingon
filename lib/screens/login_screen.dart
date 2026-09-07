@@ -85,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     BrandMark.standard(),
                     const SizedBox(height: 16),
-                    Text('goingon', style: GoTheme.serif(20, color: GoColors.dim)),
+                    Text('goingon', style: GoTheme.serif(20, color: GoColors.mid)),
                     const SizedBox(height: 18),
                     Text('멀리 있어도,\n함께 달려요',
                         textAlign: TextAlign.center, style: GoTheme.serif(30)),

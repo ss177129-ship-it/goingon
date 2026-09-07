@@ -526,7 +526,7 @@ class _RunScreenState extends State<RunScreen>
                 child: TextButton(
                   onPressed: () => Navigator.pop(ctx, null),
                   child: const Text('건너뛰기',
-                      style: TextStyle(color: GoColors.dim, fontSize: 13)),
+                      style: TextStyle(color: GoColors.mid, fontSize: 13)),
                 ),
               ),
             ]),
