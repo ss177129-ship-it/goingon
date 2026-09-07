@@ -12,9 +12,10 @@ class GoBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      // iOS 탭바 방식 — 바탕(페이퍼)과 다른 면(흰 88%) + 상단 헤어라인
       decoration: BoxDecoration(
-        color: GoColors.paper.withValues(alpha: .95),
-        border: Border(top: BorderSide(color: GoColors.rule, width: GoStroke.rule)),
+        color: Colors.white.withValues(alpha: .88),
+        border: Border(top: BorderSide(color: GoColors.line, width: GoStroke.rule)),
       ),
       padding: const EdgeInsets.fromLTRB(28, 10, 28, 6),
       child: Row(children: [

@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import '../services/auth_service.dart';
 import '../services/avatar_service.dart';
 import '../theme.dart';
-import '../widgets/go_card.dart';
+import '../widgets/go_group.dart';
 import '../widgets/go_button.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
@@ -292,9 +292,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           const SizedBox(height: 22),
           _photoBlock(),
           const SizedBox(height: 22),
-          _row('이름', _name.isEmpty ? '설정 안 함' : _name, _editName),
-          _row('아이디', username.isEmpty ? '설정 안 함' : '@$username',
-              _editUsername),
+          GoGroup(rows: [
+            _row('이름', _name.isEmpty ? '설정 안 함' : _name, _editName),
+            _row('아이디', username.isEmpty ? '설정 안 함' : '@$username',
+                _editUsername),
+          ]),
           const SizedBox(height: GoSpace.section),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 24),
@@ -350,12 +352,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     );
   }
 
-  /// 편집 행 하나 = 독립 카드 하나
-  Widget _row(String title, String value, VoidCallback onTap) {
-    return GoCard(
+  /// 그룹 안의 행 하나
+  GoGroupRow _row(String title, String value, VoidCallback onTap) {
+    return GoGroupRow(
       onTap: onTap,
-      margin: const EdgeInsets.fromLTRB(
-          GoSpace.screen, 0, GoSpace.screen, GoSpace.gutter),
       padding: const EdgeInsets.symmetric(
           horizontal: GoSpace.card, vertical: GoSpace.l),
       child: Row(children: [

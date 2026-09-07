@@ -164,7 +164,6 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: GoColors.line, width: GoStroke.card),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(children: [
@@ -253,7 +252,6 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: GoColors.line, width: GoStroke.card),
       ),
       child: Row(children: [
         InitialAvatar(

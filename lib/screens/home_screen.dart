@@ -9,7 +9,7 @@ import '../services/auth_service.dart';
 import '../services/friend_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
-import '../widgets/go_card.dart';
+import '../widgets/go_group.dart';
 import '../widgets/pressable.dart';
 import '../widgets/go_button.dart';
 import '../widgets/friend_search_sheet.dart';
@@ -309,7 +309,11 @@ class _HomeScreenState extends State<HomeScreen> {
         if (friends.isEmpty)
           _noFriendsYet()
         else
-          ...friends.map(_friendRow),
+          GoGroup(
+            margin: const EdgeInsets.symmetric(horizontal: 22),
+            dividerInset: GoSpace.card + 44 + GoSpace.m,
+            rows: friends.map(_friendRow).toList(),
+          ),
         // 친구가 없어도 전체 흐름을 체험할 수 있는 통로. 심사관이 로비·러닝·
         // 완료 화면을 볼 유일한 방법이라 반드시 눈에 띄는 곳에 있어야 함
         if (friends.isEmpty) _demoLink(),
@@ -479,7 +483,6 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: GoColors.line, width: GoStroke.card),
       ),
       child: Column(children: [
         InitialAvatar(
@@ -533,15 +536,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// 친구 행 — 프로토타입의 friend-row (아바타 + 이름 + GO?)
   /// 길게 누르면 연결 끊기 / 차단 메뉴
-  Widget _friendRow(Map<String, dynamic> f) {
+  GoGroupRow _friendRow(Map<String, dynamic> f) {
     final name = _displayName(f['name']);
     final uid = f['uid'] as String;
-    // 페이스메이트 한 명 = 카드 하나. 상대 역할색(coralDark)은 아바타 링에만
-    return GoCard(
+    // 그룹 안의 행 하나. 상대 역할색(coralDark)은 아바타 링에만
+    return GoGroupRow(
       onLongPress: () => _showFriendActions(uid, name),
-      margin: const EdgeInsets.fromLTRB(22, 0, 22, GoSpace.gutter),
-      padding: const EdgeInsets.symmetric(
-          horizontal: GoSpace.card, vertical: GoSpace.m),
       child: Row(children: [
           InitialAvatar(
             letter: name[0],
@@ -628,7 +628,6 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: GoSpace.l),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(GoRadius.sm),
-          border: Border.all(color: GoColors.line, width: GoStroke.card),
         ),
         child:
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -701,7 +700,6 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(GoRadius.md),
-        border: Border.all(color: GoColors.line, width: GoStroke.card),
       ),
       child: Column(children: [
         Text('아직 페이스메이트가 없어요',

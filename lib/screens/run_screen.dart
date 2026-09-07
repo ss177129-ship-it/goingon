@@ -605,7 +605,6 @@ class _RunScreenState extends State<RunScreen>
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 28),
             child: GoCard(
-              borderColor: GoColors.limeDark,
               padding: const EdgeInsets.symmetric(vertical: GoSpace.m),
               child: Column(children: [
                 _caption('나 · 페이스', color: GoColors.limeDark),
@@ -613,17 +612,10 @@ class _RunScreenState extends State<RunScreen>
                     style: GoTheme.serif(68, color: GoColors.limeDark)
                         .copyWith(height: 1.1)),
                 _caption('km당'),
-              ]),
-            ),
-          ),
-          const SizedBox(height: GoSpace.gutter),
-          // ── 상대 상태어 ──
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: GoCard(
-              borderColor: GoColors.coralDark,
-              padding: const EdgeInsets.symmetric(vertical: GoSpace.m),
-              child: Column(children: [
+                const SizedBox(height: GoSpace.m),
+                Container(height: GoStroke.rule, color: GoColors.line),
+                const SizedBox(height: GoSpace.m),
+                // ── 상대 상태어 ──
                 _caption('${widget.partnerName} · 상태', color: GoColors.coralDark),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 400),
@@ -663,7 +655,6 @@ class _RunScreenState extends State<RunScreen>
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: GoColors.line, width: GoStroke.card),
                 boxShadow: [
                   BoxShadow(
                       color: Colors.black.withValues(alpha: .05),
@@ -726,7 +717,6 @@ class _RunScreenState extends State<RunScreen>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
-              border: Border.all(color: GoColors.line, width: GoStroke.card),
             ),
           ),
           // 링은 누르는 동안에만 그린다. 색은 ink 계열 — lime(나)도

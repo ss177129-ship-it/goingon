@@ -5,7 +5,7 @@ import '../services/friend_service.dart';
 import '../services/run_service.dart';
 import '../services/story_labels.dart';
 import '../theme.dart';
-import '../widgets/go_card.dart';
+import '../widgets/go_group.dart';
 import '../widgets/go_button.dart';
 import '../widgets/friend_search_sheet.dart';
 import '../widgets/initial_avatar.dart';
@@ -412,7 +412,7 @@ class _UsScreenState extends State<UsScreen> {
                   borderRadius: BorderRadius.circular(GoRadius.sm),
                   border: isToday && !done
                       ? Border.all(color: GoColors.limeDark, width: GoStroke.accent)
-                      : Border.all(color: GoColors.line, width: GoStroke.card),
+                      : null,
                 ),
                 child: Text(_kWeekdayLabels[i],
                     style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
@@ -493,7 +493,7 @@ class _UsScreenState extends State<UsScreen> {
       ),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(children: sessions
+        child: GoGroup(margin: EdgeInsets.zero, dividerInset: GoSpace.card + 40 + 14, rows: sessions
             .map((s) => _momentRow(s, me, partnerUid, partnerName,
                 storyLabel: storyLabels[s['id']]))
             .toList()),
@@ -537,7 +537,6 @@ class _UsScreenState extends State<UsScreen> {
         padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 6),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(color: GoColors.line, width: GoStroke.card),
           borderRadius: BorderRadius.circular(GoRadius.md),
         ),
         child: Column(children: [
@@ -581,7 +580,7 @@ class _UsScreenState extends State<UsScreen> {
     );
   }
 
-  Widget _momentRow(
+  GoGroupRow _momentRow(
       Map<String, dynamic> s, String me, String partnerUid, String partnerName,
       {String? storyLabel}) {
     final started = sessionStartedAt(s);
@@ -599,11 +598,8 @@ class _UsScreenState extends State<UsScreen> {
       if (partnerMood != null) "$partnerName '$partnerMood'",
     ].join(' · ');
 
-    // 순간 하나 = 카드 하나
-    return GoCard(
-      margin: const EdgeInsets.only(bottom: GoSpace.gutter),
-      padding: const EdgeInsets.symmetric(
-          horizontal: GoSpace.card, vertical: GoSpace.m),
+    // 그룹 안의 행 하나
+    return GoGroupRow(
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         SizedBox(
           width: 40,

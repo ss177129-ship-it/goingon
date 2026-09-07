@@ -7,7 +7,7 @@ import '../services/friend_service.dart';
 import '../services/push_service.dart';
 import '../services/sound_settings.dart';
 import '../theme.dart';
-import '../widgets/go_card.dart';
+import '../widgets/go_group.dart';
 import '../widgets/go_button.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/initial_avatar.dart';
@@ -195,7 +195,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(GoRadius.md),
-        border: Border.all(color: GoColors.line, width: GoStroke.card),
       ),
       child: Row(children: [
         InitialAvatar(
@@ -298,6 +297,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.fromLTRB(24, 14, 24, 6),
         child: const Text('설정', style: GoText.title),
       ),
+      const SizedBox(height: GoSpace.m),
+      GoGroup(dividerInset: 54, rows: [
       // 프로토타입 s-settings의 '프로필 편집' 한 줄. 사진·이름·아이디를
       // 한 화면에서 다루므로 여기서는 지금 상태만 요약해 보여줌
       _row(
@@ -350,7 +351,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         onTap: _soundOn ? () => _setBriefing(!_briefingOn) : null,
       ),
-      const SizedBox(height: GoSpace.section - GoSpace.gutter),
+      ]),
+      const SizedBox(height: GoSpace.section),
+      GoGroup(dividerInset: 54, rows: [
       _row(
         icon: Icons.block,
         title: '차단 목록',
@@ -371,7 +374,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
       ),
-      const SizedBox(height: GoSpace.section - GoSpace.gutter),
+      ]),
+      const SizedBox(height: GoSpace.section),
+      GoGroup(dividerInset: 54, rows: [
       _row(
         icon: Icons.logout,
         title: '로그아웃',
@@ -383,19 +388,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
         titleColor: GoColors.coralDark,
         onTap: _busy ? null : _deleteAccount,
       ),
-      const SizedBox(height: GoSpace.section - GoSpace.gutter),
+      ]),
+      const SizedBox(height: GoSpace.section),
+      GoGroup(dividerInset: 54, rows: [
       _row(
         icon: Icons.info_outline,
         title: '버전',
         trailing: Text(_appVersion,
             style: const TextStyle(fontSize: 13, color: GoColors.mid)),
       ),
+      ]),
       const SizedBox(height: GoSpace.m),
     ]);
   }
 
-  /// 설정 행 하나 = 독립 카드 하나. 색은 테두리·아이콘에만(역할색), 배경은 흰색
-  Widget _row({
+  /// 그룹 안의 행 하나(iOS 설정). 역할색은 아이콘·제목 글자에만
+  GoGroupRow _row({
     IconData? icon,
     Widget? leading,
     required String title,
@@ -405,13 +413,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     VoidCallback? onTap,
   }) {
     assert(icon != null || leading != null);
-    return GoCard(
+    return GoGroupRow(
       onTap: onTap,
-      borderColor: titleColor ?? GoColors.line,
-      margin: const EdgeInsets.fromLTRB(
-          GoSpace.screen, 0, GoSpace.screen, GoSpace.gutter),
       padding: const EdgeInsets.symmetric(
-          horizontal: GoSpace.card, vertical: GoSpace.m),
+          horizontal: GoSpace.card, vertical: GoSpace.l),
       child: Row(children: [
           SizedBox(
             width: 24,
