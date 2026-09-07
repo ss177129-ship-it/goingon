@@ -152,9 +152,7 @@ class _UsScreenState extends State<UsScreen> {
                 width: 64, height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: roles.surface,
-                  border: Border.all(
-                      color: roles.line, width: GoStroke.accent),
+                  color: roles.pressOverlay,
                 ),
                 child: Icon(Icons.wifi_off_rounded,
                     size: 28, color: roles.textSecondary),
@@ -195,9 +193,7 @@ class _UsScreenState extends State<UsScreen> {
                 width: 64, height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: roles.surface,
-                  border: Border.all(
-                      color: roles.partner, width: GoStroke.accent),
+                  color: roles.partner.withValues(alpha: .18),
                 ),
                 child: Icon(Icons.people_alt_outlined,
                     size: 30, color: roles.partner),
@@ -239,9 +235,7 @@ class _UsScreenState extends State<UsScreen> {
                 width: 64, height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: roles.surface,
-                  border: Border.all(
-                      color: roles.self, width: GoStroke.accent),
+                  color: roles.self.withValues(alpha: .18),
                 ),
                 child: Icon(Icons.directions_run,
                     size: 30, color: roles.self),
@@ -411,7 +405,6 @@ class _UsScreenState extends State<UsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
           color: roles.surface,
-          border: Border.all(color: roles.positive, width: GoStroke.accent),
           borderRadius: BorderRadius.circular(GoRadius.md),
           boxShadow: GoShadow.card,
         ),
@@ -441,8 +434,9 @@ class _UsScreenState extends State<UsScreen> {
                 decoration: BoxDecoration(
                   color: done ? roles.statusOnline.bg : roles.surface,
                   borderRadius: BorderRadius.circular(GoRadius.sm),
+                  // 오늘: 굵은 색 테두리 대신 헤어라인
                   border: isToday && !done
-                      ? Border.all(color: roles.positive, width: GoStroke.accent)
+                      ? Border.all(color: roles.positive, width: GoStroke.rule)
                       : null,
                   boxShadow: GoShadow.card,
                 ),
@@ -600,9 +594,6 @@ class _UsScreenState extends State<UsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: roles.surface,
-        border: Border.all(
-            color: isNext ? roles.line : roles.positive,
-            width: isNext ? GoStroke.rule : GoStroke.accent),
         borderRadius: BorderRadius.circular(GoRadius.md),
         boxShadow: GoShadow.card,
       ),

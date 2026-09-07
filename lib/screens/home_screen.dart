@@ -419,7 +419,6 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: roles.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
-        border: Border.all(color: roles.partner, width: GoStroke.accent),
         boxShadow: GoShadow.card,
       ),
       child: Column(children: [
@@ -499,7 +498,6 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: roles.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
-        border: Border.all(color: roles.attention, width: GoStroke.accent),
         boxShadow: GoShadow.card,
       ),
       child: Row(children: [

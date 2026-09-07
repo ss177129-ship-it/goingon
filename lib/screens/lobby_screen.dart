@@ -380,9 +380,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                 decoration: BoxDecoration(
                   color: roles.surface,
                   borderRadius: BorderRadius.circular(GoRadius.md),
-                  border: Border.all(
-                      color: _meReady ? roles.positive : roles.line,
-                      width: _meReady ? GoStroke.accent : GoStroke.card),
+                  // 준비 상태는 테두리가 아니라 아래 아이콘·도트·글자가 말한다
                   boxShadow: GoShadow.card,
                 ),
                 child: Column(children: [
@@ -531,7 +529,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
       decoration: BoxDecoration(
         color: roles.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
-        border: Border.all(color: roles.attention, width: GoStroke.accent),
         boxShadow: GoShadow.card,
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -563,8 +560,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       required Color color,
       String waitingText = '준비 중'}) {
     final roles = GoRoles.of(context);
-    // 밝은 바탕 위의 나/상대는 한 색으로 — 면은 그 색 25%, 선은 그 색
-    final line = color;
+    // 밝은 바탕 위의 나/상대는 한 색으로 — 면은 그 색 25%, 테두리 없음
     // (이모지 대신 텍스트만 — 폰트 폴백 이슈 회피)
     return Column(children: [
       Container(
@@ -572,7 +568,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: color.withValues(alpha: .25),
-          border: Border.all(color: ready ? line : roles.line, width: GoStroke.accent),
         ),
         child: Center(
             child: Text(name[0],
@@ -584,20 +579,22 @@ class _LobbyScreenState extends State<LobbyScreen> {
       const SizedBox(height: 7),
       Text(name,
           style: TextStyle(
-              fontSize: 12, fontWeight: FontWeight.w600, color: line)),
+              fontSize: 12, fontWeight: FontWeight.w600, color: color)),
       const SizedBox(height: 7),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+        // 준비완료 = 초록 면, 늦음 = 코랄 면, 대기 = 흰 면 + 헤어라인.
+        // 굵은 색 테두리 대신 면으로 말한다
         decoration: BoxDecoration(
-          color: roles.surface,
+          color: ready
+              ? roles.statusOnline.bg
+              : isLate
+                  ? roles.statusRunning.bg
+                  : roles.surface,
           borderRadius: BorderRadius.circular(GoRadius.sm),
-          border: Border.all(
-              color: isLate
-                  ? roles.attention
-                  : ready
-                      ? line
-                      : roles.line,
-              width: (ready || isLate) ? GoStroke.accent : GoStroke.rule),
+          border: (ready || isLate)
+              ? null
+              : Border.all(color: roles.line, width: GoStroke.rule),
           boxShadow: GoShadow.card,
         ),
         child: Text(
@@ -609,21 +606,20 @@ class _LobbyScreenState extends State<LobbyScreen> {
             style: TextStyle(fontSize: 12,
                 fontWeight: ready ? FontWeight.w600 : FontWeight.normal,
                 color: ready
-                    ? line
+                    ? roles.statusOnline.fg
                     : isLate
-                        ? roles.attention
+                        ? roles.statusRunning.fg
                         : roles.textSecondary)),
       ),
     ]);
   }
 
-  /// 카운트다운의 나/상대 점 — 밝은 바탕이라 한 색으로(면 25%, 선 100%)
+  /// 카운트다운의 나/상대 점 — 역할색 면 하나
   Widget _cdDot(Color color) => Container(
         width: 18, height: 18,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: color.withValues(alpha: .25),
-          border: Border.all(color: color, width: GoStroke.accent),
+          color: color,
         ),
       );
 }
