@@ -17,7 +17,7 @@ Future<void> showFriendSearchSheet(BuildContext context) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: GoColors.paper,
+    backgroundColor: GoColors.surfaceHigh,
     shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
     builder: (ctx) => const _FriendSearchSheet(),
@@ -162,7 +162,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
             // 사람이 실패한다. 붙여넣기로 @가 또 들어와도 정규화가 떼어낸다
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: GoColors.surface,
                 borderRadius: BorderRadius.circular(14),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -250,7 +250,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
     return Container(
       padding: const EdgeInsets.all(GoSpace.card),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: GoColors.surface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(children: [

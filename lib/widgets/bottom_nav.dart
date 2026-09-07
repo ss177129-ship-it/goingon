@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
@@ -12,18 +14,28 @@ class GoBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      // iOS 탭바 방식 — 바탕(페이퍼)과 다른 면(흰 88%) + 상단 헤어라인
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .88),
-        border: Border(top: BorderSide(color: GoColors.line, width: GoStroke.rule)),
+    // iOS 탭바 방식 — 목록이 밑으로 지나가는 게 비쳐 보이는 막.
+    // 불투명한 색을 깔면 화면을 가로로 자른 벽이 되고, 반투명이기만 하고
+    // 블러가 없으면 글자가 그대로 비쳐 지저분해진다. 둘은 한 세트다
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: GoColors.surfaceVeil,
+            border: Border(
+                top: BorderSide(
+                    color: GoColors.line, width: GoStroke.rule)),
+            boxShadow: GoShadow.bar,
+          ),
+          padding: const EdgeInsets.fromLTRB(28, 10, 28, 6),
+          child: Row(children: [
+            _item(0, Icons.home_rounded, '홈'),
+            _item(1, Icons.people_alt_outlined, '우리'),
+            _item(2, Icons.settings_outlined, '설정'),
+          ]),
+        ),
       ),
-      padding: const EdgeInsets.fromLTRB(28, 10, 28, 6),
-      child: Row(children: [
-        _item(0, Icons.home_rounded, '홈'),
-        _item(1, Icons.people_alt_outlined, '우리'),
-        _item(2, Icons.settings_outlined, '설정'),
-      ]),
     );
   }
 

@@ -78,23 +78,36 @@ class GoButton extends StatelessWidget {
     final Color bg;
     final Color fg;
     final BoxBorder? border;
+    // 눌렸을 때의 배경. 면이 있는 버튼은 **어두워지고**, 면이 없는 버튼은
+    // 잉크가 옅게 깔린다 — 투명한 버튼에 색을 씌우려 하면 배경이 뭐든
+    // 상관없이 지저분해지므로 잉크 6%만 얹는다
+    final Color bgDown;
+    final List<BoxShadow>? shadow;
     switch (kind) {
       case GoButtonKind.primary:
         bg = GoColors.ink;
         fg = GoColors.paper;
+        bgDown = const Color(0xFF35342C); // ink를 밝히는 쪽으로 — 이미 거의 검정
         border = null;
+        shadow = GoShadow.raised;
       case GoButtonKind.go:
         bg = GoColors.lime;
         fg = GoColors.ink;
+        bgDown = const Color(0xFFAFC935); // lime을 한 단 낮춘 값
         border = null;
+        shadow = GoShadow.raised;
       case GoButtonKind.secondary:
-        bg = Colors.transparent;
+        bg = GoColors.surface;
         fg = destructive ? GoColors.coralDark : GoColors.ink;
+        bgDown = const Color(0xFFEDE7DE);
         border = Border.all(color: GoColors.line, width: GoStroke.card);
+        shadow = GoShadow.card;
       case GoButtonKind.text:
         bg = Colors.transparent;
         fg = destructive ? GoColors.coralDark : GoColors.ink;
+        bgDown = const Color(0x141A1A16); // ink 8%
         border = null;
+        shadow = null;
     }
 
     final textStyle = serifLabel
@@ -122,23 +135,31 @@ class GoButton extends StatelessWidget {
       if (loading) CupertinoActivityIndicator(color: fg),
     ]);
 
+    // 축소(Pressable)만으로는 손끝에 가려 안 보인다. 색이 가라앉고 그림자가
+    // 접히는 것이 실제로 "눌렸다"고 말해주는 부분이다
     return Pressable(
       onTap: _active ? onTap : null,
-      child: Opacity(
+      builder: (context, pressed, child) => Opacity(
         opacity: enabled ? 1 : .4,
-        child: Container(
+        child: AnimatedContainer(
+          duration: pressed ? Duration.zero : Pressable.releaseDuration,
+          curve: Curves.easeOut,
           height: height,
           width: lg ? double.infinity : null,
-          padding: EdgeInsets.symmetric(horizontal: lg ? GoSpace.l : GoSpace.l),
+          padding: const EdgeInsets.symmetric(horizontal: GoSpace.l),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: bg,
+            color: pressed ? bgDown : bg,
             borderRadius: BorderRadius.circular(radius),
             border: border,
+            boxShadow: shadow == null
+                ? null
+                : (pressed ? GoShadow.pressed : shadow),
           ),
-          child: body,
+          child: child,
         ),
       ),
+      child: body,
     );
   }
 }

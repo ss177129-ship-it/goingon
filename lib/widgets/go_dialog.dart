@@ -17,25 +17,43 @@ class GoDialog {
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: GoColors.paper,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        // 다이얼로그는 페이지 위로 떠오른 것 — 배경과 같은 페이퍼색이면
+        // 어디까지가 다이얼로그인지 경계가 사라진다
+        backgroundColor: GoColors.surfaceHigh,
+        elevation: 12,
+        shadowColor: GoColors.shadow,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(GoRadius.lg)),
         title: Text(title, style: GoText.heading),
         content: body == null
             ? null
             : Text(body,
                 style: const TextStyle(
                     fontSize: 13, color: GoColors.mid, height: 1.5)),
+        // 한 줄에 나란히. 기본 actions는 폭이 모자라면 세로로 쌓는데,
+        // 그러면 취소만 가운데 뜬 채 확인 버튼이 그 밑에 붙어 두 버튼이
+        // 서로 다른 종류의 것처럼 보인다
+        actionsPadding:
+            const EdgeInsets.fromLTRB(GoSpace.xl, 0, GoSpace.xl, GoSpace.xl),
         actions: [
-          GoButton(cancelLabel,
-              kind: GoButtonKind.text,
-              size: GoButtonSize.md,
-              onTap: () => Navigator.pop(ctx, false)),
-          // destructive는 primary 대신 secondary + coralDark 글자
-          GoButton(confirmLabel,
-              kind: destructive ? GoButtonKind.secondary : GoButtonKind.primary,
-              size: GoButtonSize.md,
-              destructive: destructive,
-              onTap: () => Navigator.pop(ctx, true)),
+          Row(children: [
+            Expanded(
+              child: GoButton(cancelLabel,
+                  kind: GoButtonKind.secondary,
+                  size: GoButtonSize.md,
+                  onTap: () => Navigator.pop(ctx, false)),
+            ),
+            const SizedBox(width: GoSpace.m),
+            Expanded(
+              // destructive는 primary 대신 secondary + coralDark 글자
+              child: GoButton(confirmLabel,
+                  kind:
+                      destructive ? GoButtonKind.secondary : GoButtonKind.primary,
+                  size: GoButtonSize.md,
+                  destructive: destructive,
+                  onTap: () => Navigator.pop(ctx, true)),
+            ),
+          ]),
         ],
       ),
     );
@@ -52,15 +70,26 @@ class GoDialog {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        backgroundColor: GoColors.paper,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        // 다이얼로그는 페이지 위로 떠오른 것 — 배경과 같은 페이퍼색이면
+        // 어디까지가 다이얼로그인지 경계가 사라진다
+        backgroundColor: GoColors.surfaceHigh,
+        elevation: 12,
+        shadowColor: GoColors.shadow,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(GoRadius.lg)),
         title: Text(title, style: GoText.heading),
         content: Text(body,
             style: const TextStyle(
                 fontSize: 15, color: GoColors.ink, height: 1.5)),
+        actionsPadding:
+            const EdgeInsets.fromLTRB(GoSpace.xl, 0, GoSpace.xl, GoSpace.xl),
         actions: [
-          GoButton(actionLabel,
-              size: GoButtonSize.md, onTap: () => Navigator.pop(ctx)),
+          Row(children: [
+            Expanded(
+              child: GoButton(actionLabel,
+                  size: GoButtonSize.md, onTap: () => Navigator.pop(ctx)),
+            ),
+          ]),
         ],
       ),
     );

@@ -3,11 +3,13 @@ import 'package:flutter/services.dart' show HapticFeedback;
 
 import '../theme.dart';
 
-/// iOS 설정 앱의 그룹 목록. 그룹 하나가 흰 둥근 면 하나이고, 안의 행은
+/// iOS 설정 앱의 그룹 목록. 그룹 하나가 둥근 면 하나이고, 안의 행은
 /// **왼쪽을 들여쓴 헤어라인**으로만 나뉜다. 행마다 카드를 만들지 않는다 —
 /// 흰 조각이 많아질수록 화면이 지저분해진다.
 ///
-/// 테두리는 없다. 흰 면과 페이퍼의 명도 차이가 곧 경계다.
+/// 테두리는 없다. 그룹의 경계는 [GoShadow.card]가, 행 사이는
+/// [GoColors.lineStrong]이 만든다 — 구분선이 안 보이면 행이 몇 개인지,
+/// 어디까지가 한 행인지 읽히지 않는다(2026-09-07).
 class GoGroup extends StatelessWidget {
   const GoGroup({
     super.key,
@@ -29,7 +31,7 @@ class GoGroup extends StatelessWidget {
       if (i > 0) {
         children.add(Padding(
           padding: EdgeInsets.only(left: dividerInset),
-          child: Container(height: GoStroke.rule, color: GoColors.line),
+          child: Container(height: GoStroke.rule, color: GoColors.lineStrong),
         ));
       }
       children.add(rows[i]);
@@ -37,12 +39,17 @@ class GoGroup extends StatelessWidget {
     return Container(
       width: double.infinity,
       margin: margin,
-      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: GoColors.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
+        boxShadow: GoShadow.card,
       ),
-      child: Column(children: children),
+      // 그림자는 바깥에, 잘라내기는 안쪽에 — 한 Container에서 둘을 같이
+      // 하면 clip이 그림자까지 잘라 없앤다
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(GoRadius.md),
+        child: Column(children: children),
+      ),
     );
   }
 }
@@ -82,7 +89,9 @@ class _GoGroupRowState extends State<GoGroupRow> {
     final row = Container(
       width: double.infinity,
       padding: widget.padding,
-      color: _down ? Color.lerp(Colors.white, GoColors.ink, .06) : Colors.white,
+      color: _down
+          ? Color.lerp(GoColors.surface, GoColors.ink, .07)
+          : GoColors.surface,
       child: widget.child,
     );
     if (!_pressable) return row;

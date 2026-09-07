@@ -25,7 +25,7 @@ class InitialAvatar extends StatelessWidget {
     required this.size,
     required this.fontSize,
     required this.borderColor,
-    this.fill = Colors.white,
+    this.fill = GoColors.surface,
     this.borderWidth = 2,
     this.emptyIcon,
     this.photoUrl,

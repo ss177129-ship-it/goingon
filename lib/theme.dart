@@ -40,10 +40,72 @@ class GoColors {
   /// 선·비활성·플레이스홀더 전용. 글자 금지
   static const dim = Color(0xFFB0ACA6);
 
-  static const line = Color(0x291A1A16); // ink 16% — 페이퍼 위에서 보이는 최소치
+  /// 카드·시트가 놓이는 면. **순백이 아니다.**
+  ///
+  /// 왜 (2026-09-07): 페이퍼(#F0EAE0)는 따뜻한 베이지인데 순백(#FFFFFF)은
+  /// 색이 없다. 따뜻한 종이 위에 색 없는 흰 면을 얹으면 카드가 "페이지에
+  /// 뚫린 차가운 구멍"으로 읽힌다. 게다가 페이퍼와 순백의 대비는 1.2:1이라
+  /// 테두리도 그림자도 없으면 경계가 아예 안 보인다. 그래서 흰 면은
+  /// **페이퍼와 같은 색상(hue 33°)을 유지한 채 밝기만 올린** 값으로 바꾸고,
+  /// 경계는 [GoShadow]가 만든다
+  static const surface = Color(0xFFFDFAF5);
+
+  /// 시트·다이얼로그처럼 화면 위로 떠오르는 면. surface보다 한 단 밝다 —
+  /// 겹쳐 있을 때 어느 쪽이 위인지 밝기로 말한다
+  static const surfaceHigh = Color(0xFFFFFDF9);
+
+  /// 뒤가 비쳐야 하는 면(탭바). 스크롤되는 내용이 밑으로 지나가는 것이
+  /// 보여야 "떠 있는 막"으로 읽힌다. 불투명하면 그냥 잘린 벽이 된다
+  static const surfaceVeil = Color(0xE6FDFAF5); // surface 90%
+
+  /// 그림자 색. **검정이 아니다** — 베이지 위의 중성 검정 그림자는 탁한
+  /// 회색으로 죽는다. 종이의 색상을 따라간 따뜻한 갈색-검정을 쓴다
+  static const shadow = Color(0xFF4A3A24);
+
+  /// 면 안쪽의 헤어라인. ink 16%에서 올렸다(2026-09-07) — 16%는 흰 면 위
+  /// 1px에서 사실상 보이지 않아 "행이 나뉘어 있다"는 사실이 전달되지 않았다
+  static const line = Color(0x381A1A16); // ink 22%
+
+  /// 반드시 읽혀야 하는 구분선 — 그룹의 행 사이, 카드 안의 단 나눔
+  static const lineStrong = Color(0x571A1A16); // ink 34%
 
   /// 섹션 사이 1px 구분선. 신문처럼 잉크 100%. 카드 테두리엔 쓰지 않는다
   static const rule = ink;
+}
+
+/// 높이 3단계. 그림자는 **두 겹**이다 — 붙어 있는 접촉 그림자 하나와
+/// 넓게 퍼지는 주변광 그림자 하나. 한 겹짜리 그림자는 스티커처럼 보인다.
+///
+/// 색은 [GoColors.shadow](따뜻한 갈색-검정). 알파가 낮아 페이퍼 위에서는
+/// 카드 가장자리를 살짝 어둡게 만드는 정도로만 보이고, 그것이 곧 경계다
+class GoShadow {
+  /// 페이지에 놓인 카드·그룹
+  static const card = [
+    BoxShadow(color: Color(0x1A4A3A24), blurRadius: 3, offset: Offset(0, 1)),
+    BoxShadow(color: Color(0x144A3A24), blurRadius: 12, offset: Offset(0, 5)),
+  ];
+
+  /// 눌린 카드 — 그림자가 줄면 종이가 눌려 들어간 것처럼 보인다
+  static const pressed = [
+    BoxShadow(color: Color(0x0F4A3A24), blurRadius: 1, offset: Offset(0, 0.5)),
+  ];
+
+  /// 주 버튼처럼 눌러주길 바라는 것
+  static const raised = [
+    BoxShadow(color: Color(0x244A3A24), blurRadius: 4, offset: Offset(0, 2)),
+    BoxShadow(color: Color(0x1F4A3A24), blurRadius: 18, offset: Offset(0, 8)),
+  ];
+
+  /// 시트·다이얼로그·토스트 — 화면에서 확실히 떨어져 나온 것
+  static const overlay = [
+    BoxShadow(color: Color(0x1F4A3A24), blurRadius: 6, offset: Offset(0, 2)),
+    BoxShadow(color: Color(0x244A3A24), blurRadius: 32, offset: Offset(0, 12)),
+  ];
+
+  /// 탭바처럼 위로 그림자를 던지는 것
+  static const bar = [
+    BoxShadow(color: Color(0x144A3A24), blurRadius: 16, offset: Offset(0, -4)),
+  ];
 }
 
 /// 모서리 3단계. 이 밖의 값(14·18·20·22)은 쓰지 않는다

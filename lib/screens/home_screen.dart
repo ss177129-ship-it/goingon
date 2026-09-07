@@ -173,7 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet(
       context: context,
       isDismissible: false,
-      backgroundColor: GoColors.paper,
+      backgroundColor: GoColors.surfaceHigh,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
@@ -182,9 +182,10 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: GoColors.surface,
               borderRadius: BorderRadius.circular(GoRadius.sm),
               border: Border.all(color: GoColors.coralDark, width: GoStroke.accent),
+              boxShadow: GoShadow.card,
             ),
             child: const Text('함께 달리기 요청',
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
@@ -230,7 +231,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const options = ['지금은 어려워요', '30분 뒤 어때요?', '오늘은 쉬고 싶어요'];
     showModalBottomSheet(
       context: context,
-      backgroundColor: GoColors.paper,
+      backgroundColor: GoColors.surfaceHigh,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
@@ -411,9 +412,10 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.fromLTRB(22, 0, 22, 8),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: GoColors.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
         border: Border.all(color: GoColors.coralDark, width: GoStroke.accent),
+        boxShadow: GoShadow.card,
       ),
       child: Column(children: [
         Row(children: [
@@ -488,9 +490,10 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.fromLTRB(22, 6, 22, 0),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: GoColors.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
         border: Border.all(color: GoColors.amberDark, width: GoStroke.accent),
+        boxShadow: GoShadow.card,
       ),
       child: Row(children: [
         const Icon(Icons.wifi_off, size: 18, color: GoColors.amber),
@@ -538,8 +541,9 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.fromLTRB(22, 6, 22, 0),
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: GoColors.surface,
         borderRadius: BorderRadius.circular(22),
+        boxShadow: GoShadow.card,
       ),
       child: Column(children: [
         InitialAvatar(
@@ -558,7 +562,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontSize: 12,
                 color: loaded ? GoColors.limeDark : GoColors.mid)),
         const SizedBox(height: 14),
-        Container(height: 1, color: GoColors.line),
+        Container(height: 1, color: GoColors.lineStrong),
         const SizedBox(height: GoSpace.m),
         IntrinsicHeight(
           child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -592,7 +596,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _statDivider() => Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Container(width: 1, color: GoColors.line),
+        child: Container(width: 1, color: GoColors.lineStrong),
       );
 
   /// 친구 행 — 프로토타입의 friend-row (아바타 + 이름 + GO?)
@@ -657,7 +661,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showFriendActions(String uid, String name) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: GoColors.paper,
+      backgroundColor: GoColors.surfaceHigh,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
@@ -775,8 +779,9 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 22),
       padding: const EdgeInsets.symmetric(vertical: GoSpace.xl, horizontal: GoSpace.hero),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: GoColors.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
+        boxShadow: GoShadow.card,
       ),
       child: Column(children: [
         Text('아직 페이스메이트가 없어요',

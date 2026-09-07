@@ -22,11 +22,18 @@ class Pressable extends StatefulWidget {
     this.onLongPress,
     this.scale = 0.97,
     this.behavior = HitTestBehavior.opaque,
+    this.builder,
   });
 
   final Widget child;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
+
+  /// 눌림 상태를 자기 모양에 반영해야 하는 위젯용. 크기 축소만으로는
+  /// 부족한 것들이 있다 — 버튼은 색이 가라앉아야 하고, 카드는 그림자가
+  /// 줄어야 눌린 것처럼 보인다. [child]를 감쌀 껍데기를 여기서 만든다
+  final Widget Function(BuildContext context, bool pressed, Widget child)?
+      builder;
 
   /// 눌렸을 때 크기. 0.97보다 작게 하면 큰 버튼에서 과장돼 보인다
   final double scale;
@@ -64,7 +71,9 @@ class _PressableState extends State<Pressable> {
         // 눌리는 것은 즉시, 놓는 것만 부드럽게
         duration: _down ? Duration.zero : Pressable.releaseDuration,
         curve: Curves.easeOut,
-        child: widget.child,
+        child: widget.builder == null
+            ? widget.child
+            : widget.builder!(context, _down && _enabled, widget.child),
       ),
     );
   }

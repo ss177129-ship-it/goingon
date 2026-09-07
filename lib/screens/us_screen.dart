@@ -150,7 +150,7 @@ class _UsScreenState extends State<UsScreen> {
                 width: 64, height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white,
+                  color: GoColors.surface,
                   border: Border.all(
                       color: GoColors.line, width: GoStroke.accent),
                 ),
@@ -192,7 +192,7 @@ class _UsScreenState extends State<UsScreen> {
                 width: 64, height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white,
+                  color: GoColors.surface,
                   border: Border.all(
                       color: GoColors.coralDark, width: GoStroke.accent),
                 ),
@@ -235,7 +235,7 @@ class _UsScreenState extends State<UsScreen> {
                 width: 64, height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white,
+                  color: GoColors.surface,
                   border: Border.all(
                       color: GoColors.limeDark, width: GoStroke.accent),
                 ),
@@ -404,9 +404,10 @@ class _UsScreenState extends State<UsScreen> {
         margin: const EdgeInsets.fromLTRB(22, 12, 22, 0),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: GoColors.surface,
           border: Border.all(color: GoColors.amberDark, width: GoStroke.accent),
           borderRadius: BorderRadius.circular(GoRadius.md),
+          boxShadow: GoShadow.card,
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
@@ -432,11 +433,12 @@ class _UsScreenState extends State<UsScreen> {
                 height: 28,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: done ? GoColors.amber : Colors.white,
+                  color: done ? GoColors.amber : GoColors.surface,
                   borderRadius: BorderRadius.circular(GoRadius.sm),
                   border: isToday && !done
                       ? Border.all(color: GoColors.limeDark, width: GoStroke.accent)
                       : null,
+                  boxShadow: GoShadow.card,
                 ),
                 child: Text(_kWeekdayLabels[i],
                     style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
@@ -451,7 +453,7 @@ class _UsScreenState extends State<UsScreen> {
               borderRadius: BorderRadius.circular(GoRadius.sm),
               child: Container(
                 width: double.infinity,
-                color: Colors.white,
+                color: GoColors.surface,
                 child: IntrinsicHeight(
                   child: Row(children: [
                     Container(width: 4, color: GoColors.limeDark),
@@ -560,8 +562,9 @@ class _UsScreenState extends State<UsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 6),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: GoColors.surface,
           borderRadius: BorderRadius.circular(GoRadius.md),
+          boxShadow: GoShadow.card,
         ),
         child: Column(children: [
           Text(value, style: GoTheme.serif(22)),
@@ -582,11 +585,12 @@ class _UsScreenState extends State<UsScreen> {
       margin: const EdgeInsets.fromLTRB(22, 0, 22, 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: GoColors.surface,
         border: Border.all(
             color: isNext ? GoColors.line : GoColors.limeDark,
             width: isNext ? GoStroke.rule : GoStroke.accent),
         borderRadius: BorderRadius.circular(GoRadius.md),
+        boxShadow: GoShadow.card,
       ),
       child: Row(children: [
         Icon(icon, size: 20, color: isNext ? GoColors.dim : GoColors.limeDark),
@@ -642,9 +646,10 @@ class _UsScreenState extends State<UsScreen> {
                 margin: const EdgeInsets.only(bottom: 5),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: GoColors.surface,
                   borderRadius: BorderRadius.circular(GoRadius.sm),
                   border: Border.all(color: GoColors.limeDark, width: GoStroke.accent),
+                  boxShadow: GoShadow.card,
                 ),
                 child: Text(storyLabel,
                     style: const TextStyle(fontSize: 9,

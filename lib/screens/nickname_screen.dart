@@ -83,7 +83,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
                   hintText: '뭐라고 부르면 될까요?',
                   counterText: '',
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: GoColors.surface,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide(color: GoColors.line, width: GoStroke.card),
@@ -99,7 +99,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
                   hintText: '아이디 (페이스메이트가 찾아요)',
                   counterText: '',
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: GoColors.surface,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide(color: GoColors.line, width: GoStroke.card),

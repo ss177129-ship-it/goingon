@@ -489,7 +489,7 @@ class _RunScreenState extends State<RunScreen>
     const moods = ['상쾌했어요', '죽을 뻔했어요', '네 생각 났어요', '또 하고 싶어요'];
     return showModalBottomSheet<String>(
       context: context,
-      backgroundColor: GoColors.paper,
+      backgroundColor: GoColors.surfaceHigh,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
@@ -626,7 +626,7 @@ class _RunScreenState extends State<RunScreen>
                         .copyWith(height: 1.1)),
                 _caption('km당'),
                 const SizedBox(height: GoSpace.m),
-                Container(height: GoStroke.rule, color: GoColors.line),
+                Container(height: GoStroke.rule, color: GoColors.lineStrong),
                 const SizedBox(height: GoSpace.m),
                 // ── 상대 상태어 ──
                 _caption('${widget.partnerName} · 상태', color: GoColors.coralDark),
@@ -666,7 +666,7 @@ class _RunScreenState extends State<RunScreen>
             padding: const EdgeInsets.symmetric(horizontal: 28),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: GoColors.surface,
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
@@ -730,7 +730,10 @@ class _RunScreenState extends State<RunScreen>
           Container(
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white,
+              color: GoColors.surface,
+              // 러닝 화면에서 유일하게 눌러야 하는 것 — 종이에서 떠 있어야
+              // 달리면서 곁눈으로도 "누르는 것"으로 읽힌다
+              boxShadow: GoShadow.raised,
             ),
           ),
           // 링은 누르는 동안에만 그린다. 색은 ink 계열 — lime(나)도
@@ -773,7 +776,7 @@ class _RunScreenState extends State<RunScreen>
       );
 
   Widget _togetherDivider() =>
-      Container(width: 1, height: 44, color: GoColors.line);
+      Container(width: 1, height: 44, color: GoColors.lineStrong);
 }
 
 /// 멈춤 버튼 테두리를 따라 차오르는 진행 링.

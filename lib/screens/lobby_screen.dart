@@ -324,7 +324,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   child: _runner('나', _meReady,
                       isLate: _isLate,
                       fill: GoColors.lime, line: GoColors.limeDark)),
-              Container(width: GoStroke.rule, height: 64, color: GoColors.line),
+              Container(width: GoStroke.rule, height: 64, color: GoColors.lineStrong),
               Expanded(
                   child: _runner(widget.partnerName, _partnerReady,
                       isLate: _partnerLate,
@@ -376,11 +376,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
               child: Container(
                 padding: const EdgeInsets.all(GoSpace.hero),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: GoColors.surface,
                   borderRadius: BorderRadius.circular(GoRadius.md),
                   border: Border.all(
                       color: _meReady ? GoColors.limeDark : GoColors.line,
                       width: _meReady ? GoStroke.accent : GoStroke.card),
+                  boxShadow: GoShadow.card,
                 ),
                 child: Column(children: [
                   Row(children: [
@@ -410,7 +411,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   ]),
                   if (!_isLate) ...[
                     const SizedBox(height: 10),
-                    Container(height: 1, color: GoColors.line),
+                    Container(height: 1, color: GoColors.lineStrong),
                     const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -499,8 +500,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: GoColors.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
+        boxShadow: GoShadow.card,
       ),
       child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
         const SizedBox(
@@ -523,9 +525,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(GoSpace.card),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: GoColors.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
         border: Border.all(color: GoColors.amberDark, width: GoStroke.accent),
+        boxShadow: GoShadow.card,
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('아직 응답이 없어요. 앱을 안 보고 있을 수 있어요.',
@@ -562,7 +565,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
         width: 64, height: 64,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white,
+          color: GoColors.surface,
           border: Border.all(color: ready ? line : GoColors.line, width: GoStroke.accent),
         ),
         child: Center(
@@ -580,7 +583,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: GoColors.surface,
           borderRadius: BorderRadius.circular(GoRadius.sm),
           border: Border.all(
               color: isLate
@@ -589,6 +592,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                       ? line
                       : GoColors.line,
               width: (ready || isLate) ? GoStroke.accent : GoStroke.rule),
+          boxShadow: GoShadow.card,
         ),
         child: Text(
             ready
@@ -611,7 +615,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
         width: 18, height: 18,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white,
+          color: GoColors.surface,
           border: Border.all(color: line, width: GoStroke.accent),
         ),
       );

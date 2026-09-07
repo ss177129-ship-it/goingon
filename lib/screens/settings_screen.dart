@@ -142,7 +142,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: GoColors.paper,
+      backgroundColor: GoColors.surfaceHigh,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => DraggableScrollableSheet(
@@ -193,8 +193,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       margin: const EdgeInsets.only(bottom: GoSpace.gutter),
       padding: const EdgeInsets.symmetric(horizontal: GoSpace.card, vertical: GoSpace.m),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: GoColors.surface,
         borderRadius: BorderRadius.circular(GoRadius.md),
+        boxShadow: GoShadow.card,
       ),
       child: Row(children: [
         InitialAvatar(

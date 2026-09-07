@@ -70,7 +70,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     if (!mounted) return;
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: GoColors.paper,
+      backgroundColor: GoColors.surfaceHigh,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => SafeArea(
@@ -220,8 +220,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: GoColors.paper,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        backgroundColor: GoColors.surfaceHigh,
+        elevation: 12,
+        shadowColor: GoColors.shadow,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(GoRadius.lg)),
         title: Text(title, style: GoText.heading),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -235,7 +238,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 hintText: hint,
                 counterText: '',
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: GoColors.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(color: GoColors.line, width: GoStroke.card),

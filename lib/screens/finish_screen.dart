@@ -214,8 +214,9 @@ class _FinishScreenState extends State<FinishScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(GoSpace.card),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: GoColors.surface,
                       borderRadius: BorderRadius.circular(GoRadius.md),
+                      boxShadow: GoShadow.card,
                     ),
                     child: Column(children: [
                       const Text('함께 달린 것',
@@ -316,15 +317,16 @@ class _FinishScreenState extends State<FinishScreen> {
   }
 
   Widget _tDivider() =>
-      Container(width: 1, height: 32, color: GoColors.line);
+      Container(width: 1, height: 32, color: GoColors.lineStrong);
 
   Widget _personalCard(String who, double? km, Color color, {String? mood}) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: GoColors.surface,
           borderRadius: BorderRadius.circular(GoRadius.sm),
+          boxShadow: GoShadow.card,
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(who,
