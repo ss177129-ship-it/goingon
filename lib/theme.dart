@@ -110,7 +110,7 @@ class GoText {
     fontSize: 12,
     fontWeight: FontWeight.w600,
     letterSpacing: .6,
-    color: GoColors.mid,
+    color: GoColors.ink,
   );
 
   /// 버튼 라벨(큰 버튼 52pt)
