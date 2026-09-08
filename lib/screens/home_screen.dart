@@ -16,6 +16,7 @@ import '../widgets/go_button.dart';
 import '../widgets/friend_search_sheet.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
+import '../widgets/goingon_wordmark.dart';
 import '../widgets/initial_avatar.dart';
 import 'lobby_screen.dart';
 
@@ -303,9 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(22, 10, 12, 6),
           child: Row(children: [
-            Text('goingon',
-                style:
-                    GoTheme.serif(13, color: roles.textSecondary)),
+            const GoingOnWordmark(height: 18),
             const Spacer(),
             GoIconButton(
               icon: Icons.search,
