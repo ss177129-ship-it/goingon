@@ -24,6 +24,7 @@ class Pressable extends StatefulWidget {
     this.behavior = HitTestBehavior.opaque,
     this.builder,
     this.onPressedChanged,
+    this.minTarget,
   });
 
   final Widget child;
@@ -44,6 +45,20 @@ class Pressable extends StatefulWidget {
   /// 눌렸을 때 크기. 0.97보다 작게 하면 큰 버튼에서 과장돼 보인다
   final double scale;
   final HitTestBehavior behavior;
+
+  /// 손가락이 닿는 최소 표적. **보이는 크기는 그대로 두고 닿는 자리만**
+  /// 넓힌다 — 안쪽 내용은 가운데에 놓이고, 남는 자리는 투명하지만 탭을
+  /// 받는다.
+  ///
+  /// 왜 옵션인가: [Pressable]은 스스로 크기를 정하지 않아서, 44pt를 지키는
+  /// 일이 전부 호출부 책임이었고 실제로 여기저기서 새어 나갔다(2026-09-08
+  /// 감사). 작은 것을 누를 때 필요한 건 큰 그림이 아니라 큰 표적이다.
+  ///
+  /// 자리를 실제로 차지하므로 부모가 그만큼 자랄 수 있다는 점만 유의할 것
+  final Size? minTarget;
+
+  /// 애플 최소 권장 표적. 이보다 작으면 겨냥이 아니라 운이 된다
+  static const minSize = Size.square(44);
 
   /// 눌림 상태가 원래대로 돌아오는 시간
   static const releaseDuration = Duration(milliseconds: 90);
@@ -66,6 +81,22 @@ class _PressableState extends State<Pressable> {
 
   @override
   Widget build(BuildContext context) {
+    Widget visual = widget.builder == null
+        ? widget.child
+        : widget.builder!(context, _down && _enabled, widget.child);
+
+    final target = widget.minTarget;
+    if (target != null) {
+      // 안쪽 크기에 맞춰 오므린 뒤(widthFactor/heightFactor 1) 최소치까지만
+      // 벌린다. 인수를 빼면 Align이 부모가 허락하는 최대까지 부풀어, 화면
+      // 하나를 통째로 먹는다(2026-09-08 테스트에서 800×600이 나왔다)
+      visual = ConstrainedBox(
+        constraints:
+            BoxConstraints(minWidth: target.width, minHeight: target.height),
+        child: Align(widthFactor: 1, heightFactor: 1, child: visual),
+      );
+    }
+
     return GestureDetector(
       behavior: widget.behavior,
       onTapDown: (_) => _setDown(true),
@@ -78,9 +109,7 @@ class _PressableState extends State<Pressable> {
         // 눌리는 것은 즉시, 놓는 것만 부드럽게
         duration: _down ? Duration.zero : Pressable.releaseDuration,
         curve: Curves.easeOut,
-        child: widget.builder == null
-            ? widget.child
-            : widget.builder!(context, _down && _enabled, widget.child),
+        child: visual,
       ),
     );
   }

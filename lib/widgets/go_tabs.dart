@@ -22,8 +22,16 @@ class GoTabs extends StatelessWidget {
   final int index;
   final ValueChanged<int> onChanged;
 
-  static const _gap = 20.0;
-  static const _padV = 10.0;
+  /// 라벨 사이. 항목이 좌우 여백을 갖게 되면서 간격이 두 번 더해지므로
+  /// 20에서 줄였다
+  static const _gap = 6.0;
+
+  /// 세로 여백 — 14pt 글자와 합쳐 44pt를 넘긴다(12 + 20 + 12 + 밑줄 2)
+  static const _padV = 12.0;
+
+  /// 좌우 여백. 이게 없으면 표적 폭이 글자 폭 그대로라, '주'처럼 한 글자짜리
+  /// 라벨은 15pt짜리 표적이 된다(2026-09-08)
+  static const _padH = 12.0;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +58,10 @@ class GoTabs extends StatelessWidget {
       button: true,
       child: Pressable(
         onTap: () => onChanged(i),
+        // 좌우 여백을 줘도 '주'처럼 한 글자면 40pt에 그친다 — 남는 폭은
+        // 투명하지만 탭을 받는다. 세로는 이미 46이라 벌어지지 않으므로
+        // 밑줄은 바닥선에 그대로 붙어 있다(2026-09-08)
+        minTarget: Pressable.minSize,
         // 면이 없는 항목이라 색을 깔 곳이 없다 — 글자가 잠깐 옅어지는 것으로
         builder: (context, pressed, child) => AnimatedOpacity(
           duration: pressed ? Duration.zero : Pressable.releaseDuration,
@@ -60,7 +72,8 @@ class GoTabs extends StatelessWidget {
         child: Container(
           // 밑줄(2px)이 바닥선(1px)을 덮도록 1px 아래로 내민다
           transform: Matrix4.translationValues(0, GoStroke.rule, 0),
-          padding: const EdgeInsets.symmetric(vertical: _padV),
+          padding:
+              const EdgeInsets.symmetric(vertical: _padV, horizontal: _padH),
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
@@ -72,8 +85,8 @@ class GoTabs extends StatelessWidget {
           child: AnimatedDefaultTextStyle(
             duration: GoMotion.select,
             curve: GoMotion.curve,
-            style: GoText.buttonSmall
-                .copyWith(color: active ? roles.textPrimary : roles.textSecondary),
+            style: GoText.buttonSmall.copyWith(
+                color: active ? roles.textPrimary : roles.textSecondary),
             child: Text(labels[i]),
           ),
         ),

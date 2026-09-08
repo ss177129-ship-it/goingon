@@ -206,8 +206,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
             if (_notice != null) ...[
               const SizedBox(height: 10),
               Text(_notice!,
-                  style:
-                      TextStyle(fontSize: 12, color: roles.positive)),
+                  style: TextStyle(fontSize: 12, color: roles.positive)),
             ],
             if (c != null) ...[
               const SizedBox(height: 14),
@@ -223,9 +222,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
     final label = c == null ? '찾기' : _actionLabel(c.relation);
     final enabled = !_busy && (c == null || label != null);
     return GoButton(label ?? _stateLabel(c!.relation),
-        enabled: enabled,
-        loading: _busy,
-        onTap: c == null ? _search : _act);
+        enabled: enabled, loading: _busy, onTap: c == null ? _search : _act);
   }
 
   /// 누를 수 있는 상태면 버튼 문구, 아니면 null(비활성)
@@ -263,26 +260,25 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
         ),
         const SizedBox(width: 14),
         Expanded(
-          child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(c.name,
-                    style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: roles.textPrimary)),
-                const SizedBox(height: 2),
-                Text('@${c.username}',
-                    style: TextStyle(fontSize: 12, color: roles.textSecondary)),
-                if (status != null) ...[
-                  const SizedBox(height: 4),
-                  Text(status,
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: roles.textSecondary)),
-                ],
-              ]),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(c.name,
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: roles.textPrimary)),
+            const SizedBox(height: 2),
+            Text('@${c.username}',
+                style: TextStyle(fontSize: 12, color: roles.textSecondary)),
+            if (status != null) ...[
+              const SizedBox(height: 4),
+              Text(status,
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: roles.textSecondary)),
+            ],
+          ]),
         ),
       ]),
     );

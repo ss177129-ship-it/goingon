@@ -69,6 +69,10 @@ class GoSwitch extends StatelessWidget {
         opacity: _enabled ? 1 : .4,
         child: Pressable(
           scale: 1, // 축소 대신 손잡이 늘어남
+          // 트랙은 31pt라 그 자체로는 표적이 못 된다. 보이는 크기는 그대로
+          // 두고 닿는 자리만 44로 넓힌다(2026-09-08). 설정 행 안에서는 행
+          // onTap이 구제해 줬지만, 행 밖에 단독으로 놓이는 순간 무너졌다
+          minTarget: const Size(width, 44),
           onTap: _enabled ? () => onChanged!(!value) : null,
           builder: (context, pressed, _) => _track(roles, pressed),
           child: const SizedBox.shrink(),

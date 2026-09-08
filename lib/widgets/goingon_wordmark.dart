@@ -34,7 +34,8 @@ class GoingOnWordmark extends StatelessWidget {
   }();
 
   static final Map<String, Path> _paths = {
-    for (final e in GoingOnPaths.glyphs.entries) e.key: parseSvgPathData(e.value),
+    for (final e in GoingOnPaths.glyphs.entries)
+      e.key: parseSvgPathData(e.value),
   };
 
   static double get _aspect => _bounds.width / _bounds.height;

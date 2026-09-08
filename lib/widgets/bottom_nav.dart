@@ -26,15 +26,20 @@ class GoBottomNav extends StatefulWidget {
     this.requestCount = 0,
   });
 
-  /// 선택 인디케이터 알약 — 아이콘 뒤에 깔리는 56×32, radius [GoRadius.md]
-  static const pillWidth = 56.0;
-  static const pillHeight = 32.0;
+  /// 선택 인디케이터 알약 — 아이콘 뒤에 깔리는 64×36, radius [GoRadius.md]
+  static const pillWidth = 64.0;
+  static const pillHeight = 36.0;
 
-  /// 손가락이 닿는 줄의 높이. 알약(32)보다 큰 이유는 **표적이 알약이 아니라
+  /// 아이콘. 라벨이 없는 탭바에서 아이콘은 **글자 없이 혼자 뜻을 지고**
+  /// 있으므로, 라벨을 데리고 있던 때의 24pt로는 작다(2026-09-08)
+  static const iconSize = 26.0;
+
+  /// 손가락이 닿는 줄의 높이. 알약(36)보다 큰 이유는 **표적이 알약이 아니라
   /// 탭이기 때문**이다 — 라벨을 지우면서 표적이 32pt로 줄어 애플의 최소
-  /// 44pt를 밑돌았다(2026-09-08 접근성 트리에서 확인). 알약은 이 줄 안에
-  /// 세로 가운데로 놓인다
-  static const rowHeight = 44.0;
+  /// 44pt를 밑돌았다(2026-09-08 접근성 트리에서 확인). 최소를 겨우 맞추는
+  /// 대신 48로 둔다: 탭바는 화면 맨 아래라 엄지가 가장 부정확하게 닿는
+  /// 자리다. 알약은 이 줄 안에 세로 가운데로 놓인다
+  static const rowHeight = 48.0;
 
   /// 아이콘 줄 좌우 여백
   static const _sidePad = 28.0;
@@ -103,7 +108,7 @@ class _GoBottomNavState extends State<GoBottomNav> {
                   color: roles.surfaceHigh.withValues(alpha: .85)),
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                    GoBottomNav._sidePad, 6, GoBottomNav._sidePad, 6),
+                    GoBottomNav._sidePad, 4, GoBottomNav._sidePad, 4),
                 child: _row(roles),
               ),
               // 홈 인디케이터 자리까지 같은 면이 이어진다
@@ -174,7 +179,7 @@ class _GoBottomNavState extends State<GoBottomNav> {
       switchOutCurve: GoMotion.curve,
       child: Icon(active ? activeIcon : icon,
           key: ValueKey(active),
-          size: 24,
+          size: GoBottomNav.iconSize,
           color: active ? roles.selection.fg : roles.textSecondary),
     );
     return Expanded(

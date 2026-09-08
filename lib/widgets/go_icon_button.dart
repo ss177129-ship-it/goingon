@@ -22,6 +22,7 @@ class GoIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
   final String? tooltip;
+
   /// null이면 textPrimary
   final Color? color;
   final double size;

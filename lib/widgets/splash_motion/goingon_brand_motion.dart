@@ -61,8 +61,7 @@ class GoingOnBrandMotion extends StatefulWidget {
   static const spinOverlap = .3;
 
   /// 두 링이 한 번씩 도는 한 주기
-  static Duration get spinLoop =>
-      spinPeriod * 2 * (1 - spinOverlap);
+  static Duration get spinLoop => spinPeriod * 2 * (1 - spinOverlap);
 
   @override
   State<GoingOnBrandMotion> createState() => _GoingOnBrandMotionState();
@@ -126,8 +125,7 @@ class _GoingOnBrandMotionState extends State<GoingOnBrandMotion>
               width: widget.symbolSize,
               height: widget.symbolSize,
               child: CustomPaint(
-                painter: _SymbolPainter(
-                    _intro.value * SplashTimeline.totalMs,
+                painter: _SymbolPainter(_intro.value * SplashTimeline.totalMs,
                     spinTurns: spinTurns),
               ),
             ),
@@ -301,7 +299,8 @@ class _SymbolPainter extends CustomPainter {
     canvas.scale(scale);
     canvas.translate(-_vbX, -_vbY);
 
-    final settle = _seg(t, SplashTimeline.settleStart, SplashTimeline.settleDur);
+    final settle =
+        _seg(t, SplashTimeline.settleStart, SplashTimeline.settleDur);
     final bounce = 1 + 0.045 * math.sin(settle * math.pi);
     const center = Offset(511.5, 514.75);
     canvas.translate(center.dx, center.dy);
@@ -319,7 +318,8 @@ class _SymbolPainter extends CustomPainter {
   }
 
   void _paintRings(Canvas canvas) {
-    final pCoral = _seg(t, SplashTimeline.ringStart, SplashTimeline.ringDur, _ringEase);
+    final pCoral =
+        _seg(t, SplashTimeline.ringStart, SplashTimeline.ringDur, _ringEase);
     final pLime = _seg(t, SplashTimeline.ringStart + SplashTimeline.limeLag,
         SplashTimeline.ringDur, _ringEase);
 
@@ -329,16 +329,18 @@ class _SymbolPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeWidth = ui.lerpDouble(40, 60, p)!;
 
-    final coralRect = Rect.fromCircle(center: const Offset(598, 290), radius: 120);
-    final limeRect = Rect.fromCircle(center: const Offset(431, 291), radius: 115);
+    final coralRect =
+        Rect.fromCircle(center: const Offset(598, 290), radius: 120);
+    final limeRect =
+        Rect.fromCircle(center: const Offset(431, 291), radius: 115);
 
     if (pCoral > 0) {
       canvas.drawArc(coralRect, math.pi, 2 * math.pi * pCoral, false,
           ring(GoColors.coral, pCoral));
     }
     if (pLime > 0) {
-      canvas.drawArc(limeRect, 0, -2 * math.pi * pLime, false,
-          ring(GoColors.lime, pLime));
+      canvas.drawArc(
+          limeRect, 0, -2 * math.pi * pLime, false, ring(GoColors.lime, pLime));
     }
     if (pCoral > 0) {
       canvas.save();
@@ -353,7 +355,8 @@ class _SymbolPainter extends CustomPainter {
     void bar(RRect r, int start) {
       final p = _seg(t, start, SplashTimeline.barDur, _barEase);
       if (p <= 0) return;
-      final sx = p < .7 ? 1.06 * (p / .7) : ui.lerpDouble(1.06, 1.0, (p - .7) / .3)!;
+      final sx =
+          p < .7 ? 1.06 * (p / .7) : ui.lerpDouble(1.06, 1.0, (p - .7) / .3)!;
       final c = r.center;
       canvas.save();
       canvas.translate(c.dx, c.dy);
@@ -363,8 +366,10 @@ class _SymbolPainter extends CustomPainter {
       canvas.restore();
     }
 
-    bar(RRect.fromLTRBR(322, 456, 702, 514, const Radius.circular(29)), SplashTimeline.bar1Start);
-    bar(RRect.fromLTRBR(322, 530, 702, 590, const Radius.circular(30)), SplashTimeline.bar2Start);
+    bar(RRect.fromLTRBR(322, 456, 702, 514, const Radius.circular(29)),
+        SplashTimeline.bar1Start);
+    bar(RRect.fromLTRBR(322, 530, 702, 590, const Radius.circular(30)),
+        SplashTimeline.bar2Start);
   }
 
   void _paintArc(Canvas canvas) {
@@ -400,10 +405,12 @@ class _WordmarkPainter extends CustomPainter {
   static const _vbX = 55.0, _vbY = 55.0, _vbW = 400.0;
 
   static final Map<String, Path> _glyph = {
-    for (final e in GoingOnPaths.glyphs.entries) e.key: parseSvgPathData(e.value),
+    for (final e in GoingOnPaths.glyphs.entries)
+      e.key: parseSvgPathData(e.value),
   };
   static final Map<String, Path> _stroke = {
-    for (final e in GoingOnPaths.strokes.entries) e.key: parseSvgPathData(e.value),
+    for (final e in GoingOnPaths.strokes.entries)
+      e.key: parseSvgPathData(e.value),
   };
   static final Map<String, double> _strokeLen = {
     for (final e in _stroke.entries)

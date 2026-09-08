@@ -170,9 +170,8 @@ class GoButton extends StatelessWidget {
             color: pressed ? bgDown : bg,
             borderRadius: BorderRadius.circular(radius),
             border: border,
-            boxShadow: shadow == null
-                ? null
-                : (pressed ? GoShadow.pressed : shadow),
+            boxShadow:
+                shadow == null ? null : (pressed ? GoShadow.pressed : shadow),
           ),
           child: child,
         ),

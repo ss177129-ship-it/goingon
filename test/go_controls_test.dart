@@ -5,6 +5,7 @@ import 'package:goingon/widgets/bottom_nav.dart';
 import 'package:goingon/widgets/go_badge.dart';
 import 'package:goingon/widgets/go_checkbox.dart';
 import 'package:goingon/widgets/go_chip.dart';
+import 'package:goingon/widgets/go_group.dart';
 import 'package:goingon/widgets/go_icon_button.dart';
 import 'package:goingon/widgets/go_radio.dart';
 import 'package:goingon/widgets/go_segment.dart';
@@ -43,10 +44,14 @@ void main() {
       .toList();
 
   group('GoSwitch', () {
-    testWidgets('51×31, 켬은 limeDark 트랙 / 끔은 dim 트랙', (tester) async {
+    testWidgets('트랙 51×31 · 표적 51×44, 켬은 limeDark 트랙 / 끔은 dim 트랙',
+        (tester) async {
       await tester.pumpWidget(host(GoSwitch(value: true, onChanged: (_) {})));
       await tester.pumpAndSettle();
-      expect(tester.getSize(find.byType(GoSwitch)), const Size(51, 31));
+      // 보이는 트랙은 51×31 그대로, 손가락이 닿는 자리만 44까지 넓다
+      expect(tester.getSize(inside<AnimatedContainer>(GoSwitch).first),
+          const Size(51, 31));
+      expect(tester.getSize(find.byType(GoSwitch)), const Size(51, 44));
       expect(fillOf(tester, inside<AnimatedContainer>(GoSwitch).first),
           R.actionComplete.bg);
 
@@ -144,10 +149,24 @@ void main() {
       await tester.tap(find.text('기록'));
       expect(got, 2);
     });
+
+    testWidgets('한 글자짜리 라벨도 표적이 44pt 이상 — 글자 폭이 곧 표적이면 안 된다', (tester) async {
+      await tester.pumpWidget(host(GoTabs(
+        labels: const ['주', '월', '전체'],
+        index: 0,
+        onChanged: (_) {},
+      )));
+      await tester.pumpAndSettle();
+      for (final p in tester.widgetList<Pressable>(inside<Pressable>(GoTabs))) {
+        final size = tester.getSize(find.byWidget(p));
+        expect(size.height, greaterThanOrEqualTo(44));
+        expect(size.width, greaterThanOrEqualTo(44));
+      }
+    });
   });
 
   group('GoSegment', () {
-    testWidgets('높이 40, 활성 항목은 ink 면 + paper 글자', (tester) async {
+    testWidgets('높이 53(항목 44), 활성 항목은 ink 면 + paper 글자', (tester) async {
       int? got;
       await tester.pumpWidget(host(SizedBox(
         width: 300,
@@ -158,7 +177,14 @@ void main() {
         ),
       )));
       await tester.pumpAndSettle();
-      expect(tester.getSize(find.byType(GoSegment)).height, 40);
+      // 통 높이 53에서 안쪽 여백 3×2와 테두리 1.5×2를 빼면 항목이 딱 44pt —
+      // 손가락이 닿는 자리가 애플 최소치를 넘긴다
+      expect(tester.getSize(find.byType(GoSegment)).height, 53);
+      final itemHeights = tester
+          .widgetList<Pressable>(inside<Pressable>(GoSegment))
+          .map((p) => tester.getSize(find.byWidget(p)).height)
+          .toList();
+      expect(itemHeights, everyElement(greaterThanOrEqualTo(44)));
 
       final fills = tester
           .widgetList<AnimatedContainer>(inside<AnimatedContainer>(GoSegment))
@@ -174,12 +200,17 @@ void main() {
   });
 
   group('칩', () {
-    testWidgets('GoSelectChip: 높이 32, 선택은 ink 면 + paper 글자', (tester) async {
+    testWidgets('GoSelectChip: 칩 32 · 표적 44, 선택은 ink 면 + paper 글자',
+        (tester) async {
       var tapped = false;
       await tester.pumpWidget(host(GoSelectChip(
           label: '5km', selected: true, onTap: () => tapped = true)));
       await tester.pumpAndSettle();
-      expect(tester.getSize(find.byType(GoSelectChip)).height, 32);
+      // 보이는 칩은 32 — 44로 키우면 칩이 아니라 버튼이 된다. 대신 닿는
+      // 자리를 44로 넓혔다
+      expect(
+          tester.getSize(inside<AnimatedContainer>(GoSelectChip)).height, 32);
+      expect(tester.getSize(find.byType(GoSelectChip)).height, 44);
       expect(
           fillOf(tester, inside<AnimatedContainer>(GoSelectChip)), R.dark.bg);
       expect(textColorsIn(tester, GoSelectChip), [R.dark.fg]);
@@ -435,6 +466,35 @@ void main() {
           .92);
       await g.up();
       await tester.pumpAndSettle();
+    });
+  });
+
+  /// 그룹 행은 화면 어디에나 있고, 안에 든 글자 크기에 따라 높이가 정해진다.
+  /// 작은 글자 한 줄만 든 행이 조용히 44pt를 밑돌던 자리다(2026-09-08)
+  group('GoGroupRow', () {
+    testWidgets('12pt 한 줄짜리 눌리는 행도 44pt 아래로 내려가지 않는다', (tester) async {
+      await tester.pumpWidget(host(SizedBox(
+        width: 320,
+        child: GoGroupRow(
+          onTap: () {},
+          child: const Text('차단 해제', style: TextStyle(fontSize: 12)),
+        ),
+      )));
+      await tester.pumpAndSettle();
+      expect(tester.getSize(find.byType(GoGroupRow)).height,
+          greaterThanOrEqualTo(44));
+    });
+
+    testWidgets('누를 수 없는 행에는 최소 높이를 강요하지 않는다 — 표적이 아니다', (tester) async {
+      await tester.pumpWidget(host(const SizedBox(
+        width: 320,
+        child: GoGroupRow(
+          padding: EdgeInsets.zero,
+          child: Text('읽기만', style: TextStyle(fontSize: 12)),
+        ),
+      )));
+      await tester.pumpAndSettle();
+      expect(tester.getSize(find.byType(GoGroupRow)).height, lessThan(44));
     });
   });
 }

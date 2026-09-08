@@ -54,9 +54,7 @@ class GoToast {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: isError
-                ? roles.partner.withValues(alpha: .35)
-                : roles.line,
+            color: isError ? roles.partner.withValues(alpha: .35) : roles.line,
             width: 1.5,
           ),
         ),

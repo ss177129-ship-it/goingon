@@ -100,6 +100,8 @@ class _GoGroupRowState extends State<GoGroupRow> {
       child: widget.child,
     );
     if (!_pressable) return row;
+    // 눌리는 행은 44pt 아래로 내려가지 않는다. 기본 세로 여백(12)에 12pt
+    // 한 줄만 들어간 행은 41pt라 조용히 최소치를 밑돌았다(2026-09-08)
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTapDown: (_) => _set(true),
@@ -107,7 +109,10 @@ class _GoGroupRowState extends State<GoGroupRow> {
       onTapCancel: () => _set(false),
       onTap: widget.onTap,
       onLongPress: widget.onLongPress,
-      child: row,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 44),
+        child: row,
+      ),
     );
   }
 }

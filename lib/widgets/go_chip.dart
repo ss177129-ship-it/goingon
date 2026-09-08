@@ -32,6 +32,9 @@ class GoSelectChip extends StatelessWidget {
       button: onTap != null,
       child: Pressable(
         onTap: onTap,
+        // 칩은 32pt로 그린다 — 44로 키우면 칩이 아니라 버튼이 된다.
+        // 대신 닿는 자리를 44로 넓힌다(2026-09-08)
+        minTarget: onTap == null ? null : Pressable.minSize,
         builder: (context, pressed, child) => AnimatedContainer(
           duration: pressed ? Duration.zero : GoMotion.select,
           curve: GoMotion.curve,

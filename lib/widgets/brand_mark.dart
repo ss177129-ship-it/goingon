@@ -45,14 +45,22 @@ class BrandMark extends StatelessWidget {
 
   /// login/nickname 화면의 기본 크기 (74×46, 원 40)
   factory BrandMark.standard() => const BrandMark(
-        width: 74, height: 46, circleSize: 40,
-        leftDx: 3, rightDx: 3, topDy: 4,
+        width: 74,
+        height: 46,
+        circleSize: 40,
+        leftDx: 3,
+        rightDx: 3,
+        topDy: 4,
       );
 
   /// finish 공유 카드의 축소 버전 — 면을 더 옅게(0.15 / 0.25)
   factory BrandMark.compact() => const BrandMark(
-        width: 66, height: 42, circleSize: 38,
-        leftDx: 2, rightDx: 2, topDy: 2,
+        width: 66,
+        height: 42,
+        circleSize: 38,
+        leftDx: 2,
+        rightDx: 2,
+        topDy: 2,
         fillAlpha: (.15, .25),
       );
 
@@ -62,8 +70,12 @@ class BrandMark extends StatelessWidget {
     required double rightScale,
   }) =>
       BrandMark(
-        width: 88, height: 54, circleSize: 50,
-        leftDx: 4, rightDx: 4, topDy: 2,
+        width: 88,
+        height: 54,
+        circleSize: 50,
+        leftDx: 4,
+        rightDx: 4,
+        topDy: 2,
         leftScale: leftScale,
         rightScale: rightScale,
       );
@@ -95,9 +107,7 @@ class BrandMark extends StatelessWidget {
       height: height,
       child: Stack(children: [
         Positioned(
-            left: leftDx,
-            top: topDy,
-            child: circle(lFill, lBorder, leftScale)),
+            left: leftDx, top: topDy, child: circle(lFill, lBorder, leftScale)),
         Positioned(
             right: rightDx,
             top: topDy,

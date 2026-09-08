@@ -20,7 +20,11 @@ class GoSegment extends StatelessWidget {
   final int index;
   final ValueChanged<int> onChanged;
 
-  static const height = 40.0;
+  /// 안쪽 항목이 44pt가 되도록 거꾸로 정한 높이 — 44 + 안쪽 여백 3×2 +
+  /// 테두리 1.5×2 = 53. 테두리도 자리를 먹는다는 것을 빠뜨리면 3pt가 조용히
+  /// 모자란다. 40이던 시절 항목은 34pt였고, 그건 겨냥이 아니라 운이었다
+  /// (2026-09-08)
+  static const height = 53.0;
   static const _inset = 3.0;
   static const _gap = 2.0;
   static const _itemRadius = GoRadius.sm - _inset;
@@ -41,7 +45,10 @@ class GoSegment extends StatelessWidget {
         borderRadius: BorderRadius.circular(GoRadius.sm),
         border: Border.all(color: roles.line, width: GoStroke.card),
       ),
-      child: Row(children: items),
+      // 항목이 통 높이를 꽉 채우게 늘린다 — 기본값(center)이면 항목이 글자
+      // 높이만큼만 자라 표적이 41pt에 머문다(2026-09-08)
+      child:
+          Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: items),
     );
   }
 
@@ -66,13 +73,13 @@ class GoSegment extends StatelessWidget {
           child: child,
         ),
         child: AnimatedDefaultTextStyle(
-            duration: GoMotion.select,
-            curve: GoMotion.curve,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: active ? roles.dark.fg : roles.textSecondary,
-            ),
+          duration: GoMotion.select,
+          curve: GoMotion.curve,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: active ? roles.dark.fg : roles.textSecondary,
+          ),
           child: Text(labels[i]),
         ),
       ),

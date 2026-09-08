@@ -100,8 +100,8 @@ class _ResonanceCanvasState extends State<ResonanceCanvas>
   }
 
   void _addSignal(SignalKind kind, {required bool fromPartner}) {
-    _signals
-        .add(_SignalAnim(kind: kind, start: _frame.value, fromPartner: fromPartner));
+    _signals.add(
+        _SignalAnim(kind: kind, start: _frame.value, fromPartner: fromPartner));
     _signals.removeWhere((s) => _frame.value - s.start > s.duration);
     fromPartner ? _receivedHaptic(kind) : HapticFeedback.lightImpact();
   }
@@ -299,7 +299,6 @@ class _ResonancePainter extends CustomPainter {
   /// 새로 만들어지므로 여기 두면 화면이 갱신될 때마다 크기가 튄다
   final _RadiiState radii;
 
-
   @override
   void paint(Canvas canvas, Size size) {
     final t = frame.value;
@@ -314,7 +313,8 @@ class _ResonancePainter extends CustomPainter {
     // 각자의 발걸음처럼 엇갈려 숨쉬기 (예전 화면에서 이어온 감각)
     final breath = 2 * math.pi * t / 1.8;
     final rMine = unit * radii.mine * (1 + 0.02 * math.sin(breath));
-    final rTheirs = unit * radii.theirs * (1 + 0.02 * math.sin(breath + math.pi));
+    final rTheirs =
+        unit * radii.theirs * (1 + 0.02 * math.sin(breath + math.pi));
 
     _paintAura(canvas, center, unit, closeness);
     _paintRings(canvas, center, rMine, rTheirs);
@@ -328,8 +328,9 @@ class _ResonancePainter extends CustomPainter {
   /// 케이던스는 걸음마다 튀는 값이라 그대로 그리면 원이 덜덜 떨린다.
   /// 소리·상태어와 같은 속도로 움직여야 화면과 귀가 한 몸으로 느껴진다
   void _advanceRadii(double t, double closeness) {
-    final dt =
-        radii.lastPaintAt == 0 ? 0.016 : (t - radii.lastPaintAt).clamp(0.0, 0.25);
+    final dt = radii.lastPaintAt == 0
+        ? 0.016
+        : (t - radii.lastPaintAt).clamp(0.0, 0.25);
     radii.lastPaintAt = t;
     final tau = kSharedSmoothingTimeConstant.inMicroseconds /
         Duration.microsecondsPerSecond;
@@ -344,7 +345,6 @@ class _ResonancePainter extends CustomPainter {
     radii.mine += (targetMine - radii.mine) * alpha;
     radii.theirs += (targetTheirs - radii.theirs) * alpha;
   }
-
 
   /// 가까워질수록 두 사람 사이에 도는 옅은 금빛
   void _paintAura(Canvas canvas, Offset center, double unit, double closeness) {
@@ -442,7 +442,11 @@ class _ResonancePainter extends CustomPainter {
     for (final start in bursts) {
       final age = (t - start) / _kBurstDuration;
       if (age < 0 || age > 1) continue;
-      for (final (delay, weight) in const [(0.0, 1.0), (0.12, .6), (0.24, .35)]) {
+      for (final (delay, weight) in const [
+        (0.0, 1.0),
+        (0.12, .6),
+        (0.24, .35)
+      ]) {
         final p = (age - delay) / (1 - delay);
         if (p < 0 || p > 1) continue;
         final alpha =
@@ -461,8 +465,8 @@ class _ResonancePainter extends CustomPainter {
 
   /// 신호 — 보낸 것은 바깥으로 빠져나가고, 받은 것은 상대 원이 맥동한다.
   /// 글자는 붙지 않는다. 방향과 박자가 곧 뜻이다
-  void _paintSignals(Canvas canvas, Offset center, double rMine,
-      double rTheirs, double unit, double t) {
+  void _paintSignals(Canvas canvas, Offset center, double rMine, double rTheirs,
+      double unit, double t) {
     for (final s in signals) {
       final p = (t - s.start) / s.duration;
       if (p < 0 || p > 1) continue;
@@ -493,8 +497,8 @@ class _ResonancePainter extends CustomPainter {
   }
 
   /// 받은 신호 — 상대 원(partner)이 종류마다 다른 박자로 맥동한다
-  void _paintReceived(Canvas canvas, Offset center, double rTheirs,
-      SignalKind kind, double p) {
+  void _paintReceived(
+      Canvas canvas, Offset center, double rTheirs, SignalKind kind, double p) {
     switch (kind) {
       // "여기 있어" — 한 번 툭
       case SignalKind.here:
@@ -510,7 +514,8 @@ class _ResonancePainter extends CustomPainter {
       // 애니메이션도 급하지 않다
       case SignalKind.slow:
         final eased = Curves.easeOutQuart.transform(p);
-        _pulse(canvas, center, rTheirs * (1 + 0.38 * eased), (1 - p) * 0.6, 3.4);
+        _pulse(
+            canvas, center, rTheirs * (1 + 0.38 * eased), (1 - p) * 0.6, 3.4);
         canvas.drawCircle(
           center,
           rTheirs,
@@ -519,8 +524,8 @@ class _ResonancePainter extends CustomPainter {
     }
   }
 
-  void _pulse(Canvas canvas, Offset center, double radius, double alpha,
-      double width) {
+  void _pulse(
+      Canvas canvas, Offset center, double radius, double alpha, double width) {
     canvas.drawCircle(
       center,
       radius,

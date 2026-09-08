@@ -53,8 +53,9 @@ class GoDialog {
             Expanded(
               // destructive는 primary 대신 secondary + coralDark 글자
               child: GoButton(confirmLabel,
-                  kind:
-                      destructive ? GoButtonKind.secondary : GoButtonKind.primary,
+                  kind: destructive
+                      ? GoButtonKind.secondary
+                      : GoButtonKind.primary,
                   size: GoButtonSize.md,
                   destructive: destructive,
                   onTap: () => Navigator.pop(ctx, true)),
@@ -86,9 +87,7 @@ class GoDialog {
         title: Text(title, style: GoText.heading),
         content: Text(body,
             style: TextStyle(
-                fontSize: 15,
-                color: GoRoles.of(ctx).textPrimary,
-                height: 1.5)),
+                fontSize: 15, color: GoRoles.of(ctx).textPrimary, height: 1.5)),
         actionsPadding:
             const EdgeInsets.fromLTRB(GoSpace.xl, 0, GoSpace.xl, GoSpace.xl),
         actions: [

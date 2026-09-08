@@ -78,8 +78,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const SizedBox(height: GoSpace.m),
-          _sheetAction(ctx, Icons.photo_library_outlined, '사진첩에서 고르기',
-              _pickPhoto),
+          _sheetAction(
+              ctx, Icons.photo_library_outlined, '사진첩에서 고르기', _pickPhoto),
           _sheetAction(ctx, Icons.delete_outline, '사진 지우기', _removePhoto,
               color: roles.attention),
           const SizedBox(height: GoSpace.m),
@@ -88,8 +88,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     );
   }
 
-  Widget _sheetAction(
-      BuildContext sheetContext, IconData icon, String label, Future<void> Function() action,
+  Widget _sheetAction(BuildContext sheetContext, IconData icon, String label,
+      Future<void> Function() action,
       {Color? color}) {
     // 시트의 행 — 목록 행과 같은 눌림(축소 없이 면이 가라앉는다)
     final roles = GoRoles.of(sheetContext);
@@ -107,14 +107,14 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         child: child,
       ),
       child: Row(children: [
-          Icon(icon, size: 20, color: color ?? roles.textPrimary),
-          const SizedBox(width: 14),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: color ?? roles.textPrimary)),
-        ]),
+        Icon(icon, size: 20, color: color ?? roles.textPrimary),
+        const SizedBox(width: 14),
+        Text(label,
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: color ?? roles.textPrimary)),
+      ]),
     );
   }
 
@@ -252,7 +252,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 fillColor: roles.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: roles.line, width: GoStroke.card),
+                  borderSide:
+                      BorderSide(color: roles.line, width: GoStroke.card),
                 ),
               ),
             ),
@@ -288,26 +289,27 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       body: SafeArea(
         bottom: false,
         child: ListView(padding: EdgeInsets.zero, children: [
-          // 프로토타입 .af-head — 뒤로 12px/dim, 타이틀 28px 세리프
+          // 프로토타입 .af-head — 타이틀 28px 세리프.
+          // 뒤로가기는 12px 글자뿐이라 표적이 24pt밖에 안 됐다. 로비와 같은
+          // 44pt 버튼으로 교체(2026-09-08). 왼쪽 12는 버튼 자체 좌우
+          // 여백(16)을 빼고 제목(24)에 맞춘 값
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Pressable(
-                onTap: () => Navigator.pop(context),
-                // 글자만 있는 링크 — 눌리면 잠깐 옅어진다(GoTabs와 같은 반응)
-                builder: (context, pressed, child) => AnimatedOpacity(
-                  duration: pressed ? Duration.zero : Pressable.releaseDuration,
-                  opacity: pressed ? .6 : 1,
-                  child: child,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Text('← 설정으로',
-                      style: TextStyle(fontSize: 12, color: roles.link)),
-                ),
-              ),
+            padding: const EdgeInsets.fromLTRB(12, 10, 24, 0),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                GoButton('설정으로',
+                    kind: GoButtonKind.text,
+                    size: GoButtonSize.md,
+                    icon: Icons.arrow_back,
+                    onTap: () => Navigator.pop(context)),
+                const Spacer(),
+              ]),
               const SizedBox(height: 2),
-              const Text('프로필 편집', style: GoText.title),
+              const Padding(
+                padding: EdgeInsets.only(left: 12),
+                child: Text('프로필 편집', style: GoText.title),
+              ),
             ]),
           ),
           const SizedBox(height: 22),
@@ -322,7 +324,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text('이름과 사진은 페이스메이트와 나에게 온 요청 목록에 보여요.',
-                style: TextStyle(fontSize: 12, color: roles.textSecondary, height: 1.6)),
+                style: TextStyle(
+                    fontSize: 12, color: roles.textSecondary, height: 1.6)),
           ),
           const SizedBox(height: 40),
         ]),
@@ -380,18 +383,17 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       padding: const EdgeInsets.symmetric(
           horizontal: GoSpace.card, vertical: GoSpace.l),
       child: Row(children: [
-          Expanded(
-            child: Text(title,
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: roles.textPrimary)),
-          ),
-          Text(value,
-              style: TextStyle(fontSize: 13, color: roles.textSecondary)),
-          const SizedBox(width: 6),
-          Icon(Icons.chevron_right, size: 18, color: roles.textSecondary),
-        ]),
+        Expanded(
+          child: Text(title,
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: roles.textPrimary)),
+        ),
+        Text(value, style: TextStyle(fontSize: 13, color: roles.textSecondary)),
+        const SizedBox(width: 6),
+        Icon(Icons.chevron_right, size: 18, color: roles.textSecondary),
+      ]),
     );
   }
 }
