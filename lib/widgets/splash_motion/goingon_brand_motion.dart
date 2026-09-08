@@ -51,7 +51,7 @@ class GoingOnBrandMotion extends StatefulWidget {
   /// 바·미소·워드마크는 완성된 채 그대로다 — 움직이는 것은 링뿐이다
   final bool spinWhileWaiting;
 
-  /// 링 한 바퀴. 로딩 스피너의 통상 속도(1~2초)에 맞춘다
+  /// 링 하나가 한 바퀴 도는 시간. 두 링이 번갈아 돌므로 한 주기는 이 두 배
   static const spinPeriod = Duration(milliseconds: 1800);
 
   @override
@@ -74,7 +74,7 @@ class _GoingOnBrandMotionState extends State<GoingOnBrandMotion>
           if (widget.spinWhileWaiting && mounted && !_reduceMotion) {
             _spin = AnimationController(
               vsync: this,
-              duration: GoingOnBrandMotion.spinPeriod,
+              duration: GoingOnBrandMotion.spinPeriod * 2, // 코랄 → 라임
             )..repeat();
             setState(() {});
           }
@@ -218,25 +218,50 @@ class _SymbolPainter extends CustomPainter {
   /// 코랄이 라임 위로 올라오는 교차 구간 — 사슬처럼 엮인 것으로 읽히게
   static const _crossClip = Rect.fromLTWH(450, 305, 125, 135);
 
-  /// 대기 루프 — 각 링은 제자리에서, 로딩 인디케이터처럼 **열린 호**가
-  /// 링을 따라 빙 돈다. 코랄은 시계 방향, 라임은 반시계 — 인트로에서 그려진
-  /// 방향 그대로. 링 자체가 움직이지 않으니 로고 모양은 그대로 남는다
+  /// 대기 루프 — 두 링이 **번갈아** 한 바퀴씩 돈다. 링은 제자리에 있고,
+  /// 차례가 된 링은 틈이 열리며 로딩 인디케이터처럼 호가 링을 따라 빙 돌고,
+  /// 한 바퀴 끝에서 틈이 닫혀 다시 온전한 링이 된다. 쉬는 링은 닫힌 채라
+  /// 로고 모양이 남는다. 둘 다 시계 방향. 속도는 easeInOut — 출발과 도착은
+  /// 느리고 **가운데에서 확** 돈다(2026-09-08 요청)
+  static const _spinCurve = Curves.easeInOutCubic;
+
+  /// 틈이 열리고 닫히는 데 쓰는 구간(바퀴 진행도의 앞뒤 비율)
+  static const _gapRamp = .15;
+
+  /// 최대로 열렸을 때 남는 호의 비율
+  static const _openSweep = .72;
+
   void _paintSpinningRings(Canvas canvas) {
-    const sweep = 2 * math.pi * .72; // 열린 호 — 4분의 1쯤 빈다
-    final turn = spinTurns * 2 * math.pi;
+    // 0~.5 코랄 차례, .5~1 라임 차례
+    final coralTurn = spinTurns < .5 ? spinTurns * 2 : 0.0;
+    final limeTurn = spinTurns >= .5 ? (spinTurns - .5) * 2 : 0.0;
+
     Paint ring(Color c) => Paint()
       ..color = c
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 60;
 
-    final coralStart = math.pi + turn;
-    final limeStart = -turn;
-    canvas.drawArc(_coralRect, coralStart, sweep, false, ring(GoColors.coral));
-    canvas.drawArc(_limeRect, limeStart, -sweep, false, ring(GoColors.lime));
+    /// 진행도 p(0~1)에서의 (시작각, 호 길이). p가 0이거나 1이면 닫힌 링
+    (double, double) arc(double p) {
+      if (p <= 0 || p >= 1) return (math.pi, 2 * math.pi);
+      final angle = math.pi + _spinCurve.transform(p) * 2 * math.pi;
+      final open = p < _gapRamp
+          ? p / _gapRamp
+          : p > 1 - _gapRamp
+              ? (1 - p) / _gapRamp
+              : 1.0;
+      final sweep = 2 * math.pi * ui.lerpDouble(1, _openSweep, open)!;
+      return (angle, sweep);
+    }
+
+    final (cs, cw) = arc(coralTurn);
+    final (ls, lw) = arc(limeTurn);
+    canvas.drawArc(_coralRect, cs, cw, false, ring(GoColors.coral));
+    canvas.drawArc(_limeRect, ls, lw, false, ring(GoColors.lime));
     canvas.save();
     canvas.clipRect(_crossClip);
-    canvas.drawArc(_coralRect, coralStart, sweep, false, ring(GoColors.coral));
+    canvas.drawArc(_coralRect, cs, cw, false, ring(GoColors.coral));
     canvas.restore();
   }
 
