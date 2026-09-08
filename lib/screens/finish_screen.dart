@@ -12,6 +12,7 @@ import '../services/auth_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
 import '../widgets/go_button.dart';
+import '../widgets/go_value_switch.dart';
 import '../widgets/brand_mark.dart';
 import '../widgets/go_toast.dart';
 import 'root_screen.dart';
@@ -42,8 +43,35 @@ class FinishScreen extends StatefulWidget {
   State<FinishScreen> createState() => _FinishScreenState();
 }
 
-class _FinishScreenState extends State<FinishScreen> {
+class _FinishScreenState extends State<FinishScreen>
+    with SingleTickerProviderStateMixin {
   final _cardKey = GlobalKey();
+
+  /// 완료 화면의 등장 — 타이틀·합산 카드·개인 기록·CTA가 차례로 떠오른다.
+  /// 러닝이 끝난 직후 화면이 한 장으로 뚝 나타나면 "끝났다"보다 "바뀌었다"로
+  /// 읽힌다. 순서대로 쌓이는 것이 곧 확인(confirmation)이다. 한 번만
+  /// 재생하고, 동작 줄이기가 켜져 있으면 처음부터 완성 상태다
+  late final AnimationController _enter = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 620),
+  );
+
+  /// [i]번째 블록의 등장 구간. 블록마다 90ms씩 늦게 시작해 380ms 동안
+  /// 아래 12px에서 떠오르며 밝아진다
+  Widget _entrance(int i, Widget child) {
+    final start = (i * 90 / 620).clamp(0.0, 1.0);
+    final end = ((i * 90 + 380) / 620).clamp(0.0, 1.0);
+    final anim = CurvedAnimation(
+        parent: _enter, curve: Interval(start, end, curve: Curves.easeOut));
+    return FadeTransition(
+      opacity: anim,
+      child: SlideTransition(
+        position: Tween(begin: const Offset(0, .06), end: Offset.zero)
+            .animate(anim),
+        child: child,
+      ),
+    );
+  }
 
   /// 공유 시트의 기준점을 잡기 위한 키 — [_shareOrigin] 주석 참조
   final _shareButtonKey = GlobalKey();
@@ -64,6 +92,14 @@ class _FinishScreenState extends State<FinishScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (MediaQuery.of(context).disableAnimations) {
+        _enter.value = 1;
+      } else {
+        _enter.forward();
+      }
+    });
     _waitTimer = Timer(const Duration(minutes: 5), () {
       if (mounted && _waiting) setState(() => _longWait = true);
     });
@@ -114,6 +150,7 @@ class _FinishScreenState extends State<FinishScreen> {
 
   @override
   void dispose() {
+    _enter.dispose();
     _sub?.cancel();
     _waitTimer?.cancel();
     super.dispose();
@@ -205,14 +242,16 @@ class _FinishScreenState extends State<FinishScreen> {
                 color: roles.actionComplete.bg,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Column(children: [
-                  BrandMark.compact(),
-                  const SizedBox(height: GoSpace.m),
-                  Text('나 & ${widget.partnerName}\n$_title',
-                      textAlign: TextAlign.center,
-                      style: GoText.title.copyWith(color: roles.textOnDark)),
+                  _entrance(0, Column(children: [
+                    BrandMark.compact(),
+                    const SizedBox(height: GoSpace.m),
+                    Text('나 & ${widget.partnerName}\n$_title',
+                        textAlign: TextAlign.center,
+                        style: GoText.title.copyWith(color: roles.textOnDark)),
+                  ])),
                   const SizedBox(height: 20),
                   // 함께 합산 블록 (fin-together)
-                  Container(
+                  _entrance(1, Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(GoSpace.card),
                     decoration: BoxDecoration(
@@ -253,31 +292,33 @@ class _FinishScreenState extends State<FinishScreen> {
                               fontSize: 12,
                               color: roles.textSecondary)),
                     ]),
-                  ),
+                  )),
                   const SizedBox(height: 8),
-                  Text('goingon · 멀리 있어도, 함께',
-                      style: GoTheme.serif(12, color: roles.textOnDark)),
+                  _entrance(1, Text('goingon · 멀리 있어도, 함께',
+                      style: GoTheme.serif(12, color: roles.textOnDark))),
                 ]),
               ),
             ),
             const SizedBox(height: 14),
             // ── 개인 기록 (fin-ind-row) ──
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text('개인 기록',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                      letterSpacing: 1.2,
-                      color: roles.textOnDark)),
-            ),
-            const SizedBox(height: 8),
-            Row(children: [
-              _personalCard('나', widget.myKm, roles.self,
-                  mood: widget.myMood),
-              const SizedBox(width: 10),
-              _personalCard(widget.partnerName,
-                  _waiting ? null : _partnerKm, roles.partner,
-                  mood: _waiting ? null : _partnerResult?['mood'] as String?),
-            ]),
+            _entrance(2, Column(children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text('개인 기록',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                        letterSpacing: 1.2,
+                        color: roles.textOnDark)),
+              ),
+              const SizedBox(height: 8),
+              Row(children: [
+                _personalCard('나', widget.myKm, roles.self,
+                    mood: widget.myMood),
+                const SizedBox(width: 10),
+                _personalCard(widget.partnerName,
+                    _waiting ? null : _partnerKm, roles.partner,
+                    mood: _waiting ? null : _partnerResult?['mood'] as String?),
+              ]),
+            ])),
             if (_waiting) ...[
               const SizedBox(height: 10),
               Text(
@@ -289,18 +330,20 @@ class _FinishScreenState extends State<FinishScreen> {
             ],
             const SizedBox(height: 18),
             // ── CTA ──
-            GoButton('다음에 또 함께 달려요',
-                onTap: () => Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const RootScreen()),
-                    (_) => false)),
-            const SizedBox(height: GoSpace.s),
-            GoButton('오늘의 순간 공유하기',
-                key: _shareButtonKey,
-                kind: GoButtonKind.text,
-                onDark: true, // 초록 바탕 위
-                size: GoButtonSize.md,
-                onTap: _shareCard),
+            _entrance(3, Column(children: [
+              GoButton('다음에 또 함께 달려요',
+                  onTap: () => Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const RootScreen()),
+                      (_) => false)),
+              const SizedBox(height: GoSpace.s),
+              GoButton('오늘의 순간 공유하기',
+                  key: _shareButtonKey,
+                  kind: GoButtonKind.text,
+                  onDark: true, // 초록 바탕 위
+                  size: GoButtonSize.md,
+                  onTap: _shareCard),
+            ])),
           ]),
         ),
       ),
@@ -311,7 +354,11 @@ class _FinishScreenState extends State<FinishScreen> {
     final roles = GoRoles.of(context);
     return Expanded(
       child: Column(children: [
-        Text(v, style: GoTheme.serif(26, color: roles.textPrimary)),
+        // 상대 기록이 도착해 합산되는 순간(3.2+ → 6.5km) 떠오르며 바뀐다
+        GoValueSwitch(
+          value: v,
+          child: Text(v, style: GoTheme.serif(26, color: roles.textPrimary)),
+        ),
         const SizedBox(height: 2),
         Text(label,
             style: TextStyle(fontSize: 12, letterSpacing: .8,
