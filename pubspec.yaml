@@ -55,6 +55,10 @@ dependencies:
   package_info_plus: ^9.0.1
   url_launcher: ^6.3.2
 
+  # 스플래시 워드마크 손글씨 애니메이션 — SVG path 파싱/부분 스트로크 추출
+  # (lib/widgets/splash_motion/)
+  path_drawing: ^1.0.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

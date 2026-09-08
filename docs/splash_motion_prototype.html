@@ -1,0 +1,530 @@
+<title>GoingOn Splash Motion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Sora:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F2F3EE;
+    --bg-soft:#E9EBE2;
+    --surface:#FFFFFF;
+    --ink:#17181C;
+    --muted:#6B6E63;
+    --line:rgba(23,24,28,0.12);
+    --coral:#FF6A55;
+    --lime:#C7D93E;
+    --lime-bright:#D6F24E;
+    --focus:#2F6FED;
+    --bezel:#0B0C0E;
+    --bezel-edge:#2A2C31;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#121316;
+      --bg-soft:#1A1B1F;
+      --surface:#1D1E22;
+      --ink:#F1F0EA;
+      --muted:#9A9D93;
+      --line:rgba(241,240,234,0.14);
+      --bezel:#000000;
+      --bezel-edge:#3A3C42;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#121316;
+    --bg-soft:#1A1B1F;
+    --surface:#1D1E22;
+    --ink:#F1F0EA;
+    --muted:#9A9D93;
+    --line:rgba(241,240,234,0.14);
+    --bezel:#000000;
+    --bezel-edge:#3A3C42;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Sora',ui-sans-serif,system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    padding:48px 24px 72px;
+  }
+  .wrap{
+    max-width:1040px;
+    margin:0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:36px;
+  }
+
+  /* ---------- header ---------- */
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--muted);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--coral);flex:none;}
+  h1{
+    font-family:'Bricolage Grotesque',ui-sans-serif,system-ui,sans-serif;
+    font-weight:700;
+    font-size:clamp(28px,4vw,42px);
+    line-height:1.08;
+    margin:10px 0 0;
+    text-wrap:balance;
+    letter-spacing:-.01em;
+  }
+  h1 em{
+    font-style:normal;
+    background:linear-gradient(92deg,var(--coral),var(--lime-bright));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .lede{
+    max-width:56ch;
+    margin:12px 0 0;
+    color:var(--muted);
+    font-size:15px;
+    line-height:1.6;
+  }
+
+  /* ---------- main grid ---------- */
+  .stage{display:flex; flex-direction:column; gap:28px;}
+  .devices{display:flex; gap:36px; justify-content:center; flex-wrap:wrap;}
+  .device{display:flex; flex-direction:column; align-items:center; gap:14px;}
+  .cap{text-align:center; font-size:13px;}
+  .cap b{display:block; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:15px; margin-bottom:2px;}
+  .cap span{color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:11.5px;}
+
+  /* ---------- device mockup ---------- */
+  .device-col{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:18px;
+  }
+  .phone{
+    width:264px;
+    height:540px;
+    background:var(--bezel);
+    border-radius:44px;
+    padding:12px;
+    box-shadow:0 1px 0 var(--bezel-edge) inset, 0 24px 60px -20px rgba(0,0,0,.45);
+    position:relative;
+    flex:none;
+  }
+  .phone::before{
+    content:"";
+    position:absolute;
+    top:12px; left:50%;
+    transform:translateX(-50%);
+    width:90px; height:22px;
+    background:var(--bezel);
+    border-radius:14px;
+    z-index:3;
+    box-shadow:0 0 0 2px var(--bezel-edge) inset;
+  }
+  .screen{
+    position:relative;
+    width:100%; height:100%;
+    border-radius:32px;
+    overflow:hidden;
+    background:var(--screen-bg,#FFFFFF);
+    transition:background .3s ease;
+  }
+  .home-indicator{
+    position:absolute;
+    bottom:9px; left:50%;
+    transform:translateX(-50%);
+    width:110px; height:4px;
+    border-radius:3px;
+    background:currentColor;
+    opacity:.28;
+    color:var(--screen-ink,#17181C);
+    z-index:3;
+  }
+  .splash-content{
+    position:absolute; inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:22px;
+  }
+  /* Performance notes: every moving part outside the SVG draw-on is an HTML
+     element animating only transform/opacity (GPU-composited). No filters,
+     no layout-affecting properties, no idle loop. */
+  .mark-holder{width:150px;height:150px; will-change:transform; transform-origin:50% 50%;}
+  .mark-holder svg{width:100%;height:100%;display:block;}
+
+  .wordmark-holder{position:relative; width:132px; aspect-ratio:400/110;}
+  .glyph{position:absolute; inset:0; width:100%; height:100%; overflow:visible; --d:calc(var(--t0) + var(--rel) * var(--k));}
+  /* both start after the symbol settles; --k scales handwriting speed */
+  .screen{--t0:1.30s; --k:.8;} /* --k scales handwriting speed; .8 = final */
+  /* ink glyphs are "handwritten": each filled letter sits behind a mask whose
+     only content is a stroke along the letter's centerline (pathLength=1).
+     Animating that stroke's dashoffset 1→0 reveals the fill in writing order. */
+  .glyph-ink path[mask]{fill:var(--screen-ink,#17181C);}
+  .wpath{stroke-dasharray:1; stroke-dashoffset:1;}
+  .wdot{opacity:0;}
+  /* the o's jump up from the baseline: origin at each o's own baseline center */
+  .glyph-o{opacity:0; will-change:transform,opacity; transform:translateY(8px) scale(1.2,.8);}
+  .o1{transform-origin:27.4% 72.6%;}
+  .o2{transform-origin:78.9% 72.6%;}
+
+  /* base (unplayed) states */
+  /* rings: drawn as strokes from the intersection outward; the coral ring is
+     rotated 180° so its path starts at 9 o'clock, the lime ring runs in reverse
+     (negative dashoffset) so both sweep up and over the top symmetrically.
+     dasharray = circumference + 40 keeps the round cap off the path at rest. */
+  .eyeR,.eyeL,.overlapFix{stroke-linecap:round; stroke-width:40;}
+  .eyeR,.overlapFix{stroke-dasharray:794; stroke-dashoffset:794;}
+  .eyeL{stroke-dasharray:763; stroke-dashoffset:-763;}
+  .bar1,.bar2{opacity:0; transform-box:fill-box; transform-origin:50% 50%; transform:scaleX(0);}
+  .smileArc{stroke-dasharray:755; stroke-dashoffset:755;}
+
+  .screen.play .eyeR,
+  .screen.play .overlapFix{animation:drawRingR .7s cubic-bezier(.2,.9,.3,1) forwards;}
+  .screen.play .eyeL{animation:drawRingL .7s cubic-bezier(.2,.9,.3,1) .04s forwards;}
+  .screen.play .bar1{animation:growBar .32s cubic-bezier(.22,1,.36,1) .55s forwards;}
+  .screen.play .bar2{animation:growBar .32s cubic-bezier(.22,1,.36,1) .68s forwards;}
+  .screen.play .smileArc{animation:drawArc .42s cubic-bezier(.65,0,.35,1) .88s forwards;}
+  .screen.play .mark-holder{animation:settleBounce .32s ease-out 1.28s forwards;}
+  /* handwriting runs left to right; each letter's start (--d) is the previous
+     letter's end, and the o's jump in at their own slot in the word */
+  .screen.play .glyph-ink .wpath{animation:writeOn calc(var(--wd) * var(--k)) cubic-bezier(.45,.05,.55,.95) forwards; animation-delay:var(--d);}
+  .screen.play .glyph-o{animation:oJump .58s linear forwards; animation-delay:var(--d);}
+  .screen.play .wdot{animation:dotOn .08s ease-out forwards; animation-delay:calc(var(--d) + var(--wd) * var(--k) * .9);}
+  @keyframes writeOn{from{stroke-dashoffset:1;}to{stroke-dashoffset:0;}}
+  @keyframes dotOn{from{opacity:0;}to{opacity:1;}}
+
+  @keyframes drawRingR{
+    from{stroke-dashoffset:794; stroke-width:40;}
+    to{stroke-dashoffset:0; stroke-width:60;}
+  }
+  @keyframes drawRingL{
+    from{stroke-dashoffset:-763; stroke-width:40;}
+    to{stroke-dashoffset:0; stroke-width:60;}
+  }
+  /* ball jump, bottom → top: starts squashed on the baseline, springs up
+     stretched (decelerating to the apex), falls back with a squash on landing,
+     then one small hop to rest. Per-keyframe timing functions carry the physics. */
+  @keyframes oJump{
+    0%  {opacity:0; transform:translateY(8px) scale(1.2,.8); animation-timing-function:cubic-bezier(.2,.8,.4,1);}
+    8%  {opacity:1;}
+    38% {transform:translateY(-16px) scale(.9,1.12); animation-timing-function:cubic-bezier(.5,0,.9,.6);}
+    60% {transform:translateY(0) scale(1.18,.84); animation-timing-function:cubic-bezier(.2,.8,.4,1);}
+    76% {transform:translateY(-5px) scale(.97,1.04); animation-timing-function:cubic-bezier(.5,0,.8,.6);}
+    88% {transform:translateY(0) scale(1.05,.96);}
+    100%{opacity:1; transform:translateY(0) scale(1,1);}
+  }
+  @keyframes growBar{
+    0%{opacity:0; transform:scaleX(0);}
+    70%{opacity:1; transform:scaleX(1.06);}
+    100%{opacity:1; transform:scaleX(1);}
+  }
+  @keyframes drawArc{from{stroke-dashoffset:755;}to{stroke-dashoffset:0;}}
+  @keyframes settleBounce{0%,100%{transform:scale(1);}50%{transform:scale(1.045);}}
+  @media (prefers-reduced-motion:reduce){
+    .eyeR,.eyeL,.overlapFix{stroke-dashoffset:0; stroke-width:60;}
+    .bar1,.bar2{opacity:1; transform:none;}
+    .smileArc{stroke-dashoffset:0;}
+    .glyph-o{opacity:1; transform:none;}
+    .wpath{stroke-dashoffset:0;}
+    .wdot{opacity:1;}
+  }
+
+  /* ---------- transport ---------- */
+  .transport{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  button{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:.04em;
+    border:1px solid var(--line);
+    background:var(--surface);
+    color:var(--ink);
+    padding:9px 16px;
+    border-radius:999px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    transition:border-color .15s ease, transform .1s ease;
+  }
+  button:hover{border-color:var(--coral);}
+  button:active{transform:scale(.97);}
+  button:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--ink); color:var(--bg); border-color:var(--ink);}
+  .bg-toggle{display:flex; border:1px solid var(--line); border-radius:999px; overflow:hidden;}
+  .bg-toggle button{border:none; border-radius:0; background:transparent;}
+  .bg-toggle button.active{background:var(--ink); color:var(--bg);}
+
+  /* ---------- spec / timeline panel ---------- */
+  .panel{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:26px 26px 22px;
+  }
+  .panel-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom:18px;
+    padding-bottom:16px;
+    border-bottom:1px solid var(--line);
+  }
+  .panel-head h2{
+    font-family:'Bricolage Grotesque',sans-serif;
+    font-size:17px;
+    font-weight:700;
+    margin:0;
+  }
+  .ease-tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex:none;
+  }
+  .ease-curve{display:block;}
+
+  .compare{display:grid; grid-template-columns:1fr 1fr; gap:32px;}
+  @media (max-width:700px){.compare{grid-template-columns:1fr;}}
+  .col-title{font-size:13px; font-weight:600; margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--line);}
+  ol.timeline{
+    list-style:none;
+    margin:0; padding:0;
+    display:flex;
+    flex-direction:column;
+  }
+  .timeline li{
+    display:grid;
+    grid-template-columns:62px 20px 1fr;
+    align-items:start;
+    gap:2px 14px;
+    padding:7px 0;
+    position:relative;
+  }
+  .timeline li:not(:last-child)::after{
+    content:"";
+    position:absolute;
+    left:72px; top:26px; bottom:-7px;
+    width:1px;
+    background:var(--line);
+  }
+  .t{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    font-variant-numeric:tabular-nums;
+    padding-top:1px;
+  }
+  .node{
+    width:9px;height:9px;border-radius:50%;
+    background:var(--bg-soft);
+    border:1px solid var(--line);
+    margin-top:4px;
+    transition:background .25s ease, border-color .25s ease, transform .25s ease;
+  }
+  .label{font-size:14px; line-height:1.45;}
+  .label b{display:block; font-weight:600; margin-bottom:2px;}
+  .label span{color:var(--muted); font-size:12.5px;}
+
+  .timeline li.active .node{
+    background:var(--coral);
+    border-color:var(--coral);
+    transform:scale(1.25);
+  }
+  .timeline li.active .t{color:var(--ink);}
+
+  footer{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--muted);
+    text-align:center;
+  }
+</style>
+
+<div class="wrap">
+
+  <div>
+    <div class="eyebrow"><span class="dot"></span>SPLASH SCREEN · MOTION PROTOTYPE</div>
+    <h1>고잉온 로고, <em>조립되는 순간</em>을 그리다</h1>
+    <p class="lede">앱 실행 첫 화면에서 보여줄 심볼 조립 시퀀스입니다. 코랄·라임 링이 교차점에서 스스로 원을 그리며 맞물리고, 다크 바와 미소 아크가 뒤이어 그려지며, 워드마크를 펜으로 한 글자씩 써 내려가고 두 o만 바닥에서 튀어오르는 흐름으로 구성했습니다.</p>
+  </div>
+
+  <div class="stage">
+
+    <div class="device-col">
+      <div class="devices">
+        <div class="device">
+      <div class="phone">
+        <div class="screen play">
+          <div class="splash-content">
+            <div class="mark-holder">
+              <svg viewBox="200 70 620 850" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <clipPath id="bottomCrossB"><rect x="450" y="305" width="125" height="135"></rect></clipPath>
+                </defs>
+                <g id="mark">
+                  <g id="rings">
+                    <circle class="eyeR" cx="598" cy="290" r="120" fill="none" stroke="#FF6A55" stroke-width="60" transform="rotate(180 598 290)"></circle>
+                    <circle class="eyeL" cx="431" cy="291" r="115" fill="none" stroke="#D6F24E" stroke-width="60"></circle>
+                    <g clip-path="url(#bottomCrossB)">
+                      <circle class="overlapFix" cx="598" cy="290" r="120" fill="none" stroke="#FF6A55" stroke-width="60" transform="rotate(180 598 290)"></circle>
+                    </g>
+                  </g>
+                  <rect class="bar1" x="322" y="456" width="380" height="58" rx="29" fill="#0f1115"></rect>
+                  <rect class="bar2" x="322" y="530" width="380" height="60" rx="30" fill="#0f1115"></rect>
+                  <path class="smileArc" d="M271.5 620 A240 240 0 0 0 751.5 620" fill="none" stroke="#0f1115" stroke-width="59" stroke-linecap="round"></path>
+                </g>
+              </svg>
+            </div>
+            <div class="wordmark-holder">
+              <svg class="glyph glyph-ink" style="--rel:0s;--wd:0.26s" viewBox="55 55 400 110" xmlns="http://www.w3.org/2000/svg">
+                <defs><mask id="mB-G" maskUnits="userSpaceOnUse" x="55" y="55" width="400" height="110"><path class="wpath" pathLength="1" d="M131 84 L121.2 80.8 A27 30 0 1 0 113.2 126.6 L127 130 L127 101 L102 101" fill="none" stroke="#fff" stroke-width="16" stroke-linecap="butt" stroke-linejoin="round"/></mask></defs>
+                <path mask="url(#mB-G)" d="M100.471 134.864C94.135 134.864 88.567 133.424 83.767 130.544C79.031 127.664 75.351 123.664 72.727 118.544C70.103 113.36 68.791 107.312 68.791 100.4C68.791 93.5517 70.135 87.5037 72.823 82.2557C75.511 76.9437 79.351 72.8157 84.343 69.8717C89.399 66.8637 95.383 65.3597 102.295 65.3597C110.103 65.3597 116.567 67.2477 121.687 71.0237C126.871 74.7357 130.231 79.9197 131.767 86.5757H118.807C117.847 83.2477 115.959 80.6557 113.143 78.7997C110.327 76.9437 106.679 76.0157 102.199 76.0157C97.655 76.0157 93.751 77.0077 90.487 78.9917C87.287 80.9117 84.823 83.7277 83.095 87.4397C81.431 91.0877 80.599 95.4397 80.599 100.496C80.599 105.552 81.431 109.904 83.095 113.552C84.823 117.2 87.255 119.984 90.391 121.904C93.527 123.76 97.207 124.688 101.431 124.688C107.703 124.688 112.439 122.928 115.639 119.408C118.839 115.888 120.727 111.312 121.303 105.68H103.927V96.9437H132.919V133.712H122.359L121.399 124.496C119.927 126.672 118.231 128.56 116.311 130.16C114.391 131.696 112.119 132.88 109.495 133.712C106.935 134.48 103.927 134.864 100.471 134.864Z"/>
+              </svg>
+              <svg class="glyph glyph-o o1" style="--rel:.24s" viewBox="55 55 400 110" xmlns="http://www.w3.org/2000/svg"><path d="M164.523 134.864C159.915 134.864 155.755 133.808 152.043 131.696C148.395 129.52 145.515 126.544 143.403 122.768C141.355 118.928 140.331 114.544 140.331 109.616C140.331 104.56 141.387 100.144 143.499 96.3677C145.611 92.5277 148.491 89.5517 152.139 87.4397C155.851 85.2637 160.011 84.1757 164.619 84.1757C169.227 84.1757 173.355 85.2637 177.003 87.4397C180.715 89.5517 183.595 92.4957 185.643 96.2717C187.755 100.048 188.811 104.464 188.811 109.52C188.811 114.576 187.755 118.992 185.643 122.768C183.531 126.544 180.619 129.52 176.907 131.696C173.259 133.808 169.131 134.864 164.523 134.864ZM164.523 124.976C166.827 124.976 168.907 124.4 170.763 123.248C172.683 122.096 174.219 120.368 175.371 118.064C176.523 115.76 177.099 112.912 177.099 109.52C177.099 106.128 176.523 103.312 175.371 101.072C174.283 98.7677 172.779 97.0397 170.859 95.8877C169.003 94.7357 166.923 94.1597 164.619 94.1597C162.379 94.1597 160.299 94.7357 158.379 95.8877C156.459 97.0397 154.923 98.7677 153.771 101.072C152.619 103.312 152.043 106.128 152.043 109.52C152.043 112.912 152.619 115.76 153.771 118.064C154.923 120.368 156.427 122.096 158.283 123.248C160.203 124.4 162.283 124.976 164.523 124.976Z" fill="#C5E040"/></svg>
+              <svg class="glyph glyph-ink" style="--rel:.30s;--wd:0.13s" viewBox="55 55 400 110" xmlns="http://www.w3.org/2000/svg">
+                <defs><mask id="mB-i" maskUnits="userSpaceOnUse" x="55" y="55" width="400" height="110"><path class="wpath" pathLength="1" d="M203.3 84 L203.3 135.5" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="butt" stroke-linejoin="round"/><circle class="wdot" cx="203.3" cy="70.8" r="7.6" fill="#fff"/></mask></defs>
+                <path mask="url(#mB-i)" d="M197.568 133.712V85.3277H209.088V133.712H197.568ZM203.328 77.6477C201.216 77.6477 199.456 77.0077 198.048 75.7277C196.704 74.3837 196.032 72.7517 196.032 70.8317C196.032 68.8477 196.704 67.2477 198.048 66.0317C199.456 64.7517 201.216 64.1117 203.328 64.1117C205.44 64.1117 207.168 64.7517 208.512 66.0317C209.92 67.2477 210.624 68.8477 210.624 70.8317C210.624 72.7517 209.92 74.3837 208.512 75.7277C207.168 77.0077 205.44 77.6477 203.328 77.6477Z"/>
+              </svg>
+              <svg class="glyph glyph-ink" style="--rel:.43s;--wd:0.19s" viewBox="55 55 400 110" xmlns="http://www.w3.org/2000/svg">
+                <defs><mask id="mB-n1" maskUnits="userSpaceOnUse" x="55" y="55" width="400" height="110"><path class="wpath" pathLength="1" d="M225 84 L225 135.5 M225 110 C225 92 232 89 242 89 C252 89 259 92 259 104 L259 135.5" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="butt" stroke-linejoin="round"/></mask></defs>
+                <path mask="url(#mB-n1)" d="M219.401 133.712V85.3277H229.577L230.441 93.3917C231.913 90.5757 234.025 88.3357 236.777 86.6717C239.529 85.0077 242.793 84.1757 246.569 84.1757C250.473 84.1757 253.801 85.0077 256.553 86.6717C259.305 88.2717 261.417 90.6397 262.889 93.7757C264.425 96.9117 265.193 100.816 265.193 105.488V133.712H253.673V106.544C253.673 102.512 252.777 99.4077 250.985 97.2317C249.193 95.0557 246.537 93.9677 243.017 93.9677C240.713 93.9677 238.633 94.5117 236.777 95.5997C234.985 96.6877 233.545 98.2877 232.457 100.4C231.433 102.448 230.921 104.944 230.921 107.888V133.712H219.401Z"/>
+              </svg>
+              <svg class="glyph glyph-ink" style="--rel:.62s;--wd:0.34s" viewBox="55 55 400 110" xmlns="http://www.w3.org/2000/svg">
+                <defs><mask id="mB-g" maskUnits="userSpaceOnUse" x="55" y="55" width="400" height="110"><path class="wpath" pathLength="1" d="M321 89 L303 89 M304.8 92.5 A14.3 13 0 0 0 284.6 110.9 A14.3 13 0 0 0 304.8 92.5 M288.7 113.5 L279 125.5 L278.8 133.85 A17.8 11.7 0 1 1 277 136.7" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="butt" stroke-linejoin="round"/></mask></defs>
+                <path mask="url(#mB-g)" d="M294.69 155.984C290.146 155.984 286.146 155.408 282.69 154.256C279.298 153.168 276.642 151.472 274.722 149.168C272.866 146.928 271.938 144.112 271.938 140.72C271.938 138.736 272.418 136.784 273.378 134.864C274.402 133.008 275.906 131.28 277.89 129.68C279.938 128.016 282.53 126.576 285.666 125.36L290.754 130.928C287.682 132.016 285.538 133.328 284.322 134.864C283.106 136.4 282.498 137.968 282.498 139.568C282.498 141.232 283.01 142.608 284.034 143.696C285.122 144.848 286.562 145.712 288.354 146.288C290.21 146.864 292.29 147.152 294.594 147.152C296.834 147.152 298.786 146.832 300.45 146.192C302.114 145.616 303.394 144.784 304.29 143.696C305.25 142.608 305.73 141.296 305.73 139.76C305.73 137.84 305.058 136.272 303.714 135.056C302.37 133.904 299.714 133.2 295.746 132.944C292.354 132.688 289.378 132.336 286.818 131.888C284.258 131.376 282.05 130.8 280.194 130.16C278.402 129.52 276.866 128.816 275.586 128.048C274.306 127.216 273.25 126.384 272.418 125.552V123.344L282.498 112.784L291.042 115.568L279.714 126.608L282.69 121.04C283.33 121.488 283.97 121.904 284.61 122.288C285.314 122.672 286.178 123.024 287.202 123.344C288.29 123.6 289.698 123.856 291.426 124.112C293.154 124.368 295.394 124.624 298.146 124.88C302.434 125.2 305.922 125.968 308.61 127.184C311.298 128.4 313.282 130.032 314.562 132.08C315.842 134.128 316.482 136.592 316.482 139.472C316.482 142.288 315.682 144.944 314.082 147.44C312.546 149.936 310.178 151.984 306.978 153.584C303.778 155.184 299.682 155.984 294.69 155.984ZM294.69 119.216C290.658 119.216 287.17 118.448 284.226 116.912C281.346 115.312 279.138 113.2 277.602 110.576C276.066 107.888 275.298 104.944 275.298 101.744C275.298 98.4797 276.066 95.5357 277.602 92.9117C279.138 90.2877 281.346 88.1757 284.226 86.5757C287.17 84.9757 290.658 84.1757 294.69 84.1757C298.722 84.1757 302.178 84.9757 305.058 86.5757C307.938 88.1757 310.146 90.2877 311.682 92.9117C313.218 95.5357 313.986 98.4797 313.986 101.744C313.986 104.944 313.218 107.888 311.682 110.576C310.146 113.2 307.938 115.312 305.058 116.912C302.178 118.448 298.722 119.216 294.69 119.216ZM294.69 110.288C297.442 110.288 299.65 109.552 301.314 108.08C302.978 106.608 303.81 104.496 303.81 101.744C303.81 98.9917 302.978 96.9117 301.314 95.5037C299.65 94.0317 297.442 93.2957 294.69 93.2957C291.938 93.2957 289.698 94.0317 287.97 95.5037C286.242 96.9117 285.378 98.9917 285.378 101.744C285.378 104.496 286.242 106.608 287.97 108.08C289.698 109.552 291.938 110.288 294.69 110.288ZM302.658 93.7757L300.45 85.3277H320.322V92.5277L302.658 93.7757Z"/>
+              </svg>
+              <svg class="glyph glyph-ink" style="--rel:.96s;--wd:0.09s" viewBox="55 55 400 110" xmlns="http://www.w3.org/2000/svg">
+                <defs><mask id="mB-apos" maskUnits="userSpaceOnUse" x="55" y="55" width="400" height="110"><path class="wpath" pathLength="1" d="M336 65.5 L327 91.5" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="butt" stroke-linejoin="round"/></mask></defs>
+                <path mask="url(#mB-apos)" d="M341.415 66.5117L331.911 90.4157H323.943L329.127 66.5117H341.415Z"/>
+              </svg>
+              <svg class="glyph glyph-o o2" style="--rel:1.03s" viewBox="55 55 400 110" xmlns="http://www.w3.org/2000/svg"><path d="M370.305 134.864C365.697 134.864 361.537 133.808 357.825 131.696C354.177 129.52 351.297 126.544 349.185 122.768C347.137 118.928 346.113 114.544 346.113 109.616C346.113 104.56 347.169 100.144 349.281 96.3677C351.393 92.5277 354.273 89.5517 357.921 87.4397C361.633 85.2637 365.793 84.1757 370.401 84.1757C375.009 84.1757 379.137 85.2637 382.785 87.4397C386.497 89.5517 389.377 92.4957 391.425 96.2717C393.537 100.048 394.593 104.464 394.593 109.52C394.593 114.576 393.537 118.992 391.425 122.768C389.313 126.544 386.401 129.52 382.689 131.696C379.041 133.808 374.913 134.864 370.305 134.864ZM370.305 124.976C372.609 124.976 374.689 124.4 376.545 123.248C378.465 122.096 380.001 120.368 381.153 118.064C382.305 115.76 382.881 112.912 382.881 109.52C382.881 106.128 382.305 103.312 381.153 101.072C380.065 98.7677 378.561 97.0397 376.641 95.8877C374.785 94.7357 372.705 94.1597 370.401 94.1597C368.161 94.1597 366.081 94.7357 364.161 95.8877C362.241 97.0397 360.705 98.7677 359.553 101.072C358.401 103.312 357.825 106.128 357.825 109.52C357.825 112.912 358.401 115.76 359.553 118.064C360.705 120.368 362.209 122.096 364.065 123.248C365.985 124.4 368.065 124.976 370.305 124.976Z" fill="#F05840" fill-opacity="0.709804"/></svg>
+              <svg class="glyph glyph-ink" style="--rel:1.12s;--wd:0.19s" viewBox="55 55 400 110" xmlns="http://www.w3.org/2000/svg">
+                <defs><mask id="mB-n2" maskUnits="userSpaceOnUse" x="55" y="55" width="400" height="110"><path class="wpath" pathLength="1" d="M408.6 84 L408.6 135.5 M408.6 110 C408.6 92 415.6 89 425.6 89 C435.6 89 442.9 92 442.9 104 L442.9 135.5" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="butt" stroke-linejoin="round"/></mask></defs>
+                <path mask="url(#mB-n2)" d="M402.87 133.712V85.3277H413.046L413.91 93.3917C415.382 90.5757 417.494 88.3357 420.246 86.6717C422.998 85.0077 426.262 84.1757 430.038 84.1757C433.942 84.1757 437.27 85.0077 440.022 86.6717C442.774 88.2717 444.886 90.6397 446.358 93.7757C447.894 96.9117 448.662 100.816 448.662 105.488V133.712H437.142V106.544C437.142 102.512 436.246 99.4077 434.454 97.2317C432.662 95.0557 430.006 93.9677 426.486 93.9677C424.182 93.9677 422.102 94.5117 420.246 95.5997C418.454 96.6877 417.014 98.2877 415.926 100.4C414.902 102.448 414.39 104.944 414.39 107.888V133.712H402.87Z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+
+          <div class="cap"><b>FINAL</b><span>심볼 1.3s · 손글씨 1.05s · 총 2.7s</span></div>
+        </div>
+      </div>
+      <div class="transport">
+        <button class="primary" id="replayBtn">↻ 다시 재생</button>
+        <div class="bg-toggle">
+          <button class="active" id="bgLight" type="button">Light</button>
+          <button id="bgDark" type="button">Dark</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Keyframe Spec · Final</h2>
+        <div class="ease-tag">
+          <svg class="ease-curve" width="34" height="20" viewBox="0 0 34 20">
+            <path d="M2 18 C 5 5, 11 2, 32 2" fill="none" stroke="var(--muted)" stroke-width="1.6"/>
+          </svg>
+          expo-out 0.7s · handwriting 1.05s · ball-jump 0.58s
+        </div>
+      </div>
+      <ol class="timeline">
+          <li data-t="0"><span class="t">00:00.00</span><span class="node"></span><span class="label"><b>링 드로잉</b></span></li>
+          <li data-t="550"><span class="t">00:00.55</span><span class="node"></span><span class="label"><b>바 확장</b></span></li>
+          <li data-t="880"><span class="t">00:00.88</span><span class="node"></span><span class="label"><b>미소 드로잉</b></span></li>
+          <li data-t="1280"><span class="t">00:01.28</span><span class="node"></span><span class="label"><b>정착 바운스</b></span></li>
+          <li data-t="1300"><span class="t">00:01.30</span><span class="node"></span><span class="label"><b>손글씨 G</b><span>0.21s</span></span></li>
+          <li data-t="1490"><span class="t">00:01.49</span><span class="node"></span><span class="label"><b>라임 o 점프</b></span></li>
+          <li data-t="1540"><span class="t">00:01.54</span><span class="node"></span><span class="label"><b>i · n · g · '</b></span></li>
+          <li data-t="2120"><span class="t">00:02.12</span><span class="node"></span><span class="label"><b>코랄 o 점프</b></span></li>
+          <li data-t="2200"><span class="t">00:02.20</span><span class="node"></span><span class="label"><b>손글씨 n</b></span></li>
+          <li data-t="2700"><span class="t">00:02.70</span><span class="node"></span><span class="label"><b>완성</b></span></li>
+          </ol>
+    </div>
+  </div>
+
+  <footer>GoingOn Brand Motion — 최종 확정 · 다시 재생 버튼 또는 5초 간격 자동 루프</footer>
+
+</div>
+
+<script>
+  const screens = Array.from(document.querySelectorAll('.screen'));
+  const timelines = Array.from(document.querySelectorAll('ol.timeline'));
+  const replayBtn = document.getElementById('replayBtn');
+  const bgLight = document.getElementById('bgLight');
+  const bgDark = document.getElementById('bgDark');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  let stepTimeouts = [];
+  let loopInterval = null;
+
+  function clearStepTimeouts(){
+    stepTimeouts.forEach(id => clearTimeout(id));
+    stepTimeouts = [];
+    timelines.forEach(ol => ol.querySelectorAll('li').forEach(li => li.classList.remove('active')));
+  }
+
+  function scheduleTimelines(){
+    timelines.forEach(ol => {
+      const items = Array.from(ol.querySelectorAll('li'));
+      items.forEach(li => {
+        const t = parseInt(li.dataset.t, 10);
+        stepTimeouts.push(setTimeout(() => {
+          items.forEach(o => o.classList.remove('active'));
+          li.classList.add('active');
+        }, t));
+      });
+    });
+  }
+
+  function playIntro(){
+    if (reduceMotion) return;
+    clearStepTimeouts();
+    screens.forEach(s => s.classList.remove('play'));
+    void document.body.offsetWidth;
+    screens.forEach(s => s.classList.add('play'));
+    scheduleTimelines();
+  }
+
+  function restartLoop(){
+    if (loopInterval) clearInterval(loopInterval);
+    playIntro();
+    loopInterval = setInterval(playIntro, 5000);
+  }
+  replayBtn.addEventListener('click', restartLoop);
+
+  function setScreenTheme(mode){
+    const dark = mode === 'dark';
+    screens.forEach(s => {
+      s.style.setProperty('--screen-bg', dark ? '#121216' : '#FFFFFF');
+      s.style.setProperty('--screen-ink', dark ? '#F1F0EA' : '#17181C');
+    });
+    bgDark.classList.toggle('active', dark);
+    bgLight.classList.toggle('active', !dark);
+  }
+  bgLight.addEventListener('click', () => setScreenTheme('light'));
+  bgDark.addEventListener('click', () => setScreenTheme('dark'));
+
+  if (reduceMotion){ screens.forEach(s => s.classList.add('play')); } else { restartLoop(); }
+</script>

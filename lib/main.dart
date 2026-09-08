@@ -15,7 +15,7 @@ import 'screens/update_required_screen.dart';
 import 'services/app_version_gate.dart';
 import 'services/auth_service.dart';
 import 'theme.dart';
-import 'widgets/brand_mark.dart';
+import 'widgets/splash_motion/goingon_brand_motion.dart';
 
 import 'firebase_options.dart';
 
@@ -73,9 +73,7 @@ class SplashGate extends StatefulWidget {
   State<SplashGate> createState() => _SplashGateState();
 }
 
-class _SplashGateState extends State<SplashGate>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse;
+class _SplashGateState extends State<SplashGate> {
   final _skip = Completer<void>();
   Widget? _destination;
   bool _connectionError = false;
@@ -83,9 +81,6 @@ class _SplashGateState extends State<SplashGate>
   @override
   void initState() {
     super.initState();
-    _pulse = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1100))
-      ..repeat(reverse: true);
     _resolve();
   }
 
@@ -154,12 +149,6 @@ class _SplashGateState extends State<SplashGate>
   }
 
   @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     if (_connectionError) return _connectionErrorScreen();
     return AnimatedSwitcher(
@@ -219,18 +208,10 @@ class _SplashGateState extends State<SplashGate>
           Expanded(
             child: Center(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                // 브랜드 마크 — 숨쉬는 두 원
-                // 네이티브 런치스크린(brand_mark.png)과 같은 단색 스타일 —
-                // 앱이 켜지는 순간 그림이 안 바뀌어야 하나의 화면처럼 보여요
-                AnimatedBuilder(
-                  animation: _pulse,
-                  builder: (_, __) => BrandMark.pulsing(
-                    leftScale: 1 + _pulse.value * .16,
-                    rightScale: 1 + (1 - _pulse.value) * .16,
-                  ),
-                ),
-                const SizedBox(height: 30),
-                Text('goingon', style: GoTheme.serif(42)),
+                // 브랜드 모션 — 심볼 드로잉 → 손글씨 워드마크 → o 점프(2.7s).
+                // 인트로가 끝나면 옅은 숨쉬기 루프로 "아직 준비 중"을 알린다.
+                // 타이밍은 SplashTimeline(goingon_brand_motion.dart)에서만 바꾼다.
+                const GoingOnBrandMotion(),
                 const SizedBox(height: 20),
                 Text('멀리 있어도, 함께',
                     style: GoTheme.serif(15, color: roles.textSecondary)),
