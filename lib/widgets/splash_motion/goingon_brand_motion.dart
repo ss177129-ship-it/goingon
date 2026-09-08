@@ -210,8 +210,35 @@ class _SymbolPainter extends CustomPainter {
   /// 대기 루프 — 두 링이 공통 중심을 도는 회전(바퀴 단위, 0~1)
   final double spinTurns;
 
-  /// 두 링 중심의 가운데 — 대기 회전의 축
-  static const _ringPivot = Offset((598 + 431) / 2, (290 + 291) / 2);
+  static const _coralRect =
+      Rect.fromLTWH(598 - 120, 290 - 120, 240, 240); // center 598,290 r120
+  static const _limeRect =
+      Rect.fromLTWH(431 - 115, 291 - 115, 230, 230); // center 431,291 r115
+
+  /// 코랄이 라임 위로 올라오는 교차 구간 — 사슬처럼 엮인 것으로 읽히게
+  static const _crossClip = Rect.fromLTWH(450, 305, 125, 135);
+
+  /// 대기 루프 — 각 링은 제자리에서, 로딩 인디케이터처럼 **열린 호**가
+  /// 링을 따라 빙 돈다. 코랄은 시계 방향, 라임은 반시계 — 인트로에서 그려진
+  /// 방향 그대로. 링 자체가 움직이지 않으니 로고 모양은 그대로 남는다
+  void _paintSpinningRings(Canvas canvas) {
+    const sweep = 2 * math.pi * .72; // 열린 호 — 4분의 1쯤 빈다
+    final turn = spinTurns * 2 * math.pi;
+    Paint ring(Color c) => Paint()
+      ..color = c
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 60;
+
+    final coralStart = math.pi + turn;
+    final limeStart = -turn;
+    canvas.drawArc(_coralRect, coralStart, sweep, false, ring(GoColors.coral));
+    canvas.drawArc(_limeRect, limeStart, -sweep, false, ring(GoColors.lime));
+    canvas.save();
+    canvas.clipRect(_crossClip);
+    canvas.drawArc(_coralRect, coralStart, sweep, false, ring(GoColors.coral));
+    canvas.restore();
+  }
 
   static const _vbX = 200.0, _vbY = 70.0, _vbW = 620.0, _vbH = 850.0;
 
@@ -236,14 +263,7 @@ class _SymbolPainter extends CustomPainter {
     if (spinTurns == 0) {
       _paintRings(canvas);
     } else {
-      // 링만 돈다. 바·미소는 제자리 — 로고가 통째로 도는 게 아니라
-      // "위의 두 사람이 서로를 돌고 있다"로 읽혀야 한다
-      canvas.save();
-      canvas.translate(_ringPivot.dx, _ringPivot.dy);
-      canvas.rotate(spinTurns * 2 * math.pi);
-      canvas.translate(-_ringPivot.dx, -_ringPivot.dy);
-      _paintRings(canvas);
-      canvas.restore();
+      _paintSpinningRings(canvas);
     }
     _paintBars(canvas);
     _paintArc(canvas);
