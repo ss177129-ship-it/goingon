@@ -51,8 +51,8 @@ class GoingOnBrandMotion extends StatefulWidget {
   /// 바·미소·워드마크는 완성된 채 그대로다 — 움직이는 것은 링뿐이다
   final bool spinWhileWaiting;
 
-  /// 링 하나가 한 바퀴 도는 시간. 두 링이 번갈아 돌므로 한 주기는 이 두 배
-  static const spinPeriod = Duration(milliseconds: 1800);
+  /// 링 하나가 비워졌다 채워지는 시간. 두 링이 번갈아 하므로 한 주기는 두 배
+  static const spinPeriod = Duration(milliseconds: 1400);
 
   @override
   State<GoingOnBrandMotion> createState() => _GoingOnBrandMotionState();
@@ -218,63 +218,52 @@ class _SymbolPainter extends CustomPainter {
   /// 코랄이 라임 위로 올라오는 교차 구간 — 사슬처럼 엮인 것으로 읽히게
   static const _crossClip = Rect.fromLTWH(450, 305, 125, 135);
 
-  /// 대기 루프 — 두 링이 **번갈아 채워진다.** 링은 늘 제자리에 온전한 모양으로
-  /// 있고, 차례가 된 링만 옅은 트랙으로 가라앉았다가 시작점(왼쪽)에서 시계
-  /// 방향으로 한 바퀴 본색이 차오른다. 진행 링처럼 "채워지는" 감각이지 고리가
-  /// 도는 것이 아니다(2026-09-08 요청). 속도는 easeInOut — 출발·도착은
-  /// 느리고 가운데서 확 찬다
-  static const _spinCurve = Curves.easeInOutCubic;
-
-  /// 본색이 트랙으로 가라앉는 데 쓰는 구간(진행도의 앞 비율). 채움이
-  /// 시작되는 동안 옛 본색이 사라지므로 튀지 않는다
-  static const _fadeRamp = .12;
-
-  /// 트랙(아직 안 찬 부분)의 불투명도
-  static const _trackAlpha = .28;
+  /// 대기 루프 — 두 링이 **번갈아 비워졌다 채워진다.** 링은 제자리에 있고
+  /// 반투명·잔상은 없다(2026-09-08 요청). 차례가 된 링은 시작점(왼쪽)에서
+  /// 시계 방향으로 풀려 나가다가(꼬리가 앞으로) 완전히 비워지는 순간 같은
+  /// 방향으로 다시 차오른다(머리가 앞으로).
+  ///
+  /// 풀림과 채움을 **하나의 가속 곡선**으로 묶는다 — 온전한 링에서 천천히
+  /// 출발해 비워지는 순간이 가장 빠르고, 다시 온전해지며 천천히 멈춘다.
+  /// 그래서 빈 순간은 한 프레임도 안 되게 지나가고, 풀림→채움 경계에서
+  /// 멈칫하지 않는다(따로 easing하면 경계에서 속도가 0이 돼 버벅인다)
+  static const _spinCurve = Cubic(.7, 0, .3, 1);
 
   void _paintSpinningRings(Canvas canvas) {
     // 0~.5 코랄 차례, .5~1 라임 차례
     final coralP = spinTurns < .5 ? spinTurns * 2 : 0.0;
     final limeP = spinTurns >= .5 ? (spinTurns - .5) * 2 : 0.0;
 
-    Paint stroke(Color c, double alpha) => Paint()
-      ..color = c.withValues(alpha: alpha)
+    Paint stroke(Color c) => Paint()
+      ..color = c
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 60;
 
-    /// 아직 안 찬 부분의 옅은 트랙. 채워지는 중일 때만 있다
-    void track(Rect rect, Color c, double p) {
-      if (p <= 0 || p >= 1) return;
-      canvas.drawArc(rect, math.pi, 2 * math.pi, false, stroke(c, _trackAlpha));
-    }
-
-    /// 본색 부분 — 쉬는 링은 온전한 링, 채워지는 링은 사라지는 옛 본색 +
-    /// 차오르는 호
-    void ink(Rect rect, Color c, double p) {
+    /// 진행도 p(0~1)의 링. q = ease(p)×2: 0~1 풀림(꼬리 전진), 1~2 채움(머리 전진)
+    void ring(Rect rect, Color c, double p) {
       if (p <= 0 || p >= 1) {
-        canvas.drawArc(rect, math.pi, 2 * math.pi, false, stroke(c, 1));
+        canvas.drawArc(rect, math.pi, 2 * math.pi, false, stroke(c));
         return;
       }
-      final fade = 1 - (p / _fadeRamp).clamp(0.0, 1.0);
-      final fill = _spinCurve.transform(p) * 2 * math.pi;
-      if (fade > 0) {
-        canvas.drawArc(rect, math.pi, 2 * math.pi, false, stroke(c, fade));
+      final q = _spinCurve.transform(p) * 2;
+      final double start, sweep;
+      if (q < 1) {
+        start = math.pi + q * 2 * math.pi;
+        sweep = (1 - q) * 2 * math.pi;
+      } else {
+        start = math.pi;
+        sweep = (q - 1) * 2 * math.pi;
       }
-      if (fill > 0) {
-        canvas.drawArc(rect, math.pi, fill, false, stroke(c, 1));
-      }
+      if (sweep > 0) canvas.drawArc(rect, start, sweep, false, stroke(c));
     }
 
-    // 트랙은 맨 아래 — 반투명이라 다른 링 위에 얹히면 색이 탁해진다
-    track(_coralRect, GoColors.coral, coralP);
-    track(_limeRect, GoColors.lime, limeP);
-    ink(_coralRect, GoColors.coral, coralP);
-    ink(_limeRect, GoColors.lime, limeP);
+    ring(_coralRect, GoColors.coral, coralP);
+    ring(_limeRect, GoColors.lime, limeP);
     // 교차 구간은 코랄이 위 — 사슬처럼 엮인 모양 유지
     canvas.save();
     canvas.clipRect(_crossClip);
-    ink(_coralRect, GoColors.coral, coralP);
+    ring(_coralRect, GoColors.coral, coralP);
     canvas.restore();
   }
 
