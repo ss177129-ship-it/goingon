@@ -51,8 +51,18 @@ class GoingOnBrandMotion extends StatefulWidget {
   /// 바·미소·워드마크는 완성된 채 그대로다 — 움직이는 것은 링뿐이다
   final bool spinWhileWaiting;
 
-  /// 링 하나가 비워졌다 채워지는 시간. 두 링이 번갈아 하므로 한 주기는 두 배
+  /// 링 하나가 비워졌다 채워지는 시간
   static const spinPeriod = Duration(milliseconds: 1400);
+
+  /// 두 링의 사이클이 겹치는 비율(한 링 사이클 기준). 앞 링이 천천히
+  /// 마무리되는 동안 뒤 링이 이미 천천히 출발해, 넘어가는 자리에서 속도가
+  /// 0이 되는 순간이 없다 — 0이면 "하나 끝나고 잠깐 쉬고 다음"으로 읽힌다
+  /// (2026-09-08). 한 주기 = spinPeriod × 2 × (1 − overlap)
+  static const spinOverlap = .3;
+
+  /// 두 링이 한 번씩 도는 한 주기
+  static Duration get spinLoop =>
+      spinPeriod * 2 * (1 - spinOverlap);
 
   @override
   State<GoingOnBrandMotion> createState() => _GoingOnBrandMotionState();
@@ -74,7 +84,7 @@ class _GoingOnBrandMotionState extends State<GoingOnBrandMotion>
           if (widget.spinWhileWaiting && mounted && !_reduceMotion) {
             _spin = AnimationController(
               vsync: this,
-              duration: GoingOnBrandMotion.spinPeriod * 2, // 코랄 → 라임
+              duration: GoingOnBrandMotion.spinLoop, // 코랄 → 라임 (겹침 포함)
             )..repeat();
             setState(() {});
           }
@@ -233,9 +243,17 @@ class _SymbolPainter extends CustomPainter {
   static const _spinCurve = Curves.easeInOut;
 
   void _paintSpinningRings(Canvas canvas) {
-    // 0~.5 코랄 차례, .5~1 라임 차례
-    final coralP = spinTurns < .5 ? spinTurns * 2 : 0.0;
-    final limeP = spinTurns >= .5 ? (spinTurns - .5) * 2 : 0.0;
+    // 한 주기 안에서 각 링의 창(window). 창 길이 L은 주기의 절반보다 길어
+    // 앞뒤로 겹친다 — 코랄 창 [0, L], 라임 창 [.5, .5+L] (1을 넘으면 처음으로)
+    const L = 1 / (2 * (1 - GoingOnBrandMotion.spinOverlap));
+    double window(double startAt) {
+      var d = spinTurns - startAt;
+      if (d < 0) d += 1;
+      return d < L ? d / L : 0.0;
+    }
+
+    final coralP = window(0);
+    final limeP = window(.5);
 
     Paint stroke(Color c) => Paint()
       ..color = c
