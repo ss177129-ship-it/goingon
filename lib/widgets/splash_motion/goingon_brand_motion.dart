@@ -10,9 +10,10 @@
 //   2.70  완성
 //
 // 이 위젯은 Scaffold를 갖지 않는다 — SplashGate._splash() 안에 그대로
-// 얹어서 쓴다. 인트로가 끝나면 [onIntroComplete]가 한 번 불리고, 이후
-// 원래 BrandMark.pulsing이 하던 "아직 작업 중" 신호를 대신할 아주 옅은
-// 숨쉬기 루프로 넘어간다(팀 확인 없이 끄고 싶으면 idlePulseAfterIntro:false).
+// 얹어서 쓴다. 인트로가 끝나면 [onIntroComplete]가 한 번 불리고, 이후에도
+// 화면이 남아 있으면(아직 로딩 중) **두 링만 서로를 돌며** "기다리는 중"을
+// 말한다. 인트로를 처음부터 다시 틀지 않는다 — 두 번 보면 로고가 아니라
+// 로딩 바로 읽힌다(2026-09-08). 끄려면 spinWhileWaiting:false.
 //
 // 색은 전부 GoColors를 통해서만 얻는다(theme.dart 규칙). 원본 아이콘
 // 파일(goingon_symbol.svg)의 링 색은 FF6A55 / D6F24E였는데, 앱 팔레트의
@@ -36,7 +37,7 @@ class GoingOnBrandMotion extends StatefulWidget {
     this.wordmarkWidth = 132,
     this.spacing = 22,
     this.onIntroComplete,
-    this.idlePulseAfterIntro = true,
+    this.spinWhileWaiting = true,
   });
 
   final double symbolSize;
@@ -46,8 +47,12 @@ class GoingOnBrandMotion extends StatefulWidget {
   /// 인트로(2.7s)가 끝나는 순간 한 번 호출.
   final VoidCallback? onIntroComplete;
 
-  /// 인트로 후 아주 옅은 숨쉬기 루프로 "대기 중"을 표시할지.
-  final bool idlePulseAfterIntro;
+  /// 인트로 후 두 링이 공통 중심을 도는 루프로 "대기 중"을 표시할지.
+  /// 바·미소·워드마크는 완성된 채 그대로다 — 움직이는 것은 링뿐이다
+  final bool spinWhileWaiting;
+
+  /// 링 한 바퀴. 로딩 스피너의 통상 속도(1~2초)에 맞춘다
+  static const spinPeriod = Duration(milliseconds: 1800);
 
   @override
   State<GoingOnBrandMotion> createState() => _GoingOnBrandMotionState();
@@ -56,7 +61,7 @@ class GoingOnBrandMotion extends StatefulWidget {
 class _GoingOnBrandMotionState extends State<GoingOnBrandMotion>
     with TickerProviderStateMixin {
   late final AnimationController _intro;
-  AnimationController? _idle;
+  AnimationController? _spin;
   bool _reduceMotion = false;
 
   @override
@@ -66,11 +71,11 @@ class _GoingOnBrandMotionState extends State<GoingOnBrandMotion>
       ..addStatusListener((status) {
         if (status == AnimationStatus.completed) {
           widget.onIntroComplete?.call();
-          if (widget.idlePulseAfterIntro && mounted && !_reduceMotion) {
-            _idle = AnimationController(
+          if (widget.spinWhileWaiting && mounted && !_reduceMotion) {
+            _spin = AnimationController(
               vsync: this,
-              duration: const Duration(milliseconds: 1600),
-            )..repeat(reverse: true);
+              duration: GoingOnBrandMotion.spinPeriod,
+            )..repeat();
             setState(() {});
           }
         }
@@ -91,44 +96,41 @@ class _GoingOnBrandMotionState extends State<GoingOnBrandMotion>
   @override
   void dispose() {
     _intro.dispose();
-    _idle?.dispose();
+    _spin?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final listenable = _idle == null
+    final listenable = _spin == null
         ? _intro as Listenable
-        : Listenable.merge([_intro, _idle!]);
+        : Listenable.merge([_intro, _spin!]);
     return AnimatedBuilder(
       animation: listenable,
       builder: (context, _) {
-        final idleScale =
-            _idle == null ? 1.0 : 1 + 0.012 * (_idle!.value * 2 - 1).abs();
-        return Transform.scale(
-          scale: idleScale,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: widget.symbolSize,
-                height: widget.symbolSize,
-                child: CustomPaint(
-                  painter:
-                      _SymbolPainter(_intro.value * SplashTimeline.totalMs),
-                ),
+        final spinTurns = _spin?.value ?? 0;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: widget.symbolSize,
+              height: widget.symbolSize,
+              child: CustomPaint(
+                painter: _SymbolPainter(
+                    _intro.value * SplashTimeline.totalMs,
+                    spinTurns: spinTurns),
               ),
-              SizedBox(height: widget.spacing),
-              SizedBox(
-                width: widget.wordmarkWidth,
-                height: widget.wordmarkWidth * 110 / 400,
-                child: CustomPaint(
-                  painter:
-                      _WordmarkPainter(_intro.value * SplashTimeline.totalMs),
-                ),
+            ),
+            SizedBox(height: widget.spacing),
+            SizedBox(
+              width: widget.wordmarkWidth,
+              height: widget.wordmarkWidth * 110 / 400,
+              child: CustomPaint(
+                painter:
+                    _WordmarkPainter(_intro.value * SplashTimeline.totalMs),
               ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
@@ -202,8 +204,14 @@ double _seg(double t, int start, int dur, [Curve curve = Curves.linear]) {
 // ---------------------------------------------------------------------------
 
 class _SymbolPainter extends CustomPainter {
-  _SymbolPainter(this.t);
+  _SymbolPainter(this.t, {this.spinTurns = 0});
   final double t;
+
+  /// 대기 루프 — 두 링이 공통 중심을 도는 회전(바퀴 단위, 0~1)
+  final double spinTurns;
+
+  /// 두 링 중심의 가운데 — 대기 회전의 축
+  static const _ringPivot = Offset((598 + 431) / 2, (290 + 291) / 2);
 
   static const _vbX = 200.0, _vbY = 70.0, _vbW = 620.0, _vbH = 850.0;
 
@@ -225,7 +233,18 @@ class _SymbolPainter extends CustomPainter {
     canvas.scale(bounce);
     canvas.translate(-center.dx, -center.dy);
 
-    _paintRings(canvas);
+    if (spinTurns == 0) {
+      _paintRings(canvas);
+    } else {
+      // 링만 돈다. 바·미소는 제자리 — 로고가 통째로 도는 게 아니라
+      // "위의 두 사람이 서로를 돌고 있다"로 읽혀야 한다
+      canvas.save();
+      canvas.translate(_ringPivot.dx, _ringPivot.dy);
+      canvas.rotate(spinTurns * 2 * math.pi);
+      canvas.translate(-_ringPivot.dx, -_ringPivot.dy);
+      _paintRings(canvas);
+      canvas.restore();
+    }
     _paintBars(canvas);
     _paintArc(canvas);
     canvas.restore();
@@ -298,7 +317,8 @@ class _SymbolPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_SymbolPainter old) => old.t != t;
+  bool shouldRepaint(_SymbolPainter old) =>
+      old.t != t || old.spinTurns != spinTurns;
 }
 
 // ---------------------------------------------------------------------------
