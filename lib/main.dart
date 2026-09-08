@@ -205,18 +205,11 @@ class _SplashGateState extends State<SplashGate> {
     return Scaffold(
       body: SafeArea(
         child: Column(children: [
-          Expanded(
-            child: Center(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                // 브랜드 모션 — 심볼 드로잉 → 손글씨 워드마크 → o 점프(2.7s).
-                // 인트로가 끝나면 옅은 숨쉬기 루프로 "아직 준비 중"을 알린다.
-                // 타이밍은 SplashTimeline(goingon_brand_motion.dart)에서만 바꾼다.
-                const GoingOnBrandMotion(),
-                const SizedBox(height: 20),
-                Text('멀리 있어도, 함께',
-                    style: GoTheme.serif(15, color: roles.textSecondary)),
-              ]),
-            ),
+          const Expanded(
+            // 브랜드 모션 — 심볼 드로잉 → 손글씨 워드마크 → o 점프(2.7s).
+            // 인트로가 끝나면 옅은 숨쉬기 루프로 "아직 준비 중"을 알린다.
+            // 타이밍은 SplashTimeline(goingon_brand_motion.dart)에서만 바꾼다.
+            child: Center(child: GoingOnBrandMotion()),
           ),
           Padding(
             padding: const EdgeInsets.only(bottom: 46),
