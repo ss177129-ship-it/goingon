@@ -6,6 +6,7 @@ import '../services/auth_service.dart';
 import '../theme.dart';
 import '../widgets/go_button.dart';
 import '../widgets/brand_mark.dart';
+import '../widgets/goingon_wordmark.dart';
 import '../widgets/go_toast.dart';
 import 'nickname_screen.dart';
 import 'root_screen.dart';
@@ -87,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     BrandMark.standard(),
                     const SizedBox(height: 16),
-                    Text('goingon', style: GoTheme.serif(20, color: roles.textSecondary)),
+                    const GoingOnWordmark(height: 26),
                     const SizedBox(height: 18),
                     Text('멀리 있어도,\n함께 달려요',
                         textAlign: TextAlign.center, style: GoText.title),

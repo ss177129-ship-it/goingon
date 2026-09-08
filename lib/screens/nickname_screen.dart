@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../theme.dart';
 import '../widgets/go_button.dart';
 import '../widgets/brand_mark.dart';
+import '../widgets/goingon_wordmark.dart';
 import '../widgets/go_toast.dart';
 import 'root_screen.dart';
 
@@ -70,7 +71,7 @@ class _NicknameScreenState extends State<NicknameScreen> {
               const SizedBox(height: 40),
               BrandMark.standard(),
               const SizedBox(height: 16),
-              Text('goingon', style: GoTheme.serif(20, color: roles.textSecondary)),
+              const GoingOnWordmark(height: 26),
               const SizedBox(height: 18),
               Text('마지막으로,\n프로필을 만들어요',
                   textAlign: TextAlign.center, style: GoText.title),
