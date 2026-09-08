@@ -23,6 +23,7 @@ class Pressable extends StatefulWidget {
     this.scale = 0.97,
     this.behavior = HitTestBehavior.opaque,
     this.builder,
+    this.onPressedChanged,
   });
 
   final Widget child;
@@ -34,6 +35,11 @@ class Pressable extends StatefulWidget {
   /// 줄어야 눌린 것처럼 보인다. [child]를 감쌀 껍데기를 여기서 만든다
   final Widget Function(BuildContext context, bool pressed, Widget child)?
       builder;
+
+  /// 눌림 상태를 **바깥이** 알아야 할 때. [builder]는 자기 안쪽만 다시 그릴
+  /// 수 있어서, 눌린 자리 밖에 있는 것(탭바에서 자리를 옮겨 다니는 알약
+  /// 하나처럼)이 반응해야 하면 이쪽으로 받는다
+  final ValueChanged<bool>? onPressedChanged;
 
   /// 눌렸을 때 크기. 0.97보다 작게 하면 큰 버튼에서 과장돼 보인다
   final double scale;
@@ -55,6 +61,7 @@ class _PressableState extends State<Pressable> {
     if (!_enabled || _down == down) return;
     if (down) HapticFeedback.selectionClick();
     setState(() => _down = down);
+    widget.onPressedChanged?.call(down);
   }
 
   @override

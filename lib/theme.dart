@@ -384,6 +384,16 @@ class GoMotion {
   /// 옛 값과 교차한다 — 손이 아니라 데이터가 바꾼 것이라 select보다 길다
   static const update = Duration(milliseconds: 200);
 
+  /// 탭 인디케이터가 **자리를 옮기는 것**. 색이 바뀌는 게 아니라 물체 하나가
+  /// 옆으로 미끄러지는 것이라 select(120ms)보다 길다 — 짧으면 이동이 아니라
+  /// 순간이동으로 읽힌다
+  static const slide = Duration(milliseconds: 300);
+
+  /// 미끄러지는 것 전용 곡선. 처음에 빠르게 떨어져 나와 오래 잦아든다 —
+  /// 무게가 있는 물체가 밀려가 멈추는 모양이다. 되튀지는 않는다(overshoot는
+  /// 장난스럽게 읽힌다)
+  static const slideCurve = Cubic(.2, 0, 0, 1);
+
   static const curve = Curves.easeOut;
 }
 
@@ -396,8 +406,8 @@ class GoRadius {
 
 /// 선 굵기 3단계
 class GoStroke {
-  static const rule = 1.0;   // 섹션 구분선 (GoColors.rule)
-  static const card = 1.5;   // 카드 테두리 (GoColors.line)
+  static const rule = 1.0; // 섹션 구분선 (GoColors.rule)
+  static const card = 1.5; // 카드 테두리 (GoColors.line)
   static const accent = 2.0; // 강조 카드 테두리 (coral / lime)
 }
 
@@ -411,10 +421,10 @@ class GoSpace {
   static const xxl = 32.0;
   static const screen = 24.0;
   static const sheet = 28.0;
-  static const card = 16.0;    // 카드 안쪽 패딩
-  static const hero = 20.0;    // 히어로 카드 안쪽 패딩
+  static const card = 16.0; // 카드 안쪽 패딩
+  static const hero = 20.0; // 히어로 카드 안쪽 패딩
   static const section = 24.0; // 섹션 사이
-  static const gutter = 12.0;  // 한 줄에 카드 여럿일 때 사이
+  static const gutter = 12.0; // 한 줄에 카드 여럿일 때 사이
   static const sheetBottom = 40.0; // 시트 하단(홈 인디케이터 위)
 }
 

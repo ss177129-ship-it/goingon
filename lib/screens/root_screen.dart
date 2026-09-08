@@ -50,6 +50,7 @@ class _RootScreenState extends State<RootScreen>
     if (MediaQuery.of(context).disableAnimations) return;
     _tabAnim.forward(from: 0);
   }
+
   StreamSubscription? _pushTapSub;
   StreamSubscription? _requestsSub;
 
@@ -136,32 +137,37 @@ class _RootScreenState extends State<RootScreen>
     }
     await RunRecovery.clear();
     if (!mounted) return;
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) => FinishScreen(
-        sessionId: snapshot.sessionId,
-        partnerName: snapshot.partnerName,
-        mySeconds: snapshot.seconds,
-        myKm: snapshot.km,
-        myKcal: kcal,
-        myMood: null,
-      ),
-    ));
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FinishScreen(
+            sessionId: snapshot.sessionId,
+            partnerName: snapshot.partnerName,
+            mySeconds: snapshot.seconds,
+            myKm: snapshot.km,
+            myKcal: kcal,
+            myMood: null,
+          ),
+        ));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // 아래쪽 안전영역은 SafeArea가 먹지 않는다 — 탭바가 홈 인디케이터
+      // 자리까지 직접 덮어야 바닥에서 뜬 판때기로 보이지 않는다
       body: SafeArea(
+        bottom: false,
         child: Column(children: [
           Expanded(
             child: FadeTransition(
               opacity: CurvedAnimation(parent: _tabAnim, curve: GoMotion.curve)
                   .drive(Tween(begin: .55, end: 1)),
               child: SlideTransition(
-                position:
-                    CurvedAnimation(parent: _tabAnim, curve: GoMotion.curve)
-                        .drive(Tween(
-                            begin: const Offset(0, .012), end: Offset.zero)),
+                position: CurvedAnimation(
+                        parent: _tabAnim, curve: GoMotion.curve)
+                    .drive(
+                        Tween(begin: const Offset(0, .012), end: Offset.zero)),
                 child: IndexedStack(
                   index: _index,
                   children: const [

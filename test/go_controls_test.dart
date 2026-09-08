@@ -37,7 +37,8 @@ void main() {
       find.descendant(of: find.byType(of), matching: find.byType(T));
 
   List<Color?> textColorsIn(WidgetTester tester, Type of) => tester
-      .widgetList<AnimatedDefaultTextStyle>(inside<AnimatedDefaultTextStyle>(of))
+      .widgetList<AnimatedDefaultTextStyle>(
+          inside<AnimatedDefaultTextStyle>(of))
       .map((t) => t.style.color)
       .toList();
 
@@ -46,26 +47,24 @@ void main() {
       await tester.pumpWidget(host(GoSwitch(value: true, onChanged: (_) {})));
       await tester.pumpAndSettle();
       expect(tester.getSize(find.byType(GoSwitch)), const Size(51, 31));
-      expect(
-          fillOf(tester, inside<AnimatedContainer>(GoSwitch).first),
+      expect(fillOf(tester, inside<AnimatedContainer>(GoSwitch).first),
           R.actionComplete.bg);
 
       await tester.pumpWidget(host(GoSwitch(value: false, onChanged: (_) {})));
       await tester.pumpAndSettle();
-      expect(
-          fillOf(tester, inside<AnimatedContainer>(GoSwitch).first),
+      expect(fillOf(tester, inside<AnimatedContainer>(GoSwitch).first),
           R.textSecondary);
     });
 
     testWidgets('탭하면 반대 값을 돌려주고 스스로는 바뀌지 않는다', (tester) async {
       bool? got;
-      await tester.pumpWidget(host(GoSwitch(value: false, onChanged: (v) => got = v)));
+      await tester
+          .pumpWidget(host(GoSwitch(value: false, onChanged: (v) => got = v)));
       await tester.tap(find.byType(GoSwitch));
       await tester.pumpAndSettle();
       expect(got, isTrue);
       // controlled — 부모가 value를 안 바꿨으니 여전히 끔
-      expect(
-          fillOf(tester, inside<AnimatedContainer>(GoSwitch).first),
+      expect(fillOf(tester, inside<AnimatedContainer>(GoSwitch).first),
           R.textSecondary);
     });
 
@@ -82,10 +81,11 @@ void main() {
           GoCheckbox(value: true, onChanged: (_) {}, label: const Text('동의'))));
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.check), findsOneWidget);
-      expect(fillOf(tester, find.byType(AnimatedContainer)), R.actionComplete.bg);
+      expect(
+          fillOf(tester, find.byType(AnimatedContainer)), R.actionComplete.bg);
 
-      await tester.pumpWidget(host(
-          GoCheckbox(value: false, onChanged: (_) {}, label: const Text('동의'))));
+      await tester.pumpWidget(host(GoCheckbox(
+          value: false, onChanged: (_) {}, label: const Text('동의'))));
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.check), findsNothing);
     });
@@ -122,8 +122,7 @@ void main() {
       // 안쪽 점: 선택은 10, 미선택은 0
       final dots = tester
           .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
-          .where((c) =>
-              (c.decoration as BoxDecoration?)?.color == R.dark.bg)
+          .where((c) => (c.decoration as BoxDecoration?)?.color == R.dark.bg)
           .toList();
       expect(dots.length, 2);
       expect(dots.map((d) => d.constraints?.maxWidth).toList(), [10, 0]);
@@ -177,18 +176,20 @@ void main() {
   group('칩', () {
     testWidgets('GoSelectChip: 높이 32, 선택은 ink 면 + paper 글자', (tester) async {
       var tapped = false;
-      await tester.pumpWidget(host(
-          GoSelectChip(label: '5km', selected: true, onTap: () => tapped = true)));
+      await tester.pumpWidget(host(GoSelectChip(
+          label: '5km', selected: true, onTap: () => tapped = true)));
       await tester.pumpAndSettle();
       expect(tester.getSize(find.byType(GoSelectChip)).height, 32);
-      expect(fillOf(tester, inside<AnimatedContainer>(GoSelectChip)), R.dark.bg);
+      expect(
+          fillOf(tester, inside<AnimatedContainer>(GoSelectChip)), R.dark.bg);
       expect(textColorsIn(tester, GoSelectChip), [R.dark.fg]);
       await tester.tap(find.text('5km'));
       expect(tapped, isTrue);
     });
 
     testWidgets('GoStoryChip·GoStatusTag 글자는 12px 이상', (tester) async {
-      await tester.pumpWidget(host(const Column(mainAxisSize: MainAxisSize.min, children: [
+      await tester.pumpWidget(
+          host(const Column(mainAxisSize: MainAxisSize.min, children: [
         GoStoryChip('첫 런'),
         GoStatusTag('함께 달리기 요청'),
       ])));
@@ -212,7 +213,8 @@ void main() {
     });
 
     testWidgets('GoLiveDot 14, GoLiveTag는 점과 "달리는 중"', (tester) async {
-      await tester.pumpWidget(host(const Column(mainAxisSize: MainAxisSize.min, children: [
+      await tester.pumpWidget(
+          host(const Column(mainAxisSize: MainAxisSize.min, children: [
         GoLiveDot(),
         GoLiveTag(),
       ])));
@@ -223,7 +225,8 @@ void main() {
 
   group('GoSkeletonRow', () {
     testWidgets('원 44·막대 둘·오른쪽 64×44, 애니메이션 없음', (tester) async {
-      await tester.pumpWidget(host(const SizedBox(width: 320, child: GoSkeletonRow())));
+      await tester
+          .pumpWidget(host(const SizedBox(width: 320, child: GoSkeletonRow())));
       final sizes = tester
           .widgetList<Container>(find.descendant(
               of: find.byType(GoSkeletonRow), matching: find.byType(Container)))
@@ -239,19 +242,37 @@ void main() {
   });
 
   group('GoBottomNav', () {
-    testWidgets('선택된 탭만 ink 알약 + paper 아이콘, 나머지는 mid', (tester) async {
+    Widget nav(int index, {ValueChanged<int>? onChanged, int requests = 0}) =>
+        host(SizedBox(
+          width: 390,
+          child: GoBottomNav(
+              index: index,
+              onChanged: onChanged ?? (_) {},
+              requestCount: requests),
+        ));
+
+    /// 탭바 안의 AnimatedContainer는 [미끄러지는 알약, 홈·우리·설정의 눌림 면]
+    /// 순서다 — 알약은 **하나**뿐이라 자리 수만큼 있지 않다
+    List<Color?> fills(WidgetTester tester) => tester
+        .widgetList<AnimatedContainer>(inside<AnimatedContainer>(GoBottomNav))
+        .map((c) => (c.decoration as BoxDecoration).color)
+        .toList();
+
+    double pillX(WidgetTester tester) =>
+        tester.getTopLeft(inside<AnimatedContainer>(GoBottomNav).first).dx;
+
+    testWidgets('알약은 하나뿐이고 선택된 아이콘만 잉크', (tester) async {
       int? got;
-      await tester.pumpWidget(host(SizedBox(
-        width: 390,
-        child: GoBottomNav(index: 1, onChanged: (i) => got = i, requestCount: 3),
-      )));
+      await tester.pumpWidget(nav(1, onChanged: (i) => got = i, requests: 3));
       await tester.pumpAndSettle();
-      final pills = tester
-          .widgetList<AnimatedContainer>(inside<AnimatedContainer>(GoBottomNav))
-          .map((c) => (c.decoration as BoxDecoration).color)
-          .toList();
-      // 선택된 탭은 잉크 그림자 알약(selection) — 주 색은 화면의 CTA에 양보
-      expect(pills, [Colors.transparent, R.selection.bg, Colors.transparent]);
+      // 선택된 탭은 잉크 그림자 알약(selection) — 주 색은 화면의 CTA에 양보.
+      // 나머지 셋은 눌렸을 때만 색이 드는 빈 면이다
+      expect(fills(tester), [
+        R.selection.bg,
+        Colors.transparent,
+        Colors.transparent,
+        Colors.transparent,
+      ]);
       final icons = tester
           .widgetList<Icon>(inside<Icon>(GoBottomNav))
           .map((i) => i.color)
@@ -264,12 +285,8 @@ void main() {
       expect(got, 2);
     });
 
-    testWidgets('선택된 탭은 채워진 아이콘, 나머지는 윤곽선 — 색 말고 형태로도 말한다',
-        (tester) async {
-      await tester.pumpWidget(host(SizedBox(
-        width: 390,
-        child: GoBottomNav(index: 1, onChanged: (_) {}),
-      )));
+    testWidgets('선택된 탭은 채워진 아이콘, 나머지는 윤곽선 — 색 말고 형태로도 말한다', (tester) async {
+      await tester.pumpWidget(nav(1));
       await tester.pumpAndSettle();
       final icons = tester
           .widgetList<Icon>(inside<Icon>(GoBottomNav))
@@ -280,14 +297,40 @@ void main() {
         Icons.people_alt_rounded,
         Icons.settings_outlined,
       ]);
-      // 알약은 선택된 자리에서만 온전한 크기 — 비선택 아이콘은 줄이지 않는다
-      // (Pressable의 AnimatedScale은 제외 — 알약을 감싼 것만 본다)
-      final scales = tester
-          .widgetList<AnimatedScale>(inside<AnimatedScale>(GoBottomNav))
-          .where((s) => s.child is AnimatedContainer)
-          .map((s) => s.scale)
-          .toList();
-      expect(scales, [.9, 1, .9]);
+    });
+
+    testWidgets('손가락이 닿는 자리는 44pt 이상 — 알약(32)이 아니라 탭이 표적이다', (tester) async {
+      await tester.pumpWidget(nav(0));
+      await tester.pumpAndSettle();
+      for (final icon in [
+        Icons.home_rounded,
+        Icons.people_alt_outlined,
+        Icons.settings_outlined,
+      ]) {
+        final target = find.ancestor(
+            of: find.byIcon(icon), matching: find.byType(Pressable));
+        expect(tester.getSize(target).height, greaterThanOrEqualTo(44),
+            reason: '$icon 탭의 표적이 44pt보다 낮다');
+      }
+    });
+
+    testWidgets('탭이 바뀌면 알약이 옆자리까지 미끄러져 간다 — 꺼졌다 켜지는 게 아니다', (tester) async {
+      await tester.pumpWidget(nav(0));
+      await tester.pumpAndSettle();
+      final at0 = pillX(tester);
+
+      await tester.pumpWidget(nav(1));
+      await tester.pump(const Duration(milliseconds: 60));
+      final onTheWay = pillX(tester);
+      await tester.pumpAndSettle();
+      final at1 = pillX(tester);
+
+      // 한 칸 = (너비 − 좌우 여백) ÷ 탭 수
+      expect(at1 - at0, closeTo((390 - 28 * 2) / 3, .01));
+      // 중간 프레임이 두 자리 **사이**에 있어야 이동이다. 순간이동이면
+      // 첫 프레임에 이미 도착해 있다
+      expect(onTheWay, greaterThan(at0));
+      expect(onTheWay, lessThan(at1));
     });
   });
 
@@ -335,27 +378,35 @@ void main() {
         child: GoBottomNav(index: 0, onChanged: (_) {}),
       )));
       await tester.pumpAndSettle();
+      // [미끄러지는 알약, 홈·우리·설정의 눌림 면]
       List<Color?> pills() => tester
           .widgetList<AnimatedContainer>(inside<AnimatedContainer>(GoBottomNav))
           .map((c) => (c.decoration as BoxDecoration).color)
           .toList();
       final g1 = await press(tester, find.byIcon(Icons.home_rounded));
-      expect(pills()[0], R.selection.pressed);
+      expect(pills()[0], R.selection.pressed, reason: '선택된 자리는 알약이 가라앉는다');
       await g1.up();
       await tester.pumpAndSettle();
       final g2 = await press(tester, find.byIcon(Icons.settings_outlined));
-      expect(pills()[2], R.pressOverlay);
+      expect(pills()[3], R.pressOverlay, reason: '빈 자리는 잉크 8%가 잠깐 깔린다');
       await g2.up();
       await tester.pumpAndSettle();
-      expect(pills(), [R.selection.bg, Colors.transparent, Colors.transparent]);
+      expect(pills(), [
+        R.selection.bg,
+        Colors.transparent,
+        Colors.transparent,
+        Colors.transparent,
+      ]);
     });
 
     testWidgets('GoSelectChip·GoCheckbox: 누르면 면이 가라앉는다', (tester) async {
-      await tester.pumpWidget(host(Column(mainAxisSize: MainAxisSize.min, children: [
+      await tester
+          .pumpWidget(host(Column(mainAxisSize: MainAxisSize.min, children: [
         GoSelectChip(label: '5km', selected: false, onTap: () {}),
         SizedBox(
           width: 300,
-          child: GoCheckbox(value: true, onChanged: (_) {}, label: const Text('동의')),
+          child: GoCheckbox(
+              value: true, onChanged: (_) {}, label: const Text('동의')),
         ),
       ])));
       await tester.pumpAndSettle();
@@ -371,7 +422,8 @@ void main() {
     });
 
     testWidgets('GoIconButton: 44 표적, 누르면 잉크 8% 원 + 0.92 축소', (tester) async {
-      await tester.pumpWidget(host(GoIconButton(icon: Icons.search, onTap: () {})));
+      await tester
+          .pumpWidget(host(GoIconButton(icon: Icons.search, onTap: () {})));
       expect(tester.getSize(find.byType(GoIconButton)), const Size(44, 44));
       final g = await press(tester, find.byType(GoIconButton));
       expect(fillOf(tester, inside<AnimatedContainer>(GoIconButton)),
