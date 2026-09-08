@@ -11,7 +11,7 @@ import '../widgets/go_group.dart';
 import '../widgets/go_switch.dart';
 import '../widgets/go_button.dart';
 import '../widgets/go_dialog.dart';
-import '../widgets/initial_avatar.dart';
+import '../widgets/go_avatar.dart';
 import '../widgets/go_toast.dart';
 import 'lobby_screen.dart';
 import 'login_screen.dart';
@@ -201,11 +201,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         boxShadow: GoShadow.card,
       ),
       child: Row(children: [
-        InitialAvatar(
-          letter: name[0],
+        GoAvatar(
           size: 40,
-          fontSize: 16,
-          borderColor: roles.line,
+          roleColor: roles.line,
           borderWidth: 1.5,
           photoUrl: b['photoUrl'] as String?,
         ),
@@ -307,13 +305,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // 프로토타입 s-settings의 '프로필 편집' 한 줄. 사진·이름·아이디를
       // 한 화면에서 다루므로 여기서는 지금 상태만 요약해 보여줌
       _row(
-        leading: InitialAvatar(
-          letter: _myName.isEmpty ? '' : _myName[0],
+        leading: GoAvatar(
           size: 24,
-          fontSize: 12,
-          borderColor: roles.self,
+          roleColor: roles.self,
           borderWidth: 1.2,
-          emptyIcon: Icons.person_outline,
           photoUrl: _myPhotoUrl,
         ),
         title: '프로필 편집',

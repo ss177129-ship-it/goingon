@@ -9,6 +9,7 @@ import '../services/auth_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
 import '../widgets/go_card.dart';
+import '../widgets/go_avatar.dart';
 import '../widgets/go_button.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
@@ -553,21 +554,13 @@ class _LobbyScreenState extends State<LobbyScreen> {
       required Color color,
       String waitingText = '준비 중'}) {
     final roles = GoRoles.of(context);
-    // 밝은 바탕 위의 나/상대는 한 색으로 — 면은 그 색 25%, 테두리 없음
-    // (이모지 대신 텍스트만 — 폰트 폴백 이슈 회피)
+    // 밝은 바탕 위의 나/상대는 한 색으로 — 면은 그 색 25%, 테두리 없음.
+    // 로비는 사진을 받지 않으므로 늘 기본 실루엣
     return Column(children: [
-      Container(
-        width: 64, height: 64,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color.withValues(alpha: .25),
-        ),
-        child: Center(
-            child: Text(name[0],
-                style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: roles.textPrimary))),
+      GoAvatar(
+        size: 64,
+        roleColor: color,
+        fill: color.withValues(alpha: .25),
       ),
       const SizedBox(height: 7),
       Text(name,

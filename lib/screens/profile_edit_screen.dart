@@ -9,7 +9,7 @@ import '../widgets/go_group.dart';
 import '../widgets/go_button.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
-import '../widgets/initial_avatar.dart';
+import '../widgets/go_avatar.dart';
 import '../widgets/pressable.dart';
 
 /// '설정 → 프로필 편집' — 프로토타입 s-setdetail의 '프로필' 항목.
@@ -144,7 +144,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     final confirmed = await GoDialog.confirm(
       context,
       title: '사진을 지울까요?',
-      body: '이름 첫 글자로 된 기본 아바타로 돌아가요.',
+      body: '기본 프로필로 돌아가요.',
       confirmLabel: '지우기',
       destructive: true,
     );
@@ -338,12 +338,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         Pressable(
           onTap: _tapPhoto,
           child: Stack(alignment: Alignment.center, children: [
-            InitialAvatar(
-              letter: _name.isEmpty ? '' : _name[0],
+            GoAvatar(
               size: 96,
-              fontSize: 40,
-              borderColor: roles.self,
-              emptyIcon: Icons.person_outline,
+              roleColor: roles.self,
               photoUrl: _photoUrl,
             ),
             if (_uploading)

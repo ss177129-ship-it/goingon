@@ -8,7 +8,7 @@ import '../theme.dart';
 import '../widgets/go_group.dart';
 import '../widgets/go_button.dart';
 import '../widgets/friend_search_sheet.dart';
-import '../widgets/initial_avatar.dart';
+import '../widgets/go_avatar.dart';
 
 const _kDistanceMilestones = [50, 100, 300, 500, 1000, 2000, 3000, 5000];
 const _kWeekdayLabels = ['월', '화', '수', '목', '금', '토', '일'];
@@ -333,9 +333,8 @@ class _UsScreenState extends State<UsScreen> {
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
         child: Row(children: [
-          _pairAvatar(_avatarLetter(null), roles.self,
-              photoUrl: _myPhotoUrl),
-          _pairAvatar(_avatarLetter(partnerName), roles.partner,
+          _pairAvatar(roles.self, photoUrl: _myPhotoUrl),
+          _pairAvatar(roles.partner,
               overlap: true, photoUrl: partner['photoUrl'] as String?),
           const SizedBox(width: 8),
           Expanded(
@@ -547,18 +546,13 @@ class _UsScreenState extends State<UsScreen> {
     ]);
   }
 
-  String _avatarLetter(String? name) =>
-      (name == null || name.isEmpty) ? '나' : name[0];
-
-  Widget _pairAvatar(String letter, Color borderColor,
+  Widget _pairAvatar(Color roleColor,
       {bool overlap = false, String? photoUrl}) {
     return Container(
       margin: EdgeInsets.only(left: overlap ? -12 : 0),
-      child: InitialAvatar(
-        letter: letter,
+      child: GoAvatar(
         size: 30,
-        fontSize: 13,
-        borderColor: borderColor,
+        roleColor: roleColor,
         photoUrl: photoUrl,
       ),
     );

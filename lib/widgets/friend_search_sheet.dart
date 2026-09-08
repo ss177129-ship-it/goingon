@@ -6,7 +6,7 @@ import '../services/auth_service.dart';
 import '../services/friend_service.dart';
 import '../theme.dart';
 import 'go_button.dart';
-import 'initial_avatar.dart';
+import 'go_avatar.dart';
 import 'go_toast.dart';
 
 /// 아이디로 친구 찾기 시트 — 홈/'우리' 탭 어디서든 같은 방식으로 열 수 있게 공용화.
@@ -255,13 +255,10 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(children: [
-        InitialAvatar(
-          letter: c.name.isEmpty ? '' : c.name[0],
+        GoAvatar(
           size: 44,
-          fontSize: 18,
-          borderColor: roles.line,
+          roleColor: roles.line,
           borderWidth: 1.5,
-          emptyIcon: Icons.person_outline,
           photoUrl: c.photoUrl,
         ),
         const SizedBox(width: 14),

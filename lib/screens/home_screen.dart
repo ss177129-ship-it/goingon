@@ -18,7 +18,7 @@ import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
 import '../widgets/go_value_switch.dart';
 import '../widgets/goingon_wordmark.dart';
-import '../widgets/initial_avatar.dart';
+import '../widgets/go_avatar.dart';
 import 'lobby_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -195,11 +195,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: roles.statusRunning.fg, letterSpacing: 1.2)),
           ),
           const SizedBox(height: 18),
-          InitialAvatar(
-            letter: hostName[0],
+          GoAvatar(
             size: 88,
-            fontSize: 36,
-            borderColor: roles.partner,
+            roleColor: roles.partner,
             photoUrl: hostPhotoUrl,
           ),
           const SizedBox(height: 16),
@@ -431,11 +429,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Column(children: [
         Row(children: [
-          InitialAvatar(
-            letter: name[0],
+          GoAvatar(
             size: 40,
-            fontSize: 17,
-            borderColor: roles.partner,
+            roleColor: roles.partner,
             photoUrl: r.photoUrl,
           ),
           const SizedBox(width: GoSpace.m),
@@ -560,12 +556,9 @@ class _HomeScreenState extends State<HomeScreen> {
         boxShadow: GoShadow.card,
       ),
       child: Column(children: [
-        InitialAvatar(
-          letter: myName.isEmpty ? '' : myName[0],
+        GoAvatar(
           size: 60,
-          fontSize: 26,
-          borderColor: roles.self,
-          emptyIcon: Icons.person_outline,
+          roleColor: roles.self,
           photoUrl: _me?['photoUrl'] as String?,
         ),
         const SizedBox(height: 8),
@@ -634,11 +627,9 @@ class _HomeScreenState extends State<HomeScreen> {
       // 보이는 입구가 반드시 있어야 한다
       onLongPress: () => _showFriendActions(uid, name),
       child: Row(children: [
-          InitialAvatar(
-            letter: name[0],
+          GoAvatar(
             size: 44,
-            fontSize: 18,
-            borderColor: roles.partner,
+            roleColor: roles.partner,
             borderWidth: 1.5,
             photoUrl: f['photoUrl'] as String?,
           ),
