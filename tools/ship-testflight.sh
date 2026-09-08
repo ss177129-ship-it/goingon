@@ -102,13 +102,38 @@ fi
 # ── 업로드 ───────────────────────────────────────────────────────────
 # 올리기 전에 검증을 먼저 돌린다. 업로드는 몇 분씩 걸리는데, 서명·권한
 # 문제는 validate 단계에서 훨씬 빨리 잡히기 때문
+#
+# **altool의 종료 코드를 믿지 말 것.** 2026-09-08에 API 키가 401로 거부됐는데도
+# altool이 0을 돌려줬고, set -e가 그냥 지나가 이 스크립트가 "업로드 완료"를
+# 찍었다. 올라간 것이 없는데 올라갔다고 말한 것이다. 그래서 성공 문구가
+# 실제로 있는지를 함께 본다 — 검증은 "No errors validating", 업로드는
+# "No errors uploading"을 남긴다
+run_altool() {
+  local action="$1" label="$2" out status
+  set +e
+  out=$(xcrun altool "$action" -f "$IPA" -t ios \
+    --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" --p8-file-path "$P8" 2>&1)
+  status=$?
+  set -e
+  printf '%s\n' "$out"
+  if [ "$status" -ne 0 ] || ! printf '%s' "$out" | grep -q "No errors"; then
+    echo >&2
+    echo "✗ ${label} 실패 (altool 종료 코드 ${status}). 위 로그를 보세요." >&2
+    if printf '%s' "$out" | grep -q "NOT_AUTHORIZED"; then
+      echo "  401 인증 실패입니다 — App Store Connect API 키가 만료·폐기됐거나" >&2
+      echo "  ASC_ISSUER_ID/ASC_KEY_ID가 서로 맞지 않습니다. tools/KEYS.md 참고." >&2
+    fi
+    echo "  IPA는 그대로 남아 있습니다: ${IPA}" >&2
+    echo "  키를 고친 뒤 --no-bump로 다시 올리면 이 빌드를 그대로 씁니다." >&2
+    exit 1
+  fi
+}
+
 echo "▸ 검증 중…"
-xcrun altool --validate-app -f "$IPA" -t ios \
-  --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" --p8-file-path "$P8"
+run_altool --validate-app "검증"
 
 echo "▸ 업로드 중…"
-xcrun altool --upload-app -f "$IPA" -t ios \
-  --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" --p8-file-path "$P8"
+run_altool --upload-app "업로드"
 
 echo
 echo "✔ 빌드 ${NAME}+${SHIPPED} 업로드 완료. (최소 iOS ${MIN_OS})"
