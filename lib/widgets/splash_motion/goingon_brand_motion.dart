@@ -242,17 +242,22 @@ class _SymbolPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 60;
 
-    /// 진행도 p(0~1)에서의 (시작각, 호 길이). p가 0이거나 1이면 닫힌 링
+    /// 진행도 p(0~1)에서의 (시작각=꼬리, 호 길이). p가 0이거나 1이면 닫힌 링.
+    ///
+    /// 틈은 **꼬리가 회전 방향으로 먼저 빠져나가며** 생기고(머리는 그 자리),
+    /// 끝에서는 **머리가 앞으로 나아가 꼬리를 따라잡으며** 닫힌다. 두 끝이
+    /// 언제나 시계 방향으로만 움직이므로 "열렸다가 돈다"가 아니라 처음부터
+    /// 도는 것으로 읽힌다. 예전엔 시작각을 고정하고 호만 줄여서 머리가
+    /// 거꾸로 물러나며 아래로 벌어졌다(2026-09-08 어색함 지적)
     (double, double) arc(double p) {
       if (p <= 0 || p >= 1) return (math.pi, 2 * math.pi);
-      final angle = math.pi + _spinCurve.transform(p) * 2 * math.pi;
-      final open = p < _gapRamp
-          ? p / _gapRamp
-          : p > 1 - _gapRamp
-              ? (1 - p) / _gapRamp
-              : 1.0;
-      final sweep = 2 * math.pi * ui.lerpDouble(1, _openSweep, open)!;
-      return (angle, sweep);
+      const gap = 2 * math.pi * (1 - _openSweep);
+      final theta = _spinCurve.transform(p) * 2 * math.pi;
+      final opening = (p / _gapRamp).clamp(0.0, 1.0);
+      final closing = ((p - (1 - _gapRamp)) / _gapRamp).clamp(0.0, 1.0);
+      final tail = math.pi + theta + gap * opening;
+      final head = math.pi + theta + 2 * math.pi + gap * closing;
+      return (tail, head - tail);
     }
 
     final (cs, cw) = arc(coralTurn);
