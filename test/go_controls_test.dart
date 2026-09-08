@@ -259,7 +259,8 @@ void main() {
       expect(icons, [R.textSecondary, R.selection.fg, R.textSecondary]);
       expect(find.text('3'), findsOneWidget, reason: '배지는 알약 위에도 남는다');
 
-      await tester.tap(find.text('설정'));
+      // 라벨을 지운 뒤로 탭바에는 글자가 없다 — 아이콘으로 누른다
+      await tester.tap(find.byIcon(Icons.settings_outlined));
       expect(got, 2);
     });
 
@@ -338,11 +339,11 @@ void main() {
           .widgetList<AnimatedContainer>(inside<AnimatedContainer>(GoBottomNav))
           .map((c) => (c.decoration as BoxDecoration).color)
           .toList();
-      final g1 = await press(tester, find.text('홈'));
+      final g1 = await press(tester, find.byIcon(Icons.home_rounded));
       expect(pills()[0], R.selection.pressed);
       await g1.up();
       await tester.pumpAndSettle();
-      final g2 = await press(tester, find.text('설정'));
+      final g2 = await press(tester, find.byIcon(Icons.settings_outlined));
       expect(pills()[2], R.pressOverlay);
       await g2.up();
       await tester.pumpAndSettle();

@@ -67,7 +67,8 @@ class GoingOnApp extends StatelessWidget {
 /// 반쯤 그려진 채 사라져 뭘 봤는지 모른다(2026-09-08 실기기 확인). 인증·프로필
 /// 조회는 모션과 나란히 진행하고, 둘 다 끝나야 전환한다. 모션이 먼저 끝났는데
 /// 아직 로딩 중이면 처음부터 다시 틀지 않고 두 링만 돌며 "기다리는 중"을 말한다.
-/// 탭하면 이 대기를 건너뛰고 바로 전환됨.
+/// 탭하면 이 대기를 건너뛰고 바로 전환된다 — 안내 문구는 화면에 두지 않는다
+/// (2026-09-08). 브랜드 모션만 남기기로 했고, 탭은 아는 사람을 위한 지름길이다.
 class SplashGate extends StatefulWidget {
   const SplashGate({super.key});
 
@@ -217,28 +218,14 @@ class _SplashGateState extends State<SplashGate> {
   }
 
   Widget _splash() {
-    final roles = GoRoles.of(context);
+    // 브랜드 모션 하나만 둔다 — 심볼 드로잉 → 손글씨 워드마크 → o 점프(2.7s).
+    // 인트로가 끝나고도 로딩 중이면 두 링만 돌며 "기다리는 중"을 알린다.
+    // 타이밍은 SplashTimeline(goingon_brand_motion.dart)에서만 바꾼다.
     return Scaffold(
       body: SafeArea(
-        child: Column(children: [
-          Expanded(
-            // 브랜드 모션 — 심볼 드로잉 → 손글씨 워드마크 → o 점프(2.7s).
-            // 인트로가 끝나고도 로딩 중이면 두 링만 돌며 "기다리는 중"을 알린다.
-            // 타이밍은 SplashTimeline(goingon_brand_motion.dart)에서만 바꾼다.
-            child: Center(
-              child: GoingOnBrandMotion(onIntroComplete: _onIntroComplete),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 46),
-            child: Opacity(
-              opacity: .75,
-              child: Text('화면을 누르면 시작해요',
-                  style: TextStyle(
-                      fontSize: 11, letterSpacing: .5, color: roles.textSecondary)),
-            ),
-          ),
-        ]),
+        child: Center(
+          child: GoingOnBrandMotion(onIntroComplete: _onIntroComplete),
+        ),
       ),
     );
   }
