@@ -59,6 +59,26 @@ void main() {
     expect(animatedDecorationOf(tester).boxShadow, isNull);
   });
 
+  testWidgets('누르는 카드는 읽는 카드보다 한 층 위에 떠 있다', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: GoTheme.light(),
+      home: Scaffold(
+        body: Column(children: [
+          const GoCard(child: Text('읽는 카드')),
+          GoCard(onTap: () {}, child: const Text('누르는 카드')),
+        ]),
+      ),
+    ));
+    final decos = tester
+        .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+        .map((w) => w.decoration as BoxDecoration)
+        .toList();
+    expect(decos[0].boxShadow, GoShadow.card);
+    expect(decos[0].color, GoRoles.light.surface);
+    expect(decos[1].boxShadow, GoShadow.elevated);
+    expect(decos[1].color, GoRoles.light.surfaceHigh);
+  });
+
   testWidgets('카드는 눌리면 그림자가 접혀 종이로 내려앉는다', (tester) async {
     await tester.pumpWidget(MaterialApp(
       theme: GoTheme.light(),
@@ -66,7 +86,7 @@ void main() {
         body: Center(child: GoCard(onTap: () {}, child: const Text('행'))),
       ),
     ));
-    expect(animatedDecorationOf(tester).boxShadow, GoShadow.card);
+    expect(animatedDecorationOf(tester).boxShadow, GoShadow.elevated);
 
     final gesture =
         await tester.startGesture(tester.getCenter(find.byType(GoCard)));

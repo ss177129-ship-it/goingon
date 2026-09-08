@@ -12,7 +12,6 @@ import '../widgets/go_card.dart';
 import '../widgets/go_button.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
-import '../widgets/pressable.dart';
 import 'run_screen.dart';
 
 /// 로비 — 프로토타입 s-lobby 충실 구현
@@ -373,17 +372,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
           // ── 상태 카드 (탭해서 단계 진행) ──
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: GoSpace.screen),
-            child: Pressable(
+            // 누르면 열리는 카드라 GoCard(onTap) — 읽는 카드(위 러너 행)보다
+            // 한 층 위에 뜬다. 준비 상태는 테두리가 아니라 아이콘·도트·글자가 말한다
+            child: GoCard(
               onTap: _advanceStep,
-              child: Container(
-                padding: const EdgeInsets.all(GoSpace.hero),
-                decoration: BoxDecoration(
-                  color: roles.surface,
-                  borderRadius: BorderRadius.circular(GoRadius.md),
-                  // 준비 상태는 테두리가 아니라 아래 아이콘·도트·글자가 말한다
-                  boxShadow: GoShadow.card,
-                ),
-                child: Column(children: [
+              padding: const EdgeInsets.all(GoSpace.hero),
+              child: Column(children: [
                   Row(children: [
                     Icon(_isLate ? Icons.schedule : step.icon,
                         size: 32,
@@ -432,7 +426,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
                     ),
                   ],
                 ]),
-              ),
             ),
           ),
           // ── 늦음 링크 ──

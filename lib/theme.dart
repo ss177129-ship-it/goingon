@@ -308,16 +308,39 @@ class GoRoles extends ThemeExtension<GoRoles> {
   GoRoles lerp(ThemeExtension<GoRoles>? other, double t) => this;
 }
 
-/// 높이 3단계. 그림자는 **두 겹**이다 — 붙어 있는 접촉 그림자 하나와
-/// 넓게 퍼지는 주변광 그림자 하나. 한 겹짜리 그림자는 스티커처럼 보인다.
+/// 깊이의 사다리 (2026-09-08). 화면은 한 장의 종이가 아니라 **층**이다 —
+/// 아래에서 위로:
+///
+/// | 층 | 면 | 그림자 | 무엇 |
+/// |---|---|---|---|
+/// | 0 바탕 | [GoRoles.background]/[GoRoles.canvas] | 없음 | 종이 |
+/// | 1 읽는 카드 | [GoRoles.surface] | [card] | 프로필·스탯·그룹 목록 — 정보 |
+/// | 2 누르는 카드 | [GoRoles.surfaceHigh] | [elevated] | onTap이 있는 [GoCard] — 열린다 |
+/// | 3 주 CTA | 역할색 면 | [raised] | primary·complete 버튼 — 눌러주길 바라는 것 |
+/// | 4 떠 있는 것 | [GoRoles.surfaceVeil] | [bar] | 탭바 |
+/// | 5 덮는 것 | [GoRoles.surfaceHigh] | [overlay] | 시트·다이얼로그·토스트 |
+///
+/// 층은 **역할이 정한다.** 같은 카드라도 정보를 담으면 1층, 누르면 열리는
+/// 것이면 2층이다. 화면마다 "이건 좀 더 띄우자"고 고르지 않는다 — 고르기
+/// 시작하면 모든 카드가 조금씩 떠서 다시 평면이 된다.
+///
+/// 그림자는 **두 겹**이다 — 붙어 있는 접촉 그림자 하나와 넓게 퍼지는
+/// 주변광 그림자 하나. 한 겹짜리 그림자는 스티커처럼 보인다.
 ///
 /// 색은 [GoColors.shadow](따뜻한 갈색-검정). 알파가 낮아 페이퍼 위에서는
 /// 카드 가장자리를 살짝 어둡게 만드는 정도로만 보이고, 그것이 곧 경계다
 class GoShadow {
-  /// 페이지에 놓인 카드·그룹
+  /// 1층 — 페이지에 놓인 카드·그룹(정보)
   static const card = [
     BoxShadow(color: Color(0x1A4A3A24), blurRadius: 3, offset: Offset(0, 1)),
     BoxShadow(color: Color(0x144A3A24), blurRadius: 12, offset: Offset(0, 5)),
+  ];
+
+  /// 2층 — 누르면 열리는 카드. [card]보다 주변광이 더 멀리 퍼진다.
+  /// 눌리면 [pressed]로 접혀 1층 아래까지 내려앉는다
+  static const elevated = [
+    BoxShadow(color: Color(0x1F4A3A24), blurRadius: 4, offset: Offset(0, 2)),
+    BoxShadow(color: Color(0x1A4A3A24), blurRadius: 20, offset: Offset(0, 8)),
   ];
 
   /// 눌린 카드 — 그림자가 줄면 종이가 눌려 들어간 것처럼 보인다
@@ -325,19 +348,19 @@ class GoShadow {
     BoxShadow(color: Color(0x0F4A3A24), blurRadius: 1, offset: Offset(0, 0.5)),
   ];
 
-  /// 주 버튼처럼 눌러주길 바라는 것
+  /// 3층 — 주 버튼처럼 눌러주길 바라는 것
   static const raised = [
     BoxShadow(color: Color(0x244A3A24), blurRadius: 4, offset: Offset(0, 2)),
     BoxShadow(color: Color(0x1F4A3A24), blurRadius: 18, offset: Offset(0, 8)),
   ];
 
-  /// 시트·다이얼로그·토스트 — 화면에서 확실히 떨어져 나온 것
+  /// 5층 — 시트·다이얼로그·토스트. 화면에서 확실히 떨어져 나온 것
   static const overlay = [
     BoxShadow(color: Color(0x1F4A3A24), blurRadius: 6, offset: Offset(0, 2)),
     BoxShadow(color: Color(0x244A3A24), blurRadius: 32, offset: Offset(0, 12)),
   ];
 
-  /// 탭바처럼 위로 그림자를 던지는 것
+  /// 4층 — 탭바처럼 위로 그림자를 던지는 것
   static const bar = [
     BoxShadow(color: Color(0x144A3A24), blurRadius: 16, offset: Offset(0, -4)),
   ];

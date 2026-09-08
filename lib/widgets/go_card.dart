@@ -16,6 +16,11 @@ import 'pressable.dart';
 ///
 /// [onTap]이 있으면 목록 행처럼 눌린다 — **축소 없이** 햅틱 + 눌림 배경 +
 /// 그림자 접힘. 버튼(GoButton)의 0.97 축소와 구분해, 행은 "열린다"는 느낌.
+///
+/// 누르는 카드는 읽는 카드보다 **한 층 위**에 있다([GoShadow]의 사다리).
+/// 면은 [GoRoles.surfaceHigh], 그림자는 [GoShadow.elevated] — 손이 닿기
+/// 전부터 "이건 열린다"가 깊이로 읽힌다. 눌리면 [GoShadow.pressed]로 접혀
+/// 종이 쪽으로 내려앉고, 놓으면 다시 떠오른다.
 class GoCard extends StatefulWidget {
   const GoCard({
     super.key,
@@ -60,13 +65,17 @@ class _GoCardState extends State<GoCard> {
       margin: widget.margin,
       padding: widget.padding,
       decoration: BoxDecoration(
-        color: _down ? roles.surfacePressed : roles.surface,
+        color: _down
+            ? roles.surfacePressed
+            : (_pressable ? roles.surfaceHigh : roles.surface),
         borderRadius: BorderRadius.circular(GoRadius.md),
         border: accent == null
             ? null
             : Border.all(color: accent, width: GoStroke.accent),
         // 눌리면 그림자가 접히면서 카드가 종이 쪽으로 내려앉는다
-        boxShadow: _down ? GoShadow.pressed : GoShadow.card,
+        boxShadow: _down
+            ? GoShadow.pressed
+            : (_pressable ? GoShadow.elevated : GoShadow.card),
       ),
       child: widget.child,
     );
