@@ -380,6 +380,10 @@ class GoMotion {
   /// 체크·라디오·탭·세그먼트·칩 — 색·테두리만 바뀌는 것
   static const select = Duration(milliseconds: 120);
 
+  /// 값이 바뀌었을 때(스탯·상태 문구·뼈대→목록). 새 값이 아래에서 떠오르며
+  /// 옛 값과 교차한다 — 손이 아니라 데이터가 바꾼 것이라 select보다 길다
+  static const update = Duration(milliseconds: 200);
+
   static const curve = Curves.easeOut;
 }
 

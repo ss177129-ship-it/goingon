@@ -16,6 +16,7 @@ import '../widgets/go_button.dart';
 import '../widgets/friend_search_sheet.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
+import '../widgets/go_value_switch.dart';
 import '../widgets/goingon_wordmark.dart';
 import '../widgets/initial_avatar.dart';
 import 'lobby_screen.dart';
@@ -328,16 +329,24 @@ class _HomeScreenState extends State<HomeScreen> {
         // 아직 첫 응답 전 → 목록 자리를 뼈대로 잡아둔다. "없다"고 말하지
         // 않는 이유는, 잠시 뒤 나타날 것을 없다고 했다가 뒤집으면 화면이
         // 튀고 사용자는 방금 본 것을 의심하게 되기 때문
-        if (!_friendsLoaded)
-          _friendListSkeleton()
-        else if (friends.isEmpty)
-          _noFriendsYet()
-        else
-          GoGroup(
-            margin: const EdgeInsets.symmetric(horizontal: 22),
-            dividerInset: GoSpace.card + 44 + GoSpace.m,
-            rows: friends.map(_friendRow).toList(),
-          ),
+        // 뼈대 → 목록은 교차로 넘어간다. 뚝 바뀌면 "방금 그건 뭐였지"가 남는다
+        GoValueSwitch(
+          value: !_friendsLoaded
+              ? 'skeleton'
+              : friends.isEmpty
+                  ? 'empty'
+                  : 'list',
+          alignment: Alignment.topCenter,
+          child: !_friendsLoaded
+              ? _friendListSkeleton()
+              : friends.isEmpty
+                  ? _noFriendsYet()
+                  : GoGroup(
+                      margin: const EdgeInsets.symmetric(horizontal: 22),
+                      dividerInset: GoSpace.card + 44 + GoSpace.m,
+                      rows: friends.map(_friendRow).toList(),
+                    ),
+        ),
         // 친구가 없어도 전체 흐름을 체험할 수 있는 통로. 심사관이 로비·러닝·
         // 완료 화면을 볼 유일한 방법이라 반드시 눈에 띄는 곳에 있어야 함
         if (_friendsLoaded && friends.isEmpty) _demoLink(),
@@ -562,10 +571,13 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 8),
         Text(myName, style: GoText.heading),
         const SizedBox(height: 3),
-        Text(loaded ? '함께 달릴 준비 완료' : '불러오는 중',
-            style: TextStyle(
-                fontSize: 12,
-                color: loaded ? roles.positive : roles.textSecondary)),
+        GoValueSwitch(
+          value: loaded,
+          child: Text(loaded ? '함께 달릴 준비 완료' : '불러오는 중',
+              style: TextStyle(
+                  fontSize: 12,
+                  color: loaded ? roles.positive : roles.textSecondary)),
+        ),
         const SizedBox(height: 14),
         Container(height: 1, color: roles.lineStrong),
         const SizedBox(height: GoSpace.m),
@@ -588,12 +600,16 @@ class _HomeScreenState extends State<HomeScreen> {
     final roles = GoRoles.of(context);
     return Expanded(
       child: Column(children: [
-        Text.rich(TextSpan(children: [
-          TextSpan(text: v, style: GoTheme.serif(19)),
-          TextSpan(
-              text: unit,
-              style: TextStyle(fontSize: 12, color: roles.textSecondary)),
-        ])),
+        // 값이 오면(— → 3.2) 그리고 러닝 뒤 늘어나면 살짝 떠오르며 바뀐다
+        GoValueSwitch(
+          value: '$v$unit',
+          child: Text.rich(TextSpan(children: [
+            TextSpan(text: v, style: GoTheme.serif(19)),
+            TextSpan(
+                text: unit,
+                style: TextStyle(fontSize: 12, color: roles.textSecondary)),
+          ])),
+        ),
         const SizedBox(height: 2),
         Text(label, style: GoText.label),
       ]),
