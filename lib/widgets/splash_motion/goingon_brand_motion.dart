@@ -226,8 +226,11 @@ class _SymbolPainter extends CustomPainter {
   /// 풀림과 채움을 **하나의 가속 곡선**으로 묶는다 — 온전한 링에서 천천히
   /// 출발해 비워지는 순간이 가장 빠르고, 다시 온전해지며 천천히 멈춘다.
   /// 그래서 빈 순간은 한 프레임도 안 되게 지나가고, 풀림→채움 경계에서
-  /// 멈칫하지 않는다(따로 easing하면 경계에서 속도가 0이 돼 버벅인다)
-  static const _spinCurve = Cubic(.7, 0, .3, 1);
+  /// 멈칫하지 않는다(따로 easing하면 경계에서 속도가 0이 돼 버벅인다).
+  ///
+  /// 곡선은 CSS `ease-in-out`(0.42, 0, 0.58, 1) — 웹·iOS·Material이 공통으로
+  /// 쓰는 표준 가감속. (.7,0,.3,1)은 가운데가 너무 급했다(2026-09-08)
+  static const _spinCurve = Curves.easeInOut;
 
   void _paintSpinningRings(Canvas canvas) {
     // 0~.5 코랄 차례, .5~1 라임 차례
