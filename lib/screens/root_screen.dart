@@ -9,6 +9,7 @@ import '../services/location_service.dart';
 import '../services/push_service.dart';
 import '../services/run_recovery.dart';
 import '../services/run_service.dart';
+import '../theme.dart';
 import '../widgets/bottom_nav.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
@@ -28,8 +29,27 @@ class RootScreen extends StatefulWidget {
   State<RootScreen> createState() => _RootScreenState();
 }
 
-class _RootScreenState extends State<RootScreen> {
+class _RootScreenState extends State<RootScreen>
+    with SingleTickerProviderStateMixin {
   int _index = 0;
+
+  /// 탭이 바뀔 때 새 화면이 살짝 아래에서 떠오르며 밝아진다. IndexedStack은
+  /// 그대로 두고(각 탭의 스트림·스크롤 위치가 살아야 하므로) 그 위에서
+  /// 한 번만 재생한다. 목적은 장식이 아니라 "화면이 바뀌었다"를 손가락이
+  /// 아닌 눈에도 전하는 것 — 없으면 내용이 뚝 바뀌어 어디를 눌렀는지
+  /// 놓치기 쉽다. 동작 줄이기가 켜져 있으면 재생하지 않는다
+  late final AnimationController _tabAnim = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 180),
+    value: 1,
+  );
+
+  void _goTab(int i) {
+    if (i == _index) return;
+    setState(() => _index = i);
+    if (MediaQuery.of(context).disableAnimations) return;
+    _tabAnim.forward(from: 0);
+  }
   StreamSubscription? _pushTapSub;
   StreamSubscription? _requestsSub;
 
@@ -72,11 +92,12 @@ class _RootScreenState extends State<RootScreen> {
   /// 러닝 요청은 홈이 구독 중인 세션 스트림이 수락 시트를 띄워줌
   void _onPushTap(PushTap tap) {
     if (!mounted) return;
-    setState(() => _index = 0);
+    _goTab(0);
   }
 
   @override
   void dispose() {
+    _tabAnim.dispose();
     _pushTapSub?.cancel();
     _requestsSub?.cancel();
     super.dispose();
@@ -133,19 +154,29 @@ class _RootScreenState extends State<RootScreen> {
       body: SafeArea(
         child: Column(children: [
           Expanded(
-            child: IndexedStack(
-              index: _index,
-              children: const [
-                HomeScreen(),
-                UsScreen(),
-                SettingsScreen(),
-              ],
+            child: FadeTransition(
+              opacity: CurvedAnimation(parent: _tabAnim, curve: GoMotion.curve)
+                  .drive(Tween(begin: .55, end: 1)),
+              child: SlideTransition(
+                position:
+                    CurvedAnimation(parent: _tabAnim, curve: GoMotion.curve)
+                        .drive(Tween(
+                            begin: const Offset(0, .012), end: Offset.zero)),
+                child: IndexedStack(
+                  index: _index,
+                  children: const [
+                    HomeScreen(),
+                    UsScreen(),
+                    SettingsScreen(),
+                  ],
+                ),
+              ),
             ),
           ),
           GoBottomNav(
             index: _index,
             requestCount: _requestCount,
-            onChanged: (i) => setState(() => _index = i),
+            onChanged: _goTab,
           ),
         ]),
       ),

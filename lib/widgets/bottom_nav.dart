@@ -40,10 +40,12 @@ class GoBottomNav extends StatelessWidget {
           ),
           padding: const EdgeInsets.fromLTRB(28, 6, 28, 6),
           child: Row(children: [
-            _item(roles, 0, Icons.home_rounded, '홈'),
-            _item(roles, 1, Icons.people_alt_outlined, '우리',
+            _item(roles, 0, Icons.home_outlined, Icons.home_rounded, '홈'),
+            _item(roles, 1, Icons.people_alt_outlined, Icons.people_alt_rounded,
+                '우리',
                 badge: requestCount),
-            _item(roles, 2, Icons.settings_outlined, '설정'),
+            _item(roles, 2, Icons.settings_outlined, Icons.settings_rounded,
+                '설정'),
           ]),
         ),
       ),
@@ -56,15 +58,28 @@ class GoBottomNav extends StatelessWidget {
   /// 경쟁한다. 색만이 아니라 알약이라는 *형태*가 함께 말하므로 색을 못 보는
   /// 사람에게도 어느 탭인지 읽힌다(§5). 비선택은 textSecondary — 덜 중요할
   /// 뿐 덜 보여서는 안 된다(§4)
+  ///
+  /// 선택 상태는 세 겹으로 말한다(2026-09-08): 알약(자리) + **채워진
+  /// 아이콘**(비선택은 윤곽선) + 굵은 잉크 라벨. 색 하나가 아니라 형태가
+  /// 바뀌므로 흑백으로 봐도 어느 탭인지 안다. 알약은 선택되는 순간 0.9에서
+  /// 1로 커지며 자리에 앉는다 — 색만 바뀌면 "켜졌다"가 아니라 "바뀌었다"로만
+  /// 읽힌다
   static const _pillWidth = 56.0;
   static const _pillHeight = 32.0;
 
-  Widget _item(GoRoles roles, int i, IconData icon, String label,
+  Widget _item(GoRoles roles, int i, IconData icon, IconData activeIcon,
+      String label,
       {int badge = 0}) {
     final active = i == index;
-    final iconWidget = Icon(icon,
-        size: 24,
-        color: active ? roles.selection.fg : roles.textSecondary);
+    final iconWidget = AnimatedSwitcher(
+      duration: GoMotion.select,
+      switchInCurve: GoMotion.curve,
+      switchOutCurve: GoMotion.curve,
+      child: Icon(active ? activeIcon : icon,
+          key: ValueKey(active),
+          size: 24,
+          color: active ? roles.selection.fg : roles.textSecondary),
+    );
     return Expanded(
       // 탭바는 모든 화면에 붙어 있어서, 여기가 반응하지 않으면 앱 전체가
       // 둔하게 느껴진다. 축소는 0.92 — 아이콘 하나짜리 작은 표적이라
@@ -80,19 +95,35 @@ class GoBottomNav extends StatelessWidget {
           builder: (context, pressed, child) => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AnimatedContainer(
-                duration: pressed ? Duration.zero : GoMotion.select,
-                curve: GoMotion.curve,
+              // 알약만 커지고 아이콘은 그대로 — 비선택 아이콘까지 줄이면
+              // 덜 보이게 되는데, 그건 위계가 아니라 가시성을 깎는 것이다(§4)
+              SizedBox(
                 width: _pillWidth,
                 height: _pillHeight,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: active
-                      ? (pressed ? roles.selection.pressed : roles.selection.bg)
-                      : (pressed ? roles.pressOverlay : Colors.transparent),
-                  borderRadius: BorderRadius.circular(GoRadius.md),
-                ),
-                child: GoCountBadge(count: badge, child: iconWidget),
+                child: Stack(alignment: Alignment.center, children: [
+                  AnimatedScale(
+                    scale: active ? 1 : .9,
+                    duration: GoMotion.select,
+                    curve: GoMotion.curve,
+                    child: AnimatedContainer(
+                      duration: pressed ? Duration.zero : GoMotion.select,
+                      curve: GoMotion.curve,
+                      width: _pillWidth,
+                      height: _pillHeight,
+                      decoration: BoxDecoration(
+                        color: active
+                            ? (pressed
+                                ? roles.selection.pressed
+                                : roles.selection.bg)
+                            : (pressed
+                                ? roles.pressOverlay
+                                : Colors.transparent),
+                        borderRadius: BorderRadius.circular(GoRadius.md),
+                      ),
+                    ),
+                  ),
+                  GoCountBadge(count: badge, child: iconWidget),
+                ]),
               ),
               const SizedBox(height: 4),
               child,

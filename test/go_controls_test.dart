@@ -262,6 +262,32 @@ void main() {
       await tester.tap(find.text('설정'));
       expect(got, 2);
     });
+
+    testWidgets('선택된 탭은 채워진 아이콘, 나머지는 윤곽선 — 색 말고 형태로도 말한다',
+        (tester) async {
+      await tester.pumpWidget(host(SizedBox(
+        width: 390,
+        child: GoBottomNav(index: 1, onChanged: (_) {}),
+      )));
+      await tester.pumpAndSettle();
+      final icons = tester
+          .widgetList<Icon>(inside<Icon>(GoBottomNav))
+          .map((i) => i.icon)
+          .toList();
+      expect(icons, [
+        Icons.home_outlined,
+        Icons.people_alt_rounded,
+        Icons.settings_outlined,
+      ]);
+      // 알약은 선택된 자리에서만 온전한 크기 — 비선택 아이콘은 줄이지 않는다
+      // (Pressable의 AnimatedScale은 제외 — 알약을 감싼 것만 본다)
+      final scales = tester
+          .widgetList<AnimatedScale>(inside<AnimatedScale>(GoBottomNav))
+          .where((s) => s.child is AnimatedContainer)
+          .map((s) => s.scale)
+          .toList();
+      expect(scales, [.9, 1, .9]);
+    });
   });
 
   /// 손가락이 닿아 있는 동안만 보이는 눌림 상태. 스크린샷으로는 못 잡는다
