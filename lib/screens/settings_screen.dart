@@ -201,12 +201,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         boxShadow: GoShadow.card,
       ),
       child: Row(children: [
-        GoAvatar(
-          size: 40,
-          roleColor: roles.line,
-          borderWidth: 1.5,
-          photoUrl: b['photoUrl'] as String?,
-        ),
+        GoAvatar(size: 40, photoUrl: b['photoUrl'] as String?),
         const SizedBox(width: GoSpace.m),
         Expanded(
           child: Column(
@@ -305,12 +300,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // 프로토타입 s-settings의 '프로필 편집' 한 줄. 사진·이름·아이디를
       // 한 화면에서 다루므로 여기서는 지금 상태만 요약해 보여줌
       _row(
-        leading: GoAvatar(
-          size: 24,
-          roleColor: roles.self,
-          borderWidth: 1.2,
-          photoUrl: _myPhotoUrl,
-        ),
+        leading: GoAvatar(size: 24, photoUrl: _myPhotoUrl),
         title: '프로필 편집',
         subtitle: _profileSummary,
         onTap: _openProfileEdit,

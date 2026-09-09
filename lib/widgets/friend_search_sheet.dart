@@ -252,12 +252,7 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(children: [
-        GoAvatar(
-          size: 44,
-          roleColor: roles.line,
-          borderWidth: 1.5,
-          photoUrl: c.photoUrl,
-        ),
+        GoAvatar(size: 44, photoUrl: c.photoUrl),
         const SizedBox(width: 14),
         Expanded(
           child:

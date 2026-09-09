@@ -341,11 +341,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         Pressable(
           onTap: _tapPhoto,
           child: Stack(alignment: Alignment.center, children: [
-            GoAvatar(
-              size: 96,
-              roleColor: roles.self,
-              photoUrl: _photoUrl,
-            ),
+            GoAvatar(size: 96, photoUrl: _photoUrl),
             if (_uploading)
               Container(
                 width: 96,

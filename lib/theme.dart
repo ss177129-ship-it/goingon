@@ -28,6 +28,21 @@ import 'package:flutter/material.dart';
 ///   어두운 값이고, 상태는 색만으로 전하지 않는다(아이콘·문구 동반)
 /// - 위젯 코드에 `Color(0x…)`를 쓰지 않는다. 새 값이 필요하면 여기에.
 ///   값은 `test/theme_roles_test.dart`가 대비를 검사한다
+///
+/// ## 채도 (2026-09-09)
+///
+/// 시맨틱 12색의 채도를 +12%p 올렸다. 활기는 **채도**에서 오지 명도에서
+/// 오지 않는다 — 그래서 광도는 거의 그대로 두고 색만 진하게 밀었고,
+/// 대비는 4.6:1 언저리를 유지한다.
+///
+/// **밝은 종이 위 글자는 원색이 될 수 없다.** 4.5:1을 지키려면 어두워야
+/// 하고, 어두우면 채도가 아무리 높아도 원색으로 보이지 않는다. 그래서
+/// [selfText]·[warningText]는 이미 채도 100%라 더 올릴 곳이 없었고 그대로다.
+/// 화면의 활기는 글자가 아니라 **면**이 만든다 — solid 칩, soft 배지,
+/// [GoRoles.avatarDefault]의 라임 원색 아바타, [resonance].
+///
+/// 중성 램프는 건드리지 않았다. 웜 그레이의 낮은 채도는 '종이'라는 정체성
+/// 자체이고, 여기에 색을 넣으면 활기가 아니라 탁함이 된다
 class GoColors {
   // ── 브랜드 (변경 금지) ──
   static const paper = Color(0xFFF0EAE0);
@@ -105,36 +120,36 @@ class GoColors {
 
   // ── 시맨틱 ──
   /// 완료·온라인·GPS 잡힘·성공 토스트
-  static const successText = Color(0xFF1A6B34); // 페이퍼 위 5.5:1
-  static const successSolid = Color(0xFF1E7A3C); // 흰 글자 5.4:1
-  static const successSolidPressed = Color(0xFF186532);
-  static const successSoft = Color(0xFFDCEFE0);
-  static const successSoftPressed = Color(0xFFCDE6D3);
+  static const successText = Color(0xFF0E702D); // 페이퍼 위 5.1:1
+  static const successSolid = Color(0xFF118738); // 흰 글자 4.6:1
+  static const successSolidPressed = Color(0xFF0E732F);
+  static const successSoft = Color(0xFFBFEFC9);
+  static const successSoftPressed = Color(0xFF9EE2AC);
 
   /// 연결 불안정·늦음·미등록 — 아직 실패는 아니지만 알아야 하는 것
   static const warningText = Color(0xFF9A4D00); // 페이퍼 위 5.1:1
-  static const warningSolid = Color(0xFFB45309); // 흰 글자 5.0:1
-  static const warningSolidPressed = Color(0xFF9A4708);
-  static const warningSoft = Color(0xFFFBE7C6);
-  static const warningSoftPressed = Color(0xFFF3DAB0);
+  static const warningSolid = Color(0xFFC25400); // 흰 글자 4.6:1
+  static const warningSolidPressed = Color(0xFFAE4B00);
+  static const warningSoft = Color(0xFFFBDCA8);
+  static const warningSoftPressed = Color(0xFFEEC888);
 
   /// 실패 토스트·삭제·차단·탈퇴·유효성 오류
-  static const errorText = Color(0xFFB42323); // 페이퍼 위 5.5:1
-  static const errorSolid = Color(0xFFC42B2B); // 흰 글자 5.6:1
-  static const errorSolidPressed = Color(0xFFA82424);
-  static const errorSoft = Color(0xFFF8DAD6);
-  static const errorSoftPressed = Color(0xFFF0C9C3);
+  static const errorText = Color(0xFFBD1616); // 페이퍼 위 5.1:1
+  static const errorSolid = Color(0xFFCE1414); // 흰 글자 5.0:1
+  static const errorSolidPressed = Color(0xFFB31111);
+  static const errorSoft = Color(0xFFFFD4CE);
+  static const errorSoftPressed = Color(0xFFF2B4AB);
 
   /// 안내·중립 알림. 지금 앱에는 거의 없다 — 자리만 둔다
-  static const infoText = Color(0xFF1F55C4); // 페이퍼 위 5.6:1
-  static const infoSolid = Color(0xFF2563EB); // 흰 글자 5.2:1
-  static const infoSolidPressed = Color(0xFF1E52C7);
-  static const infoSoft = Color(0xFFDAE4F8);
-  static const infoSoftPressed = Color(0xFFC8D6F2);
+  static const infoText = Color(0xFF0D53E4); // 페이퍼 위 5.0:1
+  static const infoSolid = Color(0xFF0A56FF); // 흰 글자 5.5:1
+  static const infoSolidPressed = Color(0xFF0950EB);
+  static const infoSoft = Color(0xFFCEDFFF);
+  static const infoSoftPressed = Color(0xFFABC4F2);
 
   // ── 제품 고유 ──
   /// 공명(두 사람의 발이 맞은 순간). ink·canvas 위에서만
-  static const resonance = Color(0xFFD4A84B);
+  static const resonance = Color(0xFFDEA52D);
 }
 
 /// 면 + 글자(+테두리) 한 세트. 역할 하나가 곧 조합 하나다
@@ -213,6 +228,7 @@ class GoRoles extends ThemeExtension<GoRoles> {
     required this.info,
     required this.dark,
     required this.selection,
+    required this.avatarDefault,
     required this.self,
     required this.partner,
     required this.selfOnDark,
@@ -293,6 +309,14 @@ class GoRoles extends ThemeExtension<GoRoles> {
 
   /// 선택된 자리의 표시 — 잉크를 옅게 드리운 그림자 면 + 잉크 글자
   final GoRole selection;
+
+  /// 사진이 없는 기본 프로필 (2026-09-09). 면은 브랜드 라임 원색,
+  /// 실루엣은 라임에서 파생한 올리브([GoColors.selfText], 라임 위 4.3:1).
+  ///
+  /// **관계색(self/partner)이 아니다.** 명부·목록·내 프로필의 아바타는
+  /// 누구든 같은 라임이다 — 목록에서 사람마다 색이 갈리면 색이 뜻을 잃는다.
+  /// 나와 상대를 색으로 갈라야 하는 화면(로비·러닝·'우리')만 관계색을 넘긴다
+  final GoRole avatarDefault;
 
   // ── 관계색 ──
   /// 나 — 라임 파생 올리브. 글자·아이콘·옅은 면(18%)
@@ -397,6 +421,11 @@ class GoRoles extends ThemeExtension<GoRoles> {
       bg: GoColors.inkVeil,
       fg: GoColors.ink,
       pressed: GoColors.inkVeilPressed,
+    ),
+    avatarDefault: GoRole(
+      bg: GoColors.lime,
+      fg: GoColors.selfText,
+      pressed: GoColors.limePressed,
     ),
     self: GoColors.selfText,
     partner: GoColors.partnerText,

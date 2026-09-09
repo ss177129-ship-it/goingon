@@ -195,11 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: roles.statusRunning.fg, letterSpacing: 1.2)),
           ),
           const SizedBox(height: 18),
-          GoAvatar(
-            size: 88,
-            roleColor: roles.partner,
-            photoUrl: hostPhotoUrl,
-          ),
+          GoAvatar(size: 88, photoUrl: hostPhotoUrl),
           const SizedBox(height: 16),
           Text('$hostName님이\n같이 달리자고 해요',
               textAlign: TextAlign.center, style: GoText.title),
@@ -429,11 +425,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Column(children: [
         Row(children: [
-          GoAvatar(
-            size: 40,
-            roleColor: roles.partner,
-            photoUrl: r.photoUrl,
-          ),
+          GoAvatar(size: 40, photoUrl: r.photoUrl),
           const SizedBox(width: GoSpace.m),
           Expanded(
             child: Column(
@@ -556,21 +548,10 @@ class _HomeScreenState extends State<HomeScreen> {
         boxShadow: GoShadow.card,
       ),
       child: Column(children: [
-        GoAvatar(
-          size: 60,
-          roleColor: roles.self,
-          photoUrl: _me?['photoUrl'] as String?,
-        ),
+        GoAvatar(size: 60, photoUrl: _me?['photoUrl'] as String?),
         const SizedBox(height: 8),
         Text(myName, style: GoText.heading),
-        const SizedBox(height: 3),
-        GoValueSwitch(
-          value: loaded,
-          child: Text(loaded ? '함께 달릴 준비 완료' : '불러오는 중',
-              style: TextStyle(
-                  fontSize: 12,
-                  color: loaded ? roles.success.fg : roles.textSecondary)),
-        ),
+        // 불러오는 중인지는 아래 숫자가 '—'로 말한다 — 같은 것을 두 번 말하지 않는다
         const SizedBox(height: 14),
         Container(height: 1, color: roles.lineStrong),
         const SizedBox(height: GoSpace.m),
@@ -620,33 +601,22 @@ class _HomeScreenState extends State<HomeScreen> {
     final name = _displayName(f['name']);
     final uid = f['uid'] as String;
     final roles = GoRoles.of(context);
-    // 그룹 안의 행 하나. 상대 역할색(partner)은 아바타 링에만
+    // 그룹 안의 행 하나. 아바타는 라임 기본 프로필 — 목록에서 사람마다
+    // 색이 갈리면 색이 뜻을 잃는다
     return GoGroupRow(
       // 길게 누르기는 지름길로 남기되, 그것'만'으로는 아무도 못 찾는다.
       // 차단·신고는 App Store 가이드라인 1.2가 요구하는 수단이라 화면에
       // 보이는 입구가 반드시 있어야 한다
       onLongPress: () => _showFriendActions(uid, name),
       child: Row(children: [
-          GoAvatar(
-            size: 44,
-            roleColor: roles.partner,
-            borderWidth: 1.5,
-            photoUrl: f['photoUrl'] as String?,
-          ),
+          GoAvatar(size: 44, photoUrl: f['photoUrl'] as String?),
           const SizedBox(width: GoSpace.m),
           Expanded(
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name,
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: roles.textPrimary)),
-                  const SizedBox(height: 1),
-                  Text('멀리 있어도, 함께',
-                      style: TextStyle(fontSize: 12, color: roles.textSecondary)),
-                ]),
+            child: Text(name,
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: roles.textPrimary)),
           ),
           Pressable(
             onTap: () => _showFriendActions(uid, name),

@@ -17,16 +17,22 @@ import '../theme.dart';
 /// 테두리가 아니라 **옅은 면(18%)**과 실루엣의 색으로 깔린다. 사진이 있으면
 /// 면도 안 보이고 사진만 남는다.
 ///
+/// **[roleColor]를 넘기지 않으면 브랜드 라임 기본 프로필**(2026-09-09) —
+/// 워드마크의 라임 원색 면 위에 올리브 실루엣. 명부·목록·내 프로필이
+/// 여기 해당한다. 관계색은 나와 상대를 **나란히 놓고 갈라야 하는** 화면
+/// (로비·러닝·'우리')에서만 뜻이 있고, 목록에서는 색이 뜻을 잃는다.
+///
 /// [photoUrl]이 있으면 사진으로 채움. 사진은 언제든 실패할 수 있으므로
 /// (지워진 파일, 비행기 모드, 낡은 주소) 로딩·실패 양쪽 모두 실루엣으로
 /// 되돌아감 — 아바타 자리가 비거나 깨진 아이콘이 뜨는 화면은 만들지 않음.
 class GoAvatar extends StatelessWidget {
   final double size;
 
-  /// 역할색(나=self, 상대=partner, 중립=line). 옅은 면과 실루엣의 색
-  final Color roleColor;
+  /// 역할색(나=self, 상대=partner). 옅은 면과 실루엣의 색.
+  /// null이면 [GoRoles.avatarDefault] — 라임 면 + 올리브 실루엣
+  final Color? roleColor;
 
-  /// null이면 [roleColor]의 18% 면
+  /// null이면 [roleColor]의 18% 면 (roleColor도 null이면 라임 원색 면)
   final Color? fill;
   final double borderWidth;
   final String? photoUrl;
@@ -34,7 +40,7 @@ class GoAvatar extends StatelessWidget {
   const GoAvatar({
     super.key,
     required this.size,
-    required this.roleColor,
+    this.roleColor,
     this.fill,
     this.borderWidth = 0,
     this.photoUrl,
@@ -43,42 +49,47 @@ class GoAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final url = photoUrl;
+    final role = roleColor;
+    final base = GoRoles.of(context).avatarDefault;
+    // 관계색이 오면 그 색의 옅은 면 + 55% 실루엣, 아니면 라임 원색 면 + 올리브
+    final surface = fill ?? (role?.withValues(alpha: .18) ?? base.bg);
+    final figure = role?.withValues(alpha: .55) ?? base.fg;
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: fill ?? roleColor.withValues(alpha: .18),
+        color: surface,
         border: borderWidth > 0
-            ? Border.all(color: roleColor, width: borderWidth)
+            ? Border.all(color: role ?? base.fg, width: borderWidth)
             : null,
       ),
       // 테두리 두께만큼 안쪽으로 들어온 영역이 자식의 자리라, 원으로 자르면
       // 사진이 테두리를 덮지 않고 정확히 안쪽만 채움
       child: ClipOval(
         child: url == null || url.isEmpty
-            ? _silhouette()
+            ? _silhouette(figure)
             : CachedNetworkImage(
                 imageUrl: url,
                 fit: BoxFit.cover,
                 width: size,
                 height: size,
-                placeholder: (_, __) => _silhouette(),
-                errorWidget: (_, __, ___) => _silhouette(),
+                placeholder: (_, __) => _silhouette(figure),
+                errorWidget: (_, __, ___) => _silhouette(figure),
               ),
       ),
     );
   }
 
-  Widget _silhouette() => CustomPaint(
+  Widget _silhouette(Color figure) => CustomPaint(
         size: Size.square(size),
-        painter: AvatarSilhouettePainter(color: roleColor),
+        painter: AvatarSilhouettePainter(color: figure),
       );
 }
 
 /// 머리(원) + 어깨(아래로 잘리는 타원) — 원 밖으로 흘러넘치는 어깨는
-/// [GoAvatar]의 ClipOval이 잘라 준다. 색은 역할색 그대로, 면의 18% 위에
-/// 놓이면 옅은 면과 실루엣이 같은 색조로 읽힌다.
+/// [GoAvatar]의 ClipOval이 잘라 준다. 색은 [GoAvatar]가 이미 정해서 넘기므로
+/// (관계색 55% 또는 기본 프로필의 올리브) 여기서 알파를 다시 얹지 않는다.
 class AvatarSilhouettePainter extends CustomPainter {
   final Color color;
 
@@ -88,7 +99,7 @@ class AvatarSilhouettePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final s = size.shortestSide;
     final paint = Paint()
-      ..color = color.withValues(alpha: .55)
+      ..color = color
       ..style = PaintingStyle.fill;
 
     // 머리 — 중심에서 살짝 위. 반지름은 지름의 17%

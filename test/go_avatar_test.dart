@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goingon/services/avatar_service.dart';
+import 'package:goingon/theme.dart';
 import 'package:goingon/widgets/go_avatar.dart';
 
 /// 아바타는 앱에서 가장 많이 반복되는 조각이라(홈·우리·친구 검색·차단 목록·
@@ -50,11 +51,37 @@ void main() {
       expect(silhouette(), findsOneWidget);
     });
 
-    testWidgets('실루엣은 역할색을 그대로 받는다', (tester) async {
+    testWidgets('관계색을 넘기면 실루엣은 그 색의 55%', (tester) async {
+      // 알파는 위젯이 정해서 넘긴다 — 페인터는 받은 색을 그대로 칠한다
       await pump(tester, const GoAvatar(size: 60, roleColor: Colors.red));
 
       final paint = tester.widget<CustomPaint>(silhouette());
-      expect((paint.painter as AvatarSilhouettePainter).color, Colors.red);
+      expect((paint.painter as AvatarSilhouettePainter).color,
+          Colors.red.withValues(alpha: .55));
+    });
+
+    testWidgets('관계색이 없으면 라임 기본 프로필 — 면은 라임, 실루엣은 올리브',
+        (tester) async {
+      // 명부·목록·내 프로필의 아바타. 사람마다 색이 갈리지 않는다
+      await pump(tester, const GoAvatar(size: 60));
+
+      final paint = tester.widget<CustomPaint>(silhouette());
+      expect((paint.painter as AvatarSilhouettePainter).color,
+          GoRoles.light.avatarDefault.fg);
+
+      final box = tester.widget<Container>(find.descendant(
+          of: find.byType(GoAvatar), matching: find.byType(Container)));
+      expect((box.decoration as BoxDecoration).color,
+          GoRoles.light.avatarDefault.bg);
+    });
+
+    testWidgets('기본 프로필도 사진이 있으면 사진이 이긴다', (tester) async {
+      await pump(
+        tester,
+        const GoAvatar(size: 60, photoUrl: 'https://example.test/a.jpg'),
+      );
+
+      expect(find.byType(CachedNetworkImage), findsOneWidget);
     });
   });
 

@@ -103,6 +103,18 @@ void main() {
     expect(r.partner, isNot(r.error.fg));
   });
 
+  test('기본 프로필은 워드마크의 라임 — 실루엣이 면 위에서 읽힌다', () {
+    const r = GoRoles.light;
+    // 면은 브랜드 라임 원색 그대로여야 "고잉온 문구의 그 색"이다
+    expect(r.avatarDefault.bg, GoColors.lime);
+    // 글자가 아니라 도형이지만, 실루엣이 면에 묻히면 아바타가 빈 원이 된다
+    expect(contrast(r.avatarDefault.fg, r.avatarDefault.bg),
+        greaterThanOrEqualTo(3));
+    // 라임 면은 밝은 바탕과 광도가 비슷하다 — 원의 경계는 색상(hue)이 만든다
+    expect((hue(r.avatarDefault.bg) - hue(r.background)).abs(),
+        greaterThan(20));
+  });
+
   test('중성 램프는 페이퍼의 색상을 따른다(웜 그레이)', () {
     for (final c in [
       GoColors.neutral100, GoColors.neutral200, GoColors.neutral300,
