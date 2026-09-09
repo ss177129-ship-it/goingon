@@ -112,7 +112,6 @@ void main() {
               onDecline: () {},
               onCancelInvite: () {},
               onJoin: () {},
-              onDismiss: () {},
             ),
           ),
         ));
@@ -146,7 +145,9 @@ void main() {
       await pumpInvite(tester,
           inv(SessionRules.declined, msg: '30분 뒤 어때요?'));
       expect(find.text('"30분 뒤 어때요?"'), findsOneWidget);
-      expect(find.text('확인'), findsOneWidget);
+      // 결과는 주 행동을 가로막지 않는다 — 곧바로 다시 부를 수 있다
+      expect(find.text('GO?'), findsOneWidget);
+      expect(find.text('확인'), findsNothing);
     });
 
     testWidgets('답장이 없는 거절에도 할 말은 있다', (tester) async {
@@ -159,11 +160,47 @@ void main() {
           createdAt: now.subtract(const Duration(minutes: 31))));
       expect(find.text('답이 오지 않았어요'), findsOneWidget);
       expect(find.text('취소'), findsNothing);
+      expect(find.text('GO?'), findsOneWidget, reason: '다시 부를 수 있어야 한다');
+    });
+
+    testWidgets('제안이 오가는 동안엔 활동 점을 찍지 않는다 — 색이 짝을 잃는다',
+        (tester) async {
+      // 상태 줄이 제안 이야기를 하는데 점만 러닝 활동을 뜻하면, 색 하나가
+      // 설명 없이 떠 있게 된다. 실제로 거절 문구 옆에 초록 점이 붙었다
+      await tester.pumpWidget(MaterialApp(
+        theme: GoTheme.light(),
+        home: Scaffold(
+          body: PacemateCard(
+            user: const {'uid': 'u1', 'lastRunWeek': thisWeek},
+            name: '지수',
+            invite: inv(SessionRules.declined),
+            now: now,
+            onOpen: () {},
+            onGo: () {},
+          ),
+        ),
+      ));
+      expect(find.byKey(PacemateCard.dotKey), findsNothing);
     });
 
     testWidgets('제안이 없으면 평소 카드로 돌아온다', (tester) async {
       await pumpInvite(tester, null);
       expect(find.text('GO?'), findsOneWidget);
+    });
+
+    testWidgets('끝난 제안은 무엇도 가로막지 않는다 — 전부 GO?로 돌아온다',
+        (tester) async {
+      // '확인'을 눌러 안내를 치워야 다시 부를 수 있던 시절의 반대다.
+      // 무슨 일이 있었는지는 옆의 한 줄이 이미 말하고 있다
+      for (final st in [
+        SessionRules.declined,
+        SessionRules.expired,
+        SessionRules.cancelled,
+      ]) {
+        await pumpInvite(tester, inv(st));
+        expect(find.text('GO?'), findsOneWidget, reason: st);
+        expect(find.text('확인'), findsNothing, reason: st);
+      }
     });
   });
 

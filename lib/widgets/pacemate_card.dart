@@ -37,7 +37,6 @@ class PacemateCard extends StatelessWidget {
     this.onDecline,
     this.onCancelInvite,
     this.onJoin,
-    this.onDismiss,
     this.now,
   });
 
@@ -65,9 +64,6 @@ class PacemateCard extends StatelessWidget {
 
   /// 수락된 제안 — 로비로
   final VoidCallback? onJoin;
-
-  /// 거절·만료 안내 닫기
-  final VoidCallback? onDismiss;
 
   /// 테스트에서 시간을 고정하기 위한 구멍
   final DateTime? now;
@@ -131,7 +127,12 @@ class PacemateCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
       onTap: onOpen,
       child: Row(children: [
-        _avatarWithStatus(context, status),
+        // 점은 **상태 줄이 그것을 말할 때만** 찍는다. 제안이 오가는 동안엔
+        // 줄이 제안 이야기를 하므로, 러닝 활동을 뜻하는 점만 남으면 색
+        // 하나가 짝 없이 떠 있게 된다(Color Usage Rules — 색만으로 전하지
+        // 않는다). 실제로 거절 문구 옆에 초록 점이 붙어 있었다
+        _avatarWithStatus(
+            context, card == InviteCard.none ? status : null),
         const SizedBox(width: GoSpace.m),
         Expanded(
           child: Column(
@@ -181,14 +182,14 @@ class PacemateCard extends StatelessWidget {
             kind: GoButtonKind.text,
             size: GoButtonSize.md,
             onTap: onCancelInvite),
+        // 끝난 제안은 **주 행동을 가로막지 않는다**(2026-09-09). 전에는
+        // GO? 자리에 '확인'이 서서, 다시 부르려면 먼저 안내를 치워야 했다.
+        // 무슨 일이 있었는지는 옆의 한 줄이 이미 말하고 있다
         InviteCard.declined ||
         InviteCard.expired ||
-        InviteCard.cancelled =>
-          GoButton('확인',
-              kind: GoButtonKind.text,
-              size: GoButtonSize.md,
-              onTap: onDismiss),
-        InviteCard.none => GoButton('GO?',
+        InviteCard.cancelled ||
+        InviteCard.none =>
+          GoButton('GO?',
             kind: GoButtonKind.primary,
             size: GoButtonSize.md,
             serifLabel: true,
@@ -201,7 +202,7 @@ class PacemateCard extends StatelessWidget {
   ///
   /// [Stack]이 아바타보다 조금 크다 — 점이 원 밖으로 나가야 "얹혀 있다"로
   /// 읽히는데, 딱 맞는 상자 안에 가두면 잘려서 그냥 원의 일부가 된다
-  Widget _avatarWithStatus(BuildContext context, PacemateStatus status) {
+  Widget _avatarWithStatus(BuildContext context, PacemateStatus? status) {
     final roles = GoRoles.of(context);
     return SizedBox(
       width: _avatar + 3,
@@ -216,7 +217,7 @@ class PacemateCard extends StatelessWidget {
         ),
         // 최근 기록이 없으면 점을 찍지 않는다. 회색 점은 상태가 아니라
         // 고장으로 읽히고, 목록에 아무 뜻 없는 동그라미만 늘어난다
-        if (status.tone != PacemateTone.quiet)
+        if (status != null && status.tone != PacemateTone.quiet)
           Positioned(
             right: 0,
             bottom: 0,

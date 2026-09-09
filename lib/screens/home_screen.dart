@@ -41,18 +41,15 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription? _invitesSub;
   List<Invite> _inviteList = const [];
 
-  /// 사용자가 '확인'으로 닫은 결과(거절·만료). 문서는 그대로 남아 있으므로
-  /// 앱이 사는 동안만 기억한다 — 다시 켜면 한 번 더 보이지만, 못 본 채
-  /// 사라지는 것보다는 낫다
-  final Set<String> _dismissed = {};
-
   /// 이미 접기를 시도한 세션 — 스트림이 다시 울릴 때마다 같은 쓰기를
   /// 되풀이하지 않는다
   final Set<String> _merging = {};
   StreamSubscription? _incomingSub;
-  final Set<String> _handledSessions = {};
-  int _openSheets = 0;
-  bool get _sheetShowing => _openSheets > 0;
+
+  /// 이미 알린 요청 — 스냅샷이 다시 울릴 때마다 같은 토스트를 되풀이하지
+  /// 않는다. 첫 스냅샷은 알리지 않고 채우기만 한다([_announcedPrimed])
+  final Set<String> _announced = {};
+  bool _announcedPrimed = false;
   Map<String, dynamic>? _me;
   int _incomingRetries = 0;
   bool _incomingBroken = false;
@@ -147,6 +144,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// 친구가 GO?를 보내면 여기서 감지 → 수락 시트
+  /// 나에게 온 요청 감시.
+  ///
+  /// **여기서 화면을 막지 않는다**(2026-09-09). 전에는 요청이 오는 즉시
+  /// `isDismissible: false`인 시트를 띄웠다 — 답하기 전까지 앱의 무엇도
+  /// 할 수 없었고, 답하려고 상대가 누구인지 확인하러 갈 수조차 없었다.
+  /// 지금 이 스트림이 하는 일은 두 가지뿐이다: 시간이 다 된 요청 정리,
+  /// 그리고 새로 온 것을 **가리기만 하는** 토스트. 답하는 자리는 '제안'
+  /// 탭과 홈 카드다
   void _listenIncoming() {
     _incomingSub?.cancel();
     _incomingSub = _runs.incomingSessions(_auth.uid).listen((snap) async {
@@ -156,12 +161,9 @@ class _HomeScreenState extends State<HomeScreen> {
         if (mounted && _incomingBroken) setState(() => _incomingBroken = false);
       }
       for (final doc in snap.docs) {
-        if (_handledSessions.contains(doc.id)) continue;
-        // 스트림이 시간으로 잘린 뒤로는 이미 수락·거절한 것까지 실려 온다.
-        // 아직 답하지 않은 것에만 시트를 띄운다 — 안 그러면 로비에서 나온
-        // 직후 방금 수락한 세션의 수락 시트가 다시 뜬다
+        // 스트림이 시간으로 잘린 뒤로는 이미 수락·거절한 것까지 실려 온다
         if (doc.data()['status'] != SessionRules.invited) continue;
-        // 오래 응답 없는 요청은 뒤늦게 수락 시트로 띄우는 대신 정리함
+        // 시간이 다 된 요청은 정리한다
         // (createdAt이 아직 null이면 serverTimestamp 반영 전이므로 무시하지 않음)
         final createdAt = doc.data()['createdAt'] as Timestamp?;
         if (createdAt != null &&
@@ -169,18 +171,22 @@ class _HomeScreenState extends State<HomeScreen> {
           _runs.expireSession(doc.id);
           continue;
         }
-        // 이미 다른 요청 시트가 떠 있거나 로비/러닝이 진행 중이면 겹쳐
-        // 띄우지 않고 넘어감 — handledSessions에 넣지 않으므로 나중에
-        // 자유로워지면 다음 스냅샷에서 다시 시도됨
-        if (_sheetShowing || ActiveRunGuard.active) continue;
-        _handledSessions.add(doc.id);
+        if (_announced.contains(doc.id)) continue;
+        _announced.add(doc.id);
+        // 앱을 켠 채로 받았을 때만 알린다. 처음 목록이 통째로 도착할 때는
+        // 이미 알고 있던 것까지 줄줄이 뜨므로 건너뛴다
+        if (!_announcedPrimed) continue;
+        // 러닝 중에는 알리지 않는다 — 달리는 사람에게 다른 사람의 초대는
+        // 지금 답할 수 있는 일이 아니다
+        if (ActiveRunGuard.active) continue;
         final hostId = doc.data()['hostId'] as String;
         final host = await FirebaseFirestore.instance
             .collection('users').doc(hostId).get();
-        final hostName = _displayName(host.data()?['name']);
         if (!mounted) return;
-        _showGoRequest(doc.id, hostName, host.data()?['photoUrl'] as String?);
+        GoToast.show(context,
+            '${_displayName(host.data()?['name'])}님이 함께 달리자고 해요');
       }
+      _announcedPrimed = true;
     }, onError: (e, stack) {
       // 권한/네트워크 문제로 감지가 끊기면 잠시 뒤 재구독하되, 인덱스 누락처럼
       // 기다린다고 낫지 않는 문제일 때 무한 루프에 빠지지 않도록 횟수를 제한하고
@@ -204,72 +210,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return s.isEmpty ? '페이스메이트' : s;
   }
 
-  void _showGoRequest(String sessionId, String hostName, String? hostPhotoUrl) {
-    _openSheets++;
-    final roles = GoRoles.of(context);
-    showModalBottomSheet(
-      context: context,
-      isDismissible: false,
-      backgroundColor: roles.surfaceHigh,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(28, 28, 28, 40),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          // 상태 태그(statusRunning): 코랄 면 + 잉크 글자, 테두리 없음
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              color: roles.statusRunning.bg,
-              borderRadius: BorderRadius.circular(GoRadius.sm),
-            ),
-            child: Text('함께 달리기 요청',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                    color: roles.statusRunning.fg, letterSpacing: 1.2)),
-          ),
-          const SizedBox(height: 18),
-          GoAvatar(size: 88, photoUrl: hostPhotoUrl),
-          const SizedBox(height: 16),
-          Text('$hostName님이\n같이 달리자고 해요',
-              textAlign: TextAlign.center, style: GoText.title),
-          const SizedBox(height: GoSpace.section),
-          // 수락은 **문서에 써야 성립한다.** 전에는 상태를 그대로 둔 채
-          // 로비로 밀기만 했는데, 지금 규칙에서는 invited인 세션에 준비도
-          // 출발도 걸리지 않으므로 그대로 두면 아무도 달리지 못한다
-          GoButton('수락하고 함께 달리기', onTap: () async {
-            Navigator.pop(ctx);
-            try {
-              await _runs.acceptSession(sessionId);
-            } catch (e, stack) {
-              FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
-              if (!mounted) return;
-              GoToast.error(context, '수락하지 못했어요. 다시 시도해 주세요.');
-              return;
-            }
-            if (!mounted) return;
-            Navigator.push(context, MaterialPageRoute(
-              builder: (_) => LobbyScreen(
-                  sessionId: sessionId, partnerName: hostName),
-            ));
-          }),
-          const SizedBox(height: GoSpace.s),
-          GoButton('나중에',
-              kind: GoButtonKind.text,
-              size: GoButtonSize.md,
-              onTap: () {
-                Navigator.pop(ctx);
-                _showDeclineOptions(sessionId);
-              }),
-        ]),
-      ),
-    ).whenComplete(() {
-      if (mounted) setState(() => _openSheets--);
-    });
-  }
-
   /// "나중에" 선택 시 침묵 대신 한 줄 답장을 고르게 함
   void _showDeclineOptions(String sessionId) {
-    _openSheets++;
     const options = ['지금은 어려워요', '30분 뒤 어때요?', '오늘은 쉬고 싶어요'];
     showModalBottomSheet(
       context: context,
@@ -295,9 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   )),
             ]),
       ),
-    ).whenComplete(() {
-      if (mounted) setState(() => _openSheets--);
-    });
+    );
   }
 
   /// GO?를 보내는 중인 상대의 uid. 세션 생성은 왕복이 있어서 그 사이
@@ -708,10 +648,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _pacemateCard(Map<String, dynamic> f) {
     final name = _displayName(f['name']);
     final uid = f['uid'] as String;
-    var invite = currentInviteFor(_inviteList, uid, DateTime.now());
-    // 사용자가 닫은 결과는 다시 세우지 않는다. 살아 있는 제안은 닫을 수
-    // 없으므로(닫기 버튼 자체가 없다) 여기서 가려질 일이 없다
-    if (invite != null && _dismissed.contains(invite.sessionId)) invite = null;
+    final invite = currentInviteFor(_inviteList, uid, DateTime.now());
     return PacemateCard(
       key: ValueKey(uid),
       user: f,
@@ -725,18 +662,15 @@ class _HomeScreenState extends State<HomeScreen> {
       goEnabled: _sendingTo == null || _sendingTo == uid,
       onAccept: invite == null
           ? null
-          : () => _acceptInvite(invite!.sessionId, name),
+          : () => _acceptInvite(invite.sessionId, name),
       onDecline:
-          invite == null ? null : () => _showDeclineOptions(invite!.sessionId),
+          invite == null ? null : () => _showDeclineOptions(invite.sessionId),
       onCancelInvite: invite == null
           ? null
-          : () => _inviteAction(() => _runs.cancelSession(invite!.sessionId),
+          : () => _inviteAction(() => _runs.cancelSession(invite.sessionId),
               '취소하지 못했어요. 다시 시도해 주세요.'),
       onJoin:
-          invite == null ? null : () => _enterLobby(invite!.sessionId, name),
-      onDismiss: invite == null
-          ? null
-          : () => setState(() => _dismissed.add(invite!.sessionId)),
+          invite == null ? null : () => _enterLobby(invite.sessionId, name),
     );
   }
 
