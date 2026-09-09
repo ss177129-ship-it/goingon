@@ -45,9 +45,10 @@ class GoColors {
   static const limePressed = Color(0xFFAFC935);
   static const inkPressed = Color(0xFF35342C);
 
-  /// 상대(partner) 글자·아이콘 — 코랄에서 파생, 페이퍼 위 4.6:1.
+  /// 상대(partner) 글자·아이콘 — 코랄에서 파생, 캔버스 위 4.5:1(페이퍼 4.8:1).
+  /// 밝은 바탕 셋 중 가장 어두운 [canvas]가 기준이다 — 페이퍼만 맞추면 카드 위에서 모자란다.
   /// [errorText]와 이웃한 색이므로 상태 표시에는 쓰지 않는다
-  static const partnerText = Color(0xFFC43119);
+  static const partnerText = Color(0xFFC03019);
 
   /// 나(self) 글자·아이콘 — 라임에서 파생한 올리브, 페이퍼 위 5.3:1.
   /// [successText](초록, hue 140°)와 다른 색상(hue 75°)
