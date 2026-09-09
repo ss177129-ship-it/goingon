@@ -220,6 +220,25 @@ export const cleanupSessions = onSchedule(
       expired += snap.size;
     }
 
+    // 수락까지 갔지만 아무도 로비에 들어오지 않은 만남. 이걸 안 거두면
+    // 홈 카드가 '준비하러 가요'로 굳어 영영 안 없어진다 — 30분이 지났으면
+    // 그 약속은 이미 지나간 것이다
+    let abandoned = 0;
+    {
+      const snap = await db
+        .collection('sessions')
+        .where('status', '==', 'accepted')
+        .where('createdAt', '<', staleRequest)
+        .limit(400)
+        .get();
+      if (!snap.empty) {
+        const batch = db.batch();
+        snap.docs.forEach((d) => batch.update(d.ref, { status: 'cancelled' }));
+        await batch.commit();
+        abandoned = snap.size;
+      }
+    }
+
     const running = await db
       .collection('sessions')
       .where('status', '==', 'running')
@@ -233,7 +252,8 @@ export const cleanupSessions = onSchedule(
     }
 
     logger.info(
-      `세션 정리 완료 — 만료 요청 ${expired}건, 멈춘 러닝 ${running.size}건 종료 처리`,
+      `세션 정리 완료 — 만료 요청 ${expired}건, 버려진 약속 ${abandoned}건, ` +
+        `멈춘 러닝 ${running.size}건 종료 처리`,
     );
   },
 );
