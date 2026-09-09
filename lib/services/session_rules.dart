@@ -110,6 +110,17 @@ class SessionRules {
     return {'ready.$uid': true};
   }
 
+  /// 준비 취소. 살아 있지 않은 세션이면 `null`.
+  ///
+  /// **이게 없어서 취소가 거짓말이었다.** 전에는 화면이 자기 단계만 뒤로
+  /// 돌리고 문서는 그대로 뒀다 — 상대에게는 내가 여전히 준비완료로 보였고,
+  /// 상대가 준비하는 순간 카운트다운이 돌아 아무도 취소하지 않은 러닝이
+  /// 시작됐다
+  static Map<String, Object?>? unready(Map<String, dynamic>? data, String uid) {
+    if (_status(data) != accepted) return null;
+    return {'ready.$uid': false};
+  }
+
   /// 두 사람 모두 준비됐는가 — 카운트다운을 시작해도 되는 유일한 조건
   static bool bothReady(Map<String, dynamic>? data) {
     final ready = data?['ready'];

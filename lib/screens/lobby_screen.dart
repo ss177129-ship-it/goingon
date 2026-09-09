@@ -32,24 +32,14 @@ class LobbyScreen extends StatefulWidget {
   State<LobbyScreen> createState() => _LobbyScreenState();
 }
 
-class _Step {
-  final IconData icon;
-  final String text;
-  const _Step(this.icon, this.text);
-}
-
-const _steps = [
-  _Step(Icons.home_rounded, '집에서 출발'),
-  _Step(Icons.self_improvement, '준비운동'),
-  _Step(Icons.place_outlined, '도착'),
-  _Step(Icons.check_circle_outline, '준비완료'),
-];
-
 class _LobbyScreenState extends State<LobbyScreen> {
   final _runs = RunService();
   final _uid = AuthService().uid;
   StreamSubscription? _sub;
-  int _step = 0;
+
+  /// 문서의 `ready` 맵이 진실이다 — 화면이 자기 상태를 따로 들고 있으면
+  /// 상대가 보는 것과 어긋난다(준비 취소가 실제로 그랬다)
+  bool _meReady = false;
   bool _isLate = false;
   bool _partnerReady = false;
   bool _partnerLate = false;
@@ -58,8 +48,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
   int? _countdown;
   Timer? _timeoutTimer;
   Timer? _countdownTimer;
-
-  bool get _meReady => _step == _steps.length - 1;
 
   @override
   void initState() {
@@ -112,6 +100,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       final ready = Map<String, dynamic>.from(data['ready'] ?? {});
       final partnerReady =
           ready.entries.any((e) => e.key != _uid && e.value == true);
+      final meReady = ready[_uid] == true;
       final late = Map<String, dynamic>.from(data['late'] ?? {});
       final partnerLate =
           late.entries.any((e) => e.key != _uid && e.value == true);
@@ -119,6 +108,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       final partnerJoined =
           joined.entries.any((e) => e.key != _uid && e.value == true);
       setState(() {
+        _meReady = meReady;
         _partnerReady = partnerReady;
         _partnerLate = partnerLate;
         _partnerJoined = partnerJoined;
@@ -138,46 +128,35 @@ class _LobbyScreenState extends State<LobbyScreen> {
     if (_meReady && _partnerReady && _countdown == null) _startCountdown();
   }
 
-  void _advanceStep() {
+  /// 준비완료 ↔ 준비 취소.
+  ///
+  /// **취소도 서버에 쓴다.** 전에는 화면 단계만 뒤로 돌렸는데, 상대에게는
+  /// 내가 여전히 준비완료로 보여서 상대가 준비하는 순간 아무도 취소하지
+  /// 않은 러닝이 시작됐다
+  Future<void> _toggleReady() async {
     if (_countdown != null) return;
-    if (_meReady) {
-      // 준비완료 취소
-      setState(() {
-        _step = 2;
-        _isLate = false;
-      });
-      return;
-    }
+    final next = !_meReady;
     setState(() {
-      _step++;
-      _isLate = false;
+      _meReady = next;
+      if (next) _isLate = false;
     });
-    if (_meReady) _becomeReady();
-  }
-
-  void _jumpToReady() {
-    if (_countdown != null || _meReady) return;
-    setState(() {
-      _step = _steps.length - 1;
-      _isLate = false;
-    });
-    _becomeReady();
-  }
-
-  Future<void> _becomeReady() async {
     if (widget.demo) {
       _maybeCountdown();
       return;
     }
     try {
-      await _runs.setReady(widget.sessionId, _uid);
+      if (next) {
+        await _runs.setReady(widget.sessionId, _uid);
+      } else {
+        await _runs.clearReady(widget.sessionId, _uid);
+      }
       _maybeCountdown();
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
-      // 전달에 실패하면 상대가 내 준비 상태를 영영 못 봄 — 조용히 두지 않고
-      // 준비 전 단계로 되돌려 다시 시도할 수 있게 함
+      // 전달에 실패하면 상대가 내 상태를 영영 못 봄 — 조용히 두지 않고
+      // 되돌려 다시 시도할 수 있게 함
       if (!mounted) return;
-      setState(() => _step = _steps.length - 2);
+      setState(() => _meReady = !next);
       GoToast.error(context, '준비 상태를 전달하지 못했어요. 다시 시도해 주세요.');
     }
   }
@@ -266,7 +245,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
       );
     }
 
-    final step = _steps[_step];
     // 로비를 어떤 경로로 벗어나든 세션이 정리되어야 함. iOS는 화면 왼쪽에서
     // 스와이프하면 뒤로 가는데, 그 경로는 '← 홈으로' 버튼을 거치지 않아서
     // 세션이 waiting으로 남고 ActiveRunGuard가 true로 굳어버렸음 —
@@ -276,7 +254,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) _leaveLobby();
       },
-      child: _lobbyBody(step),
+      child: _lobbyBody(),
     );
   }
 
@@ -286,7 +264,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     ActiveRunGuard.active = false;
   }
 
-  Widget _lobbyBody(_Step step) {
+  Widget _lobbyBody() {
     final roles = GoRoles.of(context);
     return Scaffold(
       body: SafeArea(
@@ -337,97 +315,15 @@ class _LobbyScreenState extends State<LobbyScreen> {
                           _partnerJoined ? '함께 준비 중' : '기다리는 중')),
             ])),
           ),
-          // ── 스텝 도트 ──
+          // ── 상대가 어디까지 왔나 ──
+          // 4단계 준비운동을 걷어낸 자리(2026-09-09). 단계는 수락 전에도
+          // 밟을 수 있어서 상대가 거절하면 그 노동이 통째로 버려졌고,
+          // 준비운동을 앱이 시킬 일도 아니었다. 대신 **먼저 준비한 사람이
+          // 볼 것**을 여기에 크게 둔다 — 스피너 한 줄로는 기다리는 동안
+          // 아무 일도 안 일어나는 것처럼 느껴진다
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: GoSpace.screen),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_steps.length * 2 - 1, (i) {
-                if (i.isOdd) {
-                  final done = (i ~/ 2) < _step;
-                  return Container(
-                      width: 32, height: 1,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      color: done ? roles.success.fg : roles.line);
-                }
-                final idx = i ~/ 2;
-                final done = idx < _step;
-                final active = idx == _step;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  width: active ? 20 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(4),
-                    color: done
-                        ? roles.success.fg
-                        : active
-                            ? roles.textPrimary
-                            : roles.textSecondary,
-                  ),
-                );
-              }),
-            ),
-          ),
-          const SizedBox(height: 14),
-          // ── 상태 카드 (탭해서 단계 진행) ──
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: GoSpace.screen),
-            // 누르면 열리는 카드라 GoCard(onTap) — 읽는 카드(위 러너 행)보다
-            // 한 층 위에 뜬다. 준비 상태는 테두리가 아니라 아이콘·도트·글자가 말한다
-            child: GoCard(
-              onTap: _advanceStep,
-              padding: const EdgeInsets.all(GoSpace.hero),
-              child: Column(children: [
-                  Row(children: [
-                    Icon(_isLate ? Icons.schedule : step.icon,
-                        size: 32,
-                        color:
-                            _isLate ? roles.warning.fg : roles.textPrimary),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                                _isLate
-                                    ? '늦는 중'
-                                    : '단계 ${_step + 1} / ${_steps.length}',
-                                style: GoText.label),
-                            const SizedBox(height: 3),
-                            Text(_isLate ? '조금 늦어요' : step.text,
-                                style: TextStyle(fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: _meReady
-                                        ? roles.success.fg
-                                        : roles.textPrimary)),
-                          ]),
-                    ),
-                  ]),
-                  if (!_isLate) ...[
-                    const SizedBox(height: 10),
-                    Container(height: 1, color: roles.lineStrong),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        // 화살표만 두면 "이게 눌리는 카드"라는 걸 아무도
-                        // 모른다 — 아이콘은 이미 아는 사람에게만 말을 건다.
-                        // 무엇이 일어나는지 글로 한 번 적어준다(2026-09-07)
-                        Text(_meReady ? '준비 취소' : '탭해서 다음 단계',
-                            style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: roles.textSecondary)),
-                        const SizedBox(width: GoSpace.s),
-                        // 칩 대신 화살표만 — 카드 자체가 눌린다(2026-09-07)
-                        Icon(_meReady ? Icons.close : Icons.arrow_forward,
-                            size: 20, color: roles.textPrimary),
-                      ],
-                    ),
-                  ],
-                ]),
-            ),
+            child: _partnerState(),
           ),
           // ── 늦음 링크 ──
           if (!_meReady) ...[
@@ -469,31 +365,72 @@ class _LobbyScreenState extends State<LobbyScreen> {
     );
   }
 
-  Widget _actionButton() {
+  Widget _actionButton() => _meReady
+      ? GoButton('준비 취소',
+          kind: GoButtonKind.secondary, onTap: _toggleReady)
+      : GoButton('준비완료',
+          icon: Icons.arrow_forward, iconTrailing: true, onTap: _toggleReady);
+
+  /// 상대가 지금 어디쯤인지 — 기다리는 동안 화면에 남는 것.
+  ///
+  /// 세 가지를 가른다: 앱을 아직 안 켰다 / 로비에 들어와 준비 중이다 /
+  /// 준비를 마쳤다. 예전엔 앞의 둘이 똑같이 보였다
+  Widget _partnerState() {
     final roles = GoRoles.of(context);
-    if (!_meReady) {
-      return GoButton('준비완료',
-          icon: Icons.arrow_forward, iconTrailing: true, onTap: _jumpToReady);
-    }
-    // 나는 준비됨 → 파트너 대기
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 18),
-      decoration: BoxDecoration(
-        color: roles.surface,
-        borderRadius: BorderRadius.circular(GoRadius.md),
-        boxShadow: GoShadow.card,
-      ),
-      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        SizedBox(
-            width: 16, height: 16,
-            child: CircularProgressIndicator(
-                strokeWidth: 2, color: roles.textSecondary)),
-        const SizedBox(width: 10),
-        Text(
-            _partnerJoined
-                ? '${widget.partnerName} 준비 중'
-                : '${widget.partnerName} 기다리는 중',
-            style: GoText.heading.copyWith(color: roles.textSecondary)),
+    final (IconData icon, String title, String? sub, Color tone) = switch ((
+      _partnerReady,
+      _partnerLate,
+      _partnerJoined,
+    )) {
+      (true, _, _) => (
+          Icons.check_circle,
+          '${widget.partnerName}님도 준비됐어요',
+          _meReady ? null : '이제 나만 준비하면 출발해요',
+          roles.success.fg
+        ),
+      (false, true, _) => (
+          Icons.schedule,
+          '${widget.partnerName}님이 조금 늦어요',
+          '기다렸다 함께 출발해요',
+          roles.warning.fg
+        ),
+      (false, false, true) => (
+          Icons.directions_walk,
+          '${widget.partnerName}님이 준비하고 있어요',
+          null,
+          roles.textSecondary
+        ),
+      (false, false, false) => (
+          Icons.hourglass_empty,
+          '${widget.partnerName}님을 기다리는 중',
+          '아직 앱을 안 보고 있을 수 있어요',
+          roles.textSecondary
+        ),
+    };
+
+    return GoCard(
+      padding: const EdgeInsets.all(GoSpace.hero),
+      child: Row(children: [
+        Icon(icon, size: 30, color: tone),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title,
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: tone)),
+                if (sub != null) ...[
+                  const SizedBox(height: 3),
+                  Text(sub,
+                      style: TextStyle(
+                          fontSize: 12, color: roles.textSecondary)),
+                ],
+              ]),
+        ),
       ]),
     );
   }

@@ -166,14 +166,12 @@ class RunService {
   }
 
   /// 취소된 세션이 뒤늦게 부활하지 않도록 트랜잭션으로 상태를 먼저 확인
-  Future<void> setReady(String sessionId, String uid) async {
-    final ref = _db.collection('sessions').doc(sessionId);
-    await _db.runTransaction((tx) async {
-      final doc = await tx.get(ref);
-      final update = SessionRules.ready(doc.data(), uid);
-      if (update != null) tx.update(ref, update);
-    });
-  }
+  Future<void> setReady(String sessionId, String uid) =>
+      _transition(sessionId, (d) => SessionRules.ready(d, uid));
+
+  /// 준비 취소 — 화면만 되돌리면 상대에게는 여전히 준비완료로 보인다
+  Future<void> clearReady(String sessionId, String uid) =>
+      _transition(sessionId, (d) => SessionRules.unready(d, uid));
 
   /// "조금 늦을 것 같아요" — 상대 로비 화면에 실시간으로 반영됨
   Future<void> setLate(String sessionId, String uid, bool isLate) async {

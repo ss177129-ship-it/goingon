@@ -95,6 +95,22 @@ void main() {
     test('문서가 없어도 터지지 않는다', () {
       expect(SessionRules.ready(null, me), isNull);
     });
+
+    test('취소하면 내 항목이 꺼진다 — 상대가 그것을 봐야 한다', () {
+      // 전에는 화면만 뒤로 돌리고 문서는 그대로 뒀다. 상대에게는 내가
+      // 여전히 준비완료였고, 상대가 준비하는 순간 아무도 취소하지 않은
+      // 러닝이 시작됐다
+      final u = SessionRules.unready(session(status: SessionRules.accepted), me)!;
+      expect(u, {'ready.$me': false});
+    });
+
+    test('살아 있지 않은 세션에서는 취소도 없다', () {
+      for (final st in [SessionRules.invited, SessionRules.running,
+          SessionRules.cancelled]) {
+        expect(SessionRules.unready(session(status: st), me), isNull,
+            reason: st);
+      }
+    });
   });
 
   group('둘 다 준비됐는가 — 출발의 유일한 조건', () {
