@@ -505,7 +505,7 @@ class _HomeScreenState extends State<HomeScreen> {
         boxShadow: GoShadow.card,
       ),
       child: Row(children: [
-        Icon(Icons.wifi_off, size: 18, color: roles.attention),
+        Icon(Icons.wifi_off, size: 18, color: roles.warning.fg),
         const SizedBox(width: GoSpace.m),
         Expanded(
           child: Text(
@@ -569,7 +569,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Text(loaded ? '함께 달릴 준비 완료' : '불러오는 중',
               style: TextStyle(
                   fontSize: 12,
-                  color: loaded ? roles.positive : roles.textSecondary)),
+                  color: loaded ? roles.success.fg : roles.textSecondary)),
         ),
         const SizedBox(height: 14),
         Container(height: 1, color: roles.lineStrong),
@@ -731,7 +731,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: destructive ? roles.attention : roles.textPrimary)),
+                color: destructive ? roles.error.fg : roles.textPrimary)),
         const SizedBox(height: 2),
         Text(note,
             style: TextStyle(

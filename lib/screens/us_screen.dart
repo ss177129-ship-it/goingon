@@ -410,9 +410,9 @@ class _UsScreenState extends State<UsScreen> {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Icon(Icons.local_fire_department,
-                size: 24, color: roles.positive),
+                size: 24, color: roles.success.fg),
             const SizedBox(width: 6),
-            Text('$streak', style: GoTheme.serif(30, color: roles.positive)),
+            Text('$streak', style: GoTheme.serif(30, color: roles.success.fg)),
             const SizedBox(width: 6),
             Padding(
               padding: const EdgeInsets.only(top: 6),
@@ -435,7 +435,7 @@ class _UsScreenState extends State<UsScreen> {
                   borderRadius: BorderRadius.circular(GoRadius.sm),
                   // 오늘: 굵은 색 테두리 대신 헤어라인
                   border: isToday && !done
-                      ? Border.all(color: roles.positive, width: GoStroke.rule)
+                      ? Border.all(color: roles.success.fg, width: GoStroke.rule)
                       : null,
                   boxShadow: GoShadow.card,
                 ),
@@ -462,14 +462,14 @@ class _UsScreenState extends State<UsScreen> {
                 color: roles.surface,
                 child: IntrinsicHeight(
                   child: Row(children: [
-                    Container(width: 4, color: roles.positive),
+                    Container(width: 4, color: roles.success.fg),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 10),
                         child: Text(
                             '이번 주는 아직 함께 달리지 않았어요. 지금 GO?를 보내볼까요?',
-                            style: TextStyle(fontSize: 12, color: roles.positive,
+                            style: TextStyle(fontSize: 12, color: roles.success.fg,
                                 height: 1.5)),
                       ),
                     ),
@@ -592,7 +592,7 @@ class _UsScreenState extends State<UsScreen> {
         boxShadow: GoShadow.card,
       ),
       child: Row(children: [
-        Icon(icon, size: 20, color: isNext ? roles.textSecondary : roles.positive),
+        Icon(icon, size: 20, color: isNext ? roles.textSecondary : roles.success.fg),
         const SizedBox(width: GoSpace.m),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

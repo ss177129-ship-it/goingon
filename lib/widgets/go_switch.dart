@@ -8,7 +8,7 @@ import 'pressable.dart';
 /// Material `Switch`를 쓰지 않는 이유: M3 스위치는 트랙 테두리·손잡이 크기
 /// 변화·아이콘 등 자기 문법이 많아 페이퍼 위에서 다른 앱의 부품처럼 보인다.
 /// 여기 스위치는 **트랙 색 하나와 손잡이 위치 하나**로만 말한다 —
-/// 켬은 actionComplete(pine) 트랙, 끔은 textSecondary 트랙.
+/// 켬은 actionComplete(잉크) 트랙, 끔은 textSecondary 트랙.
 ///
 /// 상태는 갖지 않는다(controlled). [onChanged]가 null이면 비활성 —
 /// 전체가 40%로 가라앉고 탭을 받지 않는다. 행 안에 놓일 때는 행 전체가

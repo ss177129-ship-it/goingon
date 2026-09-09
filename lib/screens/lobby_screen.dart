@@ -348,7 +348,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   return Container(
                       width: 32, height: 1,
                       margin: const EdgeInsets.symmetric(horizontal: 4),
-                      color: done ? roles.positive : roles.line);
+                      color: done ? roles.success.fg : roles.line);
                 }
                 final idx = i ~/ 2;
                 final done = idx < _step;
@@ -360,7 +360,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(4),
                     color: done
-                        ? roles.positive
+                        ? roles.success.fg
                         : active
                             ? roles.textPrimary
                             : roles.textSecondary,
@@ -383,7 +383,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                     Icon(_isLate ? Icons.schedule : step.icon,
                         size: 32,
                         color:
-                            _isLate ? roles.attention : roles.textPrimary),
+                            _isLate ? roles.warning.fg : roles.textPrimary),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
@@ -399,7 +399,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                 style: TextStyle(fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                     color: _meReady
-                                        ? roles.positive
+                                        ? roles.success.fg
                                         : roles.textPrimary)),
                           ]),
                     ),

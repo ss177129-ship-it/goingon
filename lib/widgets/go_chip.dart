@@ -75,7 +75,7 @@ class GoSelectChip extends StatelessWidget {
   }
 }
 
-/// 순간 행의 스토리 라벨. statusOnline 칩 — pineTint 면, 12/600 pine
+/// 순간 행의 스토리 라벨. statusOnline 칩 — success solid 면 + 흰 글자 12/600
 class GoStoryChip extends StatelessWidget {
   const GoStoryChip(this.label, {super.key});
 

@@ -201,12 +201,12 @@ class _FriendSearchSheetState extends State<_FriendSearchSheet> {
             if (_error != null) ...[
               const SizedBox(height: 10),
               Text(_error!,
-                  style: TextStyle(fontSize: 12, color: roles.attention)),
+                  style: TextStyle(fontSize: 12, color: roles.error.fg)),
             ],
             if (_notice != null) ...[
               const SizedBox(height: 10),
               Text(_notice!,
-                  style: TextStyle(fontSize: 12, color: roles.positive)),
+                  style: TextStyle(fontSize: 12, color: roles.success.fg)),
             ],
             if (c != null) ...[
               const SizedBox(height: 14),

@@ -81,7 +81,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           _sheetAction(
               ctx, Icons.photo_library_outlined, '사진첩에서 고르기', _pickPhoto),
           _sheetAction(ctx, Icons.delete_outline, '사진 지우기', _removePhoto,
-              color: roles.attention),
+              color: roles.error.fg),
           const SizedBox(height: GoSpace.m),
         ]),
       ),

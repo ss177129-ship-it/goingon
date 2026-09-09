@@ -31,7 +31,7 @@ class GoToast {
           Icon(
             isError ? Icons.error_outline : Icons.check_circle_outline,
             size: 18,
-            color: isError ? roles.attention : roles.positive,
+            color: isError ? roles.error.fg : roles.success.fg,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -54,7 +54,7 @@ class GoToast {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: isError ? roles.partner.withValues(alpha: .35) : roles.line,
+            color: isError ? roles.error.border! : roles.line,
             width: 1.5,
           ),
         ),

@@ -696,7 +696,7 @@ class _RunScreenState extends State<RunScreen>
               padding: const EdgeInsets.symmetric(horizontal: 28),
               // canvas 위에서 amber는 2.5:1로 읽히지 않는다. amberDark는 4.6:1
               child: _caption('화면을 끄면 거리가 멈춰요 — 위치를 "항상 허용"으로 바꾸면 꺼도 기록돼요',
-                  color: roles.attention),
+                  color: roles.warning.fg),
             ),
           ],
           const SizedBox(height: GoSpace.section),

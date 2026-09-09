@@ -90,7 +90,7 @@ class _UpdateRequiredScreenState extends State<UpdateRequiredScreen> {
                   Text(_notice!,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          fontSize: 12, color: roles.attention)),
+                          fontSize: 12, color: roles.warning.fg)),
                 ],
                 const SizedBox(height: 32),
                 GoButton('업데이트하러 가기', onTap: _openTestFlight),

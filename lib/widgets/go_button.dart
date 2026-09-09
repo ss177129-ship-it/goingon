@@ -63,7 +63,8 @@ class GoButton extends StatelessWidget {
   final bool enabled;
   final bool loading;
 
-  /// text 버튼의 글자를 코랄로. 면이 있는 버튼에는 영향 없음
+  /// 파괴적 행동(지우기·차단·탈퇴) — secondary·text 버튼의 글자·테두리를
+  /// [GoRoles.error]로. 면이 있는 버튼에는 영향 없음
   final bool destructive;
 
   /// "GO?" 단독 전용
@@ -104,18 +105,25 @@ class GoButton extends StatelessWidget {
         border = null;
         shadow = GoShadow.raised;
       case GoButtonKind.secondary:
+        // 보조 행동은 중성 — 글자는 잉크, 테두리는 중성 400. 파괴적이면 error
         bg = roles.actionSecondary.bg;
-        fg = onDark ? roles.textOnDark : roles.actionSecondary.fg;
+        fg = onDark
+            ? roles.textOnDark
+            : (destructive ? roles.error.fg : roles.actionSecondary.fg);
         bgDown = onDark
             ? roles.textOnDark.withValues(alpha: .12)
             : roles.actionSecondary.pressed;
-        border = Border.all(color: fg, width: GoStroke.card);
+        border = Border.all(
+            color: onDark
+                ? fg
+                : (destructive ? roles.error.border! : roles.actionSecondary.border!),
+            width: GoStroke.card);
         shadow = null;
       case GoButtonKind.text:
         bg = roles.actionSecondary.bg;
         fg = onDark
             ? roles.textOnDark
-            : (destructive ? roles.actionSecondary.fg : roles.textPrimary);
+            : (destructive ? roles.error.fg : roles.textPrimary);
         bgDown = onDark
             ? roles.textOnDark.withValues(alpha: .12)
             : roles.pressOverlay;

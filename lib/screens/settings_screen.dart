@@ -324,7 +324,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             : Icons.notifications_off_outlined,
         title: '알림',
         subtitle: _pushStatus,
-        titleColor: _pushRegistered ? null : roles.attention,
+        titleColor: _pushRegistered ? null : roles.warning.fg,
         onTap: _retryPush,
       ),
       // 사운드는 러닝 화면에서만 나는데 끄는 자리가 여기밖에 없다.
@@ -380,7 +380,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _row(
         icon: Icons.person_remove_outlined,
         title: '회원탈퇴',
-        titleColor: roles.attention,
+        titleColor: roles.error.fg,
         onTap: _busy ? null : _deleteAccount,
       ),
       ]),
