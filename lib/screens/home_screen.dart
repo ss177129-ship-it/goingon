@@ -9,9 +9,7 @@ import '../services/auth_service.dart';
 import '../services/friend_service.dart';
 import '../services/run_service.dart';
 import '../theme.dart';
-import '../widgets/go_group.dart';
 import '../widgets/go_icon_button.dart';
-import '../widgets/pressable.dart';
 import '../widgets/go_button.dart';
 import '../widgets/friend_search_sheet.dart';
 import '../widgets/go_dialog.dart';
@@ -19,6 +17,8 @@ import '../widgets/go_toast.dart';
 import '../widgets/go_value_switch.dart';
 import '../widgets/goingon_wordmark.dart';
 import '../widgets/go_avatar.dart';
+import '../widgets/pacemate_card.dart';
+import '../widgets/friend_profile_sheet.dart';
 import 'lobby_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -313,11 +313,11 @@ class _HomeScreenState extends State<HomeScreen> {
         if (_incomingBroken || _friendsError) _connectionNotice(),
         // ── 나에게 온 친구 요청 ──
         if (_requests.isNotEmpty) ..._requestSection(),
-        // ── 내 프로필 카드 ──
-        _profileCard(friends.length),
         // ── 같이 뛰는 사람들 ──
+        // 화면의 첫 콘텐츠는 관계다. 이 앱의 값어치는 내 숫자가 아니라
+        // 저쪽에 사람이 있다는 것이고, 위계는 그 순서를 따라야 한다
         const Padding(
-          padding: EdgeInsets.fromLTRB(22, 18, 22, 8),
+          padding: EdgeInsets.fromLTRB(22, 14, 22, 10),
           child: Text('페이스메이트', style: GoText.label),
         ),
         // 아직 첫 응답 전 → 목록 자리를 뼈대로 잡아둔다. "없다"고 말하지
@@ -335,21 +335,26 @@ class _HomeScreenState extends State<HomeScreen> {
               ? _friendListSkeleton()
               : friends.isEmpty
                   ? _noFriendsYet()
-                  : GoGroup(
-                      margin: const EdgeInsets.symmetric(horizontal: 22),
-                      dividerInset: GoSpace.card + 44 + GoSpace.m,
-                      rows: friends.map(_friendRow).toList(),
-                    ),
+                  : Column(children: friends.map(_pacemateCard).toList()),
         ),
         // 친구가 없어도 전체 흐름을 체험할 수 있는 통로. 심사관이 로비·러닝·
         // 완료 화면을 볼 유일한 방법이라 반드시 눈에 띄는 곳에 있어야 함
         if (_friendsLoaded && friends.isEmpty) _demoLink(),
-        const SizedBox(height: GoSpace.m),
+        // ── 내 기록 ── 관계 아래. 내 숫자는 확인하는 것이지 첫 화면에서
+        // 마주쳐야 하는 것이 아니다
+        const Padding(
+          padding: EdgeInsets.fromLTRB(22, GoSpace.section, 22, 10),
+          child: Text('내 기록', style: GoText.label),
+        ),
+        _profileCard(friends.length),
+        const SizedBox(height: GoSpace.xl),
       ],
     );
   }
 
-  /// 목록이 들어올 자리. 값 대신 회색 면만 두어 높이를 미리 차지한다
+  /// 목록이 들어올 자리. 값 대신 회색 면만 두어 높이를 미리 차지한다.
+  /// **뼈대의 모양은 들어올 것과 같아야 한다** — 행이던 뼈대가 카드로
+  /// 바뀌면 자리를 잡아 둔 의미가 없어지고 화면이 한 번 더 튄다
   Widget _friendListSkeleton() {
     final roles = GoRoles.of(context);
     Widget bar(double w, double h) => Container(
@@ -360,23 +365,28 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(h / 2),
           ),
         );
-    return GoGroup(
-      margin: const EdgeInsets.symmetric(horizontal: 22),
-      dividerInset: GoSpace.card + 44 + GoSpace.m,
-      rows: List.generate(
+    return Column(
+      children: List.generate(
         2,
-        (_) => GoGroupRow(
+        (_) => Container(
+          margin: const EdgeInsets.fromLTRB(22, 0, 22, 10),
+          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+          decoration: BoxDecoration(
+            color: roles.surface,
+            borderRadius: BorderRadius.circular(GoRadius.md),
+            boxShadow: GoShadow.card,
+          ),
           child: Row(children: [
             Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                  color: roles.line, shape: BoxShape.circle),
+              width: 52,
+              height: 52,
+              decoration:
+                  BoxDecoration(color: roles.line, shape: BoxShape.circle),
             ),
             const SizedBox(width: GoSpace.m),
             Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [bar(96, 12), const SizedBox(height: 6), bar(64, 10)]),
+                children: [bar(96, 13), const SizedBox(height: 6), bar(64, 10)]),
           ]),
         ),
       ),
@@ -548,12 +558,24 @@ class _HomeScreenState extends State<HomeScreen> {
         boxShadow: GoShadow.card,
       ),
       child: Column(children: [
-        GoAvatar(size: 60, photoUrl: _me?['photoUrl'] as String?),
-        const SizedBox(height: 8),
-        Text(myName, style: GoText.heading),
+        // 이름·사진은 한 줄로 눕는다. 세로로 쌓인 큰 아바타는 이 카드를
+        // 화면의 주인공으로 만들었는데, 여기는 확인하는 자리다
+        Row(children: [
+          GoAvatar(size: 36, photoUrl: _me?['photoUrl'] as String?),
+          const SizedBox(width: GoSpace.m),
+          Expanded(
+            child: Text(myName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: roles.textPrimary)),
+          ),
+        ]),
         // 불러오는 중인지는 아래 숫자가 '—'로 말한다 — 같은 것을 두 번 말하지 않는다
-        const SizedBox(height: 14),
-        Container(height: 1, color: roles.lineStrong),
+        const SizedBox(height: 12),
+        Container(height: 1, color: roles.line),
         const SizedBox(height: GoSpace.m),
         IntrinsicHeight(
           child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -595,119 +617,41 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Container(width: 1, color: GoRoles.of(context).lineStrong),
       );
 
-  /// 친구 행 — 프로토타입의 friend-row (아바타 + 이름 + GO?)
-  /// 길게 누르면 연결 끊기 / 차단 메뉴
-  GoGroupRow _friendRow(Map<String, dynamic> f) {
+  /// 페이스메이트 한 명 — 홈의 주인공.
+  ///
+  /// 카드를 누르면 상세 시트가 열린다(progressive disclosure). 전에는 행
+  /// 오른쪽의 ⋯ 하나가 유일한 입구였는데, GO? 바로 옆에서 표적을 나눠 갖고
+  /// 있으면서 정작 무엇이 열리는지는 알려주지 않았다. 지금은 카드 전체가
+  /// 눌리고(2층 → 눌림), 차단·연결 끊기는 그 시트 안에 있다
+  Widget _pacemateCard(Map<String, dynamic> f) {
     final name = _displayName(f['name']);
     final uid = f['uid'] as String;
-    final roles = GoRoles.of(context);
-    // 그룹 안의 행 하나. 아바타는 라임 기본 프로필 — 목록에서 사람마다
-    // 색이 갈리면 색이 뜻을 잃는다
-    return GoGroupRow(
-      // 길게 누르기는 지름길로 남기되, 그것'만'으로는 아무도 못 찾는다.
-      // 차단·신고는 App Store 가이드라인 1.2가 요구하는 수단이라 화면에
-      // 보이는 입구가 반드시 있어야 한다
-      onLongPress: () => _showFriendActions(uid, name),
-      child: Row(children: [
-          GoAvatar(size: 44, photoUrl: f['photoUrl'] as String?),
-          const SizedBox(width: GoSpace.m),
-          Expanded(
-            child: Text(name,
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: roles.textPrimary)),
-          ),
-          Pressable(
-            onTap: () => _showFriendActions(uid, name),
-            child: Padding(
-              // 아이콘 18 + 상하좌우 13 = 44pt 터치 표적
-              padding: const EdgeInsets.all(13),
-              child: Icon(Icons.more_horiz, size: 18, color: roles.textSecondary),
-            ),
-          ),
-          const SizedBox(width: 2),
-          GoButton('GO?',
-              kind: GoButtonKind.primary,
-              size: GoButtonSize.md,
-              serifLabel: true,
-              loading: _sendingTo == uid,
-              // 다른 행을 보내는 중이면 이 행도 눌리지 않는다 — 두 사람에게
-              // 동시에 GO?를 보내면 어느 로비로 들어갈지가 경합이 된다
-              enabled: _sendingTo == null || _sendingTo == uid,
-              onTap: () => _sendGo(uid, name)),
-        ]),
+    return PacemateCard(
+      key: ValueKey(uid),
+      user: f,
+      name: name,
+      onOpen: () => _openProfile(f, name),
+      onGo: () => _sendGo(uid, name),
+      goLoading: _sendingTo == uid,
+      // 다른 행을 보내는 중이면 이 행도 눌리지 않는다 — 두 사람에게
+      // 동시에 GO?를 보내면 어느 로비로 들어갈지가 경합이 된다
+      goEnabled: _sendingTo == null || _sendingTo == uid,
     );
   }
 
-  /// 연결 끊기 / 차단 선택. 둘의 차이가 분명해야 해서 설명을 함께 보여줌 —
-  /// 끊기는 상대가 다시 요청을 보낼 수 있고, 차단은 그것까지 막음
-  void _showFriendActions(String uid, String name) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: GoRoles.of(context).surfaceHigh,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(GoSpace.sheet, GoSpace.xl, GoSpace.sheet, GoSpace.sheetBottom),
-        child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(name, style: GoText.heading),
-              const SizedBox(height: 16),
-              _actionTile(
-                label: '연결 끊기',
-                note: '서로의 목록에서 사라져요. 상대가 다시 요청을 보낼 수는 있어요.',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _confirmRemoveFriend(uid, name);
-                },
-              ),
-              const SizedBox(height: 8),
-              _actionTile(
-                label: '차단하기',
-                note: '연결이 끊기고, 상대는 나를 검색하거나 요청을 보낼 수 없게 돼요.',
-                destructive: true,
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _confirmBlock(uid, name);
-                },
-              ),
-            ]),
-      ),
-    );
-  }
-
-  Widget _actionTile({
-    required String label,
-    required String note,
-    required VoidCallback onTap,
-    bool destructive = false,
-  }) {
-    // 두 줄(라벨+설명) 타일이라 GoButton(한 줄 라벨)이 아니라 Pressable
-    final roles = GoRoles.of(context);
-    return Pressable(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: GoSpace.l),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(GoRadius.sm),
-        ),
-        child:
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label,
-            style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: destructive ? roles.error.fg : roles.textPrimary)),
-        const SizedBox(height: 2),
-        Text(note,
-            style: TextStyle(
-                fontSize: 12, height: 1.4, color: roles.textSecondary)),
-      ]),
-      ),
+  void _openProfile(Map<String, dynamic> f, String name) {
+    final uid = f['uid'] as String;
+    showFriendProfileSheet(
+      context,
+      user: f,
+      name: name,
+      myUid: _auth.uid,
+      // 시트가 열릴 때 한 번만 부른다 — 시트 안에서 만들면 리빌드마다
+      // 다시 조회하면서 숫자가 깜빡인다('우리' 탭이 같은 함정을 밟았다)
+      togetherFuture: _runs.finishedSessionsWith(_auth.uid, uid),
+      onGo: () => _sendGo(uid, name),
+      onDisconnect: () => _confirmRemoveFriend(uid, name),
+      onBlock: () => _confirmBlock(uid, name),
     );
   }
 
