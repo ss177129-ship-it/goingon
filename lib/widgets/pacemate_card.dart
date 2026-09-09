@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/pacemate_status.dart';
 import '../theme.dart';
+import 'avatar_photo.dart';
 import 'go_avatar.dart';
 import 'go_button.dart';
 import 'go_card.dart';
@@ -111,7 +112,13 @@ class PacemateCard extends StatelessWidget {
       width: _avatar + 3,
       height: _avatar + 3,
       child: Stack(children: [
-        GoAvatar(size: _avatar, photoUrl: user['photoUrl'] as String?),
+        // 사진만 따로 눌린다 — 카드를 누르면 상세, 얼굴을 누르면 얼굴.
+        // 목록의 52pt 원에서는 누구인지 알아보기 어려울 때가 있다
+        AvatarPhotoTap(
+          photoUrl: user['photoUrl'] as String?,
+          name: name,
+          child: GoAvatar(size: _avatar, photoUrl: user['photoUrl'] as String?),
+        ),
         // 최근 기록이 없으면 점을 찍지 않는다. 회색 점은 상태가 아니라
         // 고장으로 읽히고, 목록에 아무 뜻 없는 동그라미만 늘어난다
         if (status.tone != PacemateTone.quiet)

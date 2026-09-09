@@ -3,10 +3,19 @@ import 'package:flutter/material.dart';
 import '../services/pacemate_status.dart';
 import '../services/story_labels.dart';
 import '../theme.dart';
+import 'avatar_photo.dart';
 import 'go_avatar.dart';
 import 'go_button.dart';
 
 /// 페이스메이트 상세 — 홈 카드를 누르면 열린다.
+///
+/// **아래에서 올라오는 시트가 아니라 가운데 카드**(2026-09-09). 시트는
+/// 화면 아래를 통째로 차지해서, 한 사람을 확인하고 GO?를 누르는 짧은 일이
+/// 화면 전환처럼 무거워졌다. 가운데 카드는 뒤의 홈이 사방으로 보여 "잠깐
+/// 열린 것"으로 읽히고, 아무 데나 눌러 닫을 수 있다.
+///
+/// 그래서 내용도 같이 조였다 — 아바타 76 → 60, 패널 여백과 숫자 크기를
+/// 한 단씩 낮춤. 카드가 작아졌는데 안이 그대로면 그냥 빽빽해진다.
 ///
 /// **progressive disclosure의 두 번째 단계.** 홈 카드는 지금 부를지 말지를
 /// 정하는 데 필요한 최소한(이름·상태 한 줄·GO?)만 보여주고, 더 알고 싶은
@@ -30,22 +39,26 @@ Future<void> showFriendProfileSheet(
   required VoidCallback onBlock,
 }) {
   final roles = GoRoles.of(context);
-  return showModalBottomSheet<void>(
+  return showDialog<void>(
     context: context,
-    backgroundColor: roles.surfaceHigh,
-    // 내용이 화면보다 길어질 수 있다(작은 기기·큰 글자 설정). 기본 시트는
-    // 넘치는 만큼 그냥 잘려서 맨 아래 버튼에 닿을 수 없게 된다
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-    builder: (ctx) => _FriendProfileSheet(
-      user: user,
-      name: name,
-      myUid: myUid,
-      togetherFuture: togetherFuture,
-      onGo: onGo,
-      onDisconnect: onDisconnect,
-      onBlock: onBlock,
+    barrierColor: roles.textPrimary.withValues(alpha: .45),
+    builder: (ctx) => Dialog(
+      backgroundColor: roles.surfaceHigh,
+      elevation: 12,
+      shadowColor: GoShadow.overlay.first.color.withValues(alpha: 1),
+      // 큰 기기에서 카드만 계속 넓어지면 다시 '화면'이 된다
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(GoRadius.lg)),
+      child: _FriendProfileSheet(
+        user: user,
+        name: name,
+        myUid: myUid,
+        togetherFuture: togetherFuture,
+        onGo: onGo,
+        onDisconnect: onDisconnect,
+        onBlock: onBlock,
+      ),
     ),
   );
 }
@@ -74,67 +87,64 @@ class _FriendProfileSheet extends StatelessWidget {
     final roles = GoRoles.of(context);
     final username = (user['username'] as String?) ?? '';
     final status = PacemateStatus.of(user, DateTime.now());
-    return SafeArea(
-      top: false,
-      child: ConstrainedBox(
-        // 화면을 다 덮지는 않는다 — 뒤가 보여야 "위에 열린 것"으로 읽힌다
-        constraints:
-            BoxConstraints(maxHeight: MediaQuery.of(context).size.height * .88),
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-                GoSpace.sheet, GoSpace.xl, GoSpace.sheet, GoSpace.sheetBottom),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              GoAvatar(size: 76, photoUrl: user['photoUrl'] as String?),
-              const SizedBox(height: 12),
-              Text(name, style: GoText.heading),
-              if (username.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text('@$username',
-                    style: TextStyle(fontSize: 12, color: roles.textSecondary)),
-              ],
-              const SizedBox(height: 6),
-              Text(status.label,
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: status.tone == PacemateTone.active
-                          ? roles.success.fg
-                          : roles.textSecondary)),
-              const SizedBox(height: GoSpace.xl),
-              _theirRuns(context),
-              const SizedBox(height: GoSpace.m),
-              _together(context),
-              const SizedBox(height: GoSpace.xl),
-              SizedBox(
-                width: double.infinity,
-                child: GoButton('함께 달리기',
-                    kind: GoButtonKind.primary,
-                    size: GoButtonSize.lg, onTap: () {
-                  Navigator.pop(context);
-                  onGo();
-                }),
-              ),
-              const SizedBox(height: GoSpace.m),
-              // 파괴적 행동은 주 행동과 같은 무게로 놓지 않는다 — 글자 버튼으로,
-              // 차단만 error 색
-              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                GoButton('연결 끊기',
-                    kind: GoButtonKind.text, size: GoButtonSize.md, onTap: () {
-                  Navigator.pop(context);
-                  onDisconnect();
-                }),
-                Text('·', style: TextStyle(color: roles.textDisabled)),
-                GoButton('차단하기',
-                    kind: GoButtonKind.text,
-                    size: GoButtonSize.md,
-                    destructive: true, onTap: () {
-                  Navigator.pop(context);
-                  onBlock();
-                }),
-              ]),
-            ]),
+    // 카드가 세로로 자라도 화면을 넘지 않는다(작은 기기·큰 글자 설정).
+    // Dialog가 이미 높이를 묶으므로 여기서는 넘치는 만큼만 스크롤한다
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(22, GoSpace.xl, 22, GoSpace.xl),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          // 사진을 누르면 크게 본다 — 60pt 원으로는 누구인지 애매할 때가 있다
+          AvatarPhotoTap(
+            photoUrl: user['photoUrl'] as String?,
+            name: name,
+            child: GoAvatar(size: 60, photoUrl: user['photoUrl'] as String?),
           ),
-        ),
+          const SizedBox(height: 10),
+          Text(name, style: GoText.heading),
+          if (username.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text('@$username',
+                style: TextStyle(fontSize: 12, color: roles.textSecondary)),
+          ],
+          const SizedBox(height: 6),
+          Text(status.label,
+              style: TextStyle(
+                  fontSize: 12,
+                  color: status.tone == PacemateTone.active
+                      ? roles.success.fg
+                      : roles.textSecondary)),
+          const SizedBox(height: GoSpace.l),
+          _theirRuns(context),
+          const SizedBox(height: GoSpace.s),
+          _together(context),
+          const SizedBox(height: GoSpace.l),
+          SizedBox(
+            width: double.infinity,
+            child: GoButton('함께 달리기',
+                kind: GoButtonKind.primary, size: GoButtonSize.md, onTap: () {
+              Navigator.pop(context);
+              onGo();
+            }),
+          ),
+          const SizedBox(height: GoSpace.xs),
+          // 파괴적 행동은 주 행동과 같은 무게로 놓지 않는다 — 글자 버튼으로,
+          // 차단만 error 색
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            GoButton('연결 끊기', kind: GoButtonKind.text, size: GoButtonSize.md,
+                onTap: () {
+              Navigator.pop(context);
+              onDisconnect();
+            }),
+            Text('·', style: TextStyle(color: roles.textDisabled)),
+            GoButton('차단하기',
+                kind: GoButtonKind.text,
+                size: GoButtonSize.md,
+                destructive: true, onTap: () {
+              Navigator.pop(context);
+              onBlock();
+            }),
+          ]),
+        ]),
       ),
     );
   }
@@ -189,7 +199,7 @@ class _FriendProfileSheet extends StatelessWidget {
     final roles = GoRoles.of(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: const EdgeInsets.fromLTRB(14, 11, 14, 11),
       decoration: BoxDecoration(
         // 시트(5층) 안에 놓이는 면이라 그림자를 또 얹지 않는다 —
         // 떠 있는 것 위에 뜬 것은 깊이가 아니라 소음이다
@@ -198,7 +208,7 @@ class _FriendProfileSheet extends StatelessWidget {
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(title, style: GoText.label),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Row(children: metrics),
       ]),
     );
@@ -209,7 +219,7 @@ class _FriendProfileSheet extends StatelessWidget {
     return Expanded(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text.rich(TextSpan(children: [
-          TextSpan(text: v, style: GoTheme.serif(19)),
+          TextSpan(text: v, style: GoTheme.serif(17)),
           TextSpan(
               text: unit,
               style: TextStyle(fontSize: 12, color: roles.textSecondary)),
