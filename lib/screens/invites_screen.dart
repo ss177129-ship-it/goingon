@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../services/friend_service.dart';
+import '../services/hidden_invites.dart';
 import '../services/invite.dart';
 import '../services/invite_service.dart';
 import '../services/run_service.dart';
@@ -12,6 +13,7 @@ import '../theme.dart';
 import '../widgets/go_avatar.dart';
 import '../widgets/go_button.dart';
 import '../widgets/go_card.dart';
+import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
 import 'lobby_screen.dart';
 
@@ -49,9 +51,12 @@ class _InvitesScreenState extends State<InvitesScreen> {
   /// 아직 invited여도 만료로 넘어가야 한다(서버 정리는 15분마다 돈다)
   Timer? _tick;
 
+  final _hidden = HiddenInvites.instance;
+
   @override
   void initState() {
     super.initState();
+    _hidden.addListener(_onHiddenChanged);
     _listen();
     _tick = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() {});
@@ -88,8 +93,13 @@ class _InvitesScreenState extends State<InvitesScreen> {
     });
   }
 
+  void _onHiddenChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    _hidden.removeListener(_onHiddenChanged);
     _sub?.cancel();
     _friendsSub?.cancel();
     _tick?.cancel();
@@ -107,7 +117,11 @@ class _InvitesScreenState extends State<InvitesScreen> {
     final now = DateTime.now();
     final all = _list;
     final open = all?.where((i) => i.isOpen(now)).toList() ?? const [];
-    final done = all?.where((i) => i.isOutcome(now)).toList() ?? const [];
+    // 내가 치운 것은 목록에서 뺀다. 문서는 그대로 있고 상대 화면에도 남는다
+    final done = all
+            ?.where((i) => i.isOutcome(now) && !_hidden.contains(i.sessionId))
+            .toList() ??
+        const [];
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -130,11 +144,18 @@ class _InvitesScreenState extends State<InvitesScreen> {
             ...open.map((i) => _row(i, now)),
           ],
           if (done.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.fromLTRB(22, GoSpace.section, 22, 10),
-              child: Text('지난 제안', style: GoText.label),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, GoSpace.section, 12, 4),
+              child: Row(children: [
+                const Text('지난 제안', style: GoText.label),
+                const Spacer(),
+                GoButton('모두 지우기',
+                    kind: GoButtonKind.text,
+                    size: GoButtonSize.md,
+                    onTap: () => _clearAll(done)),
+              ]),
             ),
-            ...done.map((i) => _row(i, now)),
+            ...done.map((i) => _dismissibleRow(i, now)),
           ],
         ],
         const SizedBox(height: GoSpace.xl),
@@ -169,6 +190,44 @@ class _InvitesScreenState extends State<InvitesScreen> {
             }),
       ]),
     );
+  }
+
+  /// 지난 제안 한 줄 — 옆으로 밀면 내 목록에서 사라진다.
+  ///
+  /// **오가는 중인 제안에는 이걸 씌우지 않는다.** 답해야 할 것을 손짓
+  /// 한 번으로 치울 수 있으면, 상대는 답을 못 받은 채 기다리게 된다
+  Widget _dismissibleRow(Invite i, DateTime now) {
+    final roles = GoRoles.of(context);
+    return Dismissible(
+      key: ValueKey(i.sessionId),
+      // 어느 쪽으로 밀어도 된다 — 방향을 외우게 하지 않는다
+      background: _swipeBackground(roles, Alignment.centerLeft),
+      secondaryBackground: _swipeBackground(roles, Alignment.centerRight),
+      onDismissed: (_) => _hidden.hide([i.sessionId]),
+      child: _row(i, now),
+    );
+  }
+
+  Widget _swipeBackground(GoRoles roles, Alignment align) => Container(
+        margin: const EdgeInsets.fromLTRB(22, 0, 22, 10),
+        padding: const EdgeInsets.symmetric(horizontal: GoSpace.hero),
+        alignment: align,
+        decoration: BoxDecoration(
+          color: roles.canvas,
+          borderRadius: BorderRadius.circular(GoRadius.md),
+        ),
+        child: Icon(Icons.close, size: 20, color: roles.textSecondary),
+      );
+
+  Future<void> _clearAll(List<Invite> done) async {
+    final confirmed = await GoDialog.confirm(
+      context,
+      title: '지난 제안 ${done.length}건을 지울까요?',
+      body: '내 목록에서만 사라져요. 상대에게 남은 기록은 그대로예요.',
+      confirmLabel: '지우기',
+    );
+    if (confirmed != true) return;
+    await _hidden.hide(done.map((i) => i.sessionId));
   }
 
   Widget _empty() {

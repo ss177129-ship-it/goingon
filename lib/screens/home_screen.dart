@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../services/active_run_guard.dart';
 import '../services/auth_service.dart';
 import '../services/friend_service.dart';
+import '../services/hidden_invites.dart';
 import '../services/invite.dart';
 import '../services/invite_service.dart';
 import '../services/run_service.dart';
@@ -36,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _friends = FriendService();
   final _runs = RunService();
   final _invites = InviteService();
+  final _hidden = HiddenInvites.instance;
 
   /// 지금 오가는 제안 전부 — 홈 카드가 사람마다 자기 것을 골라 쓴다
   StreamSubscription? _invitesSub;
@@ -84,6 +86,13 @@ class _HomeScreenState extends State<HomeScreen> {
     _listenFriends();
     _listenRequests();
     _listenInvites();
+    // '제안' 탭에서 치운 결과가 홈 카드에 남아 있으면 안 된다 — 같은 것을
+    // 보는 두 화면이 다른 말을 하는 자리가 또 생긴다
+    _hidden.addListener(_onHiddenChanged);
+  }
+
+  void _onHiddenChanged() {
+    if (mounted) setState(() {});
   }
 
   void _listenInvites() {
@@ -307,6 +316,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _friendsSub?.cancel();
     _requestsSub?.cancel();
     _invitesSub?.cancel();
+    _hidden.removeListener(_onHiddenChanged);
     super.dispose();
   }
 
@@ -648,7 +658,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _pacemateCard(Map<String, dynamic> f) {
     final name = _displayName(f['name']);
     final uid = f['uid'] as String;
-    final invite = currentInviteFor(_inviteList, uid, DateTime.now());
+    final now = DateTime.now();
+    // 치운 결과는 홈에서도 안 보인다. 살아 있는 제안은 치울 수 없으므로
+    // (오가는 중에는 스와이프가 없다) 여기서 가려질 일이 없다
+    final invite = currentInviteFor(
+        _inviteList.where((i) =>
+            i.isOpen(now) || !_hidden.contains(i.sessionId)),
+        uid,
+        now);
     return PacemateCard(
       key: ValueKey(uid),
       user: f,

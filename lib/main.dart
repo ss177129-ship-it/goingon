@@ -18,6 +18,7 @@ import 'theme.dart';
 import 'widgets/splash_motion/goingon_brand_motion.dart';
 
 import 'firebase_options.dart';
+import 'services/hidden_invites.dart';
 
 const _kHasLaunchedBeforeKey = 'has_launched_before';
 
@@ -41,6 +42,9 @@ void main() {
     };
 
     await GoogleSignIn.instance.initialize();
+    // 내가 치운 지난 제안 목록 — 화면이 그려지기 전에 읽어야 치운 것이
+    // 한 프레임 스쳐 지나가지 않는다. 실패해도 앱은 돌아간다
+    await HiddenInvites.instance.load();
     runApp(const GoingOnApp());
   }, (error, stack) {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);

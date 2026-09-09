@@ -329,9 +329,9 @@ class _UsScreenState extends State<UsScreen> {
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
         child: Row(children: [
-          _pairAvatar(roles.self, photoUrl: _myPhotoUrl),
-          _pairAvatar(roles.partner,
-              overlap: true, photoUrl: partner['photoUrl'] as String?),
+          _pairAvatars(
+              minePhoto: _myPhotoUrl,
+              theirsPhoto: partner['photoUrl'] as String?),
           const SizedBox(width: 8),
           Expanded(
             child: Text('함께 달린 지 $daysTogether일째',
@@ -536,15 +536,28 @@ class _UsScreenState extends State<UsScreen> {
     ]);
   }
 
-  Widget _pairAvatar(Color roleColor,
-      {bool overlap = false, String? photoUrl}) {
-    return Container(
-      margin: EdgeInsets.only(left: overlap ? -12 : 0),
-      child: GoAvatar(
-        size: 30,
-        roleColor: roleColor,
-        photoUrl: photoUrl,
-      ),
+  /// 겹쳐 놓인 두 아바타 — 나와 상대가 붙어 있다는 것을 형태로 말한다.
+  ///
+  /// **음수 margin을 쓰지 않는다.** 전에는 `EdgeInsets.only(left: -12)`로
+  /// 겹쳤는데 Flutter가 assert로 막는 값이라, 함께 달린 기록이 생겨 이
+  /// 위젯이 처음 그려지는 순간부터 '우리' 탭이 매번 예외를 던졌다.
+  /// RootScreen이 IndexedStack이라 다른 탭에 있어도 함께 터졌다.
+  /// 겹침은 [Stack]으로 만든다 — 자리를 실제로 그만큼만 차지한다
+  Widget _pairAvatars({String? minePhoto, String? theirsPhoto}) {
+    const size = 30.0;
+    const overlap = 12.0;
+    final roles = GoRoles.of(context);
+    return SizedBox(
+      width: size * 2 - overlap,
+      height: size,
+      child: Stack(children: [
+        GoAvatar(size: size, roleColor: roles.self, photoUrl: minePhoto),
+        Positioned(
+          left: size - overlap,
+          child: GoAvatar(
+              size: size, roleColor: roles.partner, photoUrl: theirsPhoto),
+        ),
+      ]),
     );
   }
 
