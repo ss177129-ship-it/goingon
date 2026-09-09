@@ -3,45 +3,62 @@ import 'package:flutter/material.dart';
 /// GoingOn 팔레트 — **값의 유일한 출처.** 화면·위젯은 이 클래스를 직접
 /// 참조하지 않고 [GoRoles](역할 토큰)를 통해서만 색을 얻는다.
 ///
-/// 규칙 (2026-09-08, 채도 전면 수정):
-/// - 기본 팔레트 4색([paper]·[lime]·[coral]·[ink])은 바꾸지 않는다
-/// - **보조색은 전부 선명하다(채도 0.75 이상).** 러스트·파인·올리브·옅은
-///   틴트 같은 탁한 색은 이 앱과 어울리지 않아 뺐다. 칩·배지는 옅은 틴트가
-///   아니라 **원색 면**(코랄·초록·라임)에 대비가 되는 글자를 얹는다
-/// - 밝은 바탕(paper·surface) 위의 색 글자는 4.5:1 이상 — 코랄은
-///   [coralText], 초록은 [green]. 원색 [lime]·[coral]은 글자로 쓰지 않는다
-/// - coral 면 위 흰 글자는 굵은 16pt 이상만(3.9:1). 초록 면 위 흰 글자는
-///   본문 크기도 된다(5:1)
-/// - 위젯 코드에 `Color(0x…)`를 쓰지 않는다. 새 값이 필요하면 여기에
+/// ## 세 묶음 (2026-09-09, 보조색 전면 재편)
+///
+/// 1. **브랜드** — [paper]·[lime]·[coral]·[ink]. 아이콘의 네 색. 바꾸지 않는다.
+///    정체성과 주 액션에만 쓴다.
+/// 2. **중성(neutral)** — 페이퍼의 색상(hue 33°)을 유지한 웜 그레이 램프.
+///    배경·면·선·보조 글자·비활성·보조 버튼은 **전부 여기서** 나온다.
+///    보조 행동에 색을 쓰지 않는다.
+/// 3. **시맨틱** — success·warning·error·info. 뜻이 고정된 네 색.
+///    상태에만 쓰고, 브랜드와 겹치지 않는다. 각각 글자용([successText] 등,
+///    밝은 바탕 위 4.5:1)·면용(옅은 [successSoft], 진한 [successSolid]) 세 단계.
+///
+/// 전에는 보조색이 코랄 변주 5개 + 초록 1개였고 한 색이 여러 뜻을 겸했다
+/// (코랄 = 주 버튼·링크·상대·경고, 초록 = 완료·온라인·나). 이제 화면에
+/// 색이 있으면 "여기 눌러"(브랜드) 아니면 "상태가 이렇다"(시맨틱) 둘 중 하나다.
+///
+/// 규칙:
+/// - 밝은 바탕(paper·surface·canvas) 위의 색 글자는 4.5:1 이상.
+///   원색 [lime]·[coral]은 글자로 쓰지 않는다 — 나/상대 글자는 [selfText]·
+///   [partnerText]
+/// - 코랄 면 위 흰 글자는 굵은 16pt 이상만(3.9:1). 시맨틱 solid 면 위
+///   흰 글자는 본문 크기도 된다(5:1+)
+/// - **코랄은 빨강 계열이라 error와 이웃한다.** error는 코랄보다 차갑고
+///   어두운 값이고, 상태는 색만으로 전하지 않는다(아이콘·문구 동반)
+/// - 위젯 코드에 `Color(0x…)`를 쓰지 않는다. 새 값이 필요하면 여기에.
+///   값은 `test/theme_roles_test.dart`가 대비를 검사한다
 class GoColors {
-  // ── 기본 팔레트 (변경 금지) ──
+  // ── 브랜드 (변경 금지) ──
   static const paper = Color(0xFFF0EAE0);
   static const lime = Color(0xFFC5E040);
   static const coral = Color(0xFFF05840);
   static const ink = Color(0xFF1A1A16);
 
-  // ── 보조 컬러 (전부 선명) ──
-  /// 버튼용 코랄 — 흰 굵은 글자 3.9:1
+  // ── 브랜드 파생 (컴포넌트용) ──
+  /// 주 버튼용 코랄 — 흰 굵은 글자 3.9:1
   static const coralComponent = Color(0xFFE04A34);
+  static const coralComponentPressed = Color(0xFFC53F2B);
 
-  /// 글자·테두리용 코랄 — 페이퍼 위 4.6:1, 채도 0.87
-  static const coralText = Color(0xFFC43119);
+  /// 원색 코랄 면이 눌렸을 때 (뛰는 중 칩)
+  static const coralPressed = Color(0xFFE04A34);
+  static const limePressed = Color(0xFFAFC935);
+  static const inkPressed = Color(0xFF35342C);
 
-  /// 초록 — 완료 면, 긍정 상태 글자(페이퍼 위 4.5:1), 나. 채도 0.91
-  static const green = Color(0xFF2B7A0B);
+  /// 상대(partner) 글자·아이콘 — 코랄에서 파생, 페이퍼 위 4.6:1.
+  /// [errorText]와 이웃한 색이므로 상태 표시에는 쓰지 않는다
+  static const partnerText = Color(0xFFC43119);
 
-  /// 보조 글자용 중성색 — 페이퍼 위 5.7:1. 유일하게 채도가 없는 색
-  static const mid = Color(0xFF5E5A54);
+  /// 나(self) 글자·아이콘 — 라임에서 파생한 올리브, 페이퍼 위 5.3:1.
+  /// [successText](초록, hue 140°)와 다른 색상(hue 75°)
+  static const selfText = Color(0xFF4E6800);
 
-  /// 흰 글자 — 코랄·초록 면 위
+  /// 흰 글자 — 코랄·시맨틱 solid 면 위
   static const white = Color(0xFFFFFFFF);
 
-  /// 코랄 15% — 아웃라인 버튼이 눌렸을 때
-  static const coralVeil = Color(0x26F05840);
-
-  // ── 면·선 (페이퍼 위의 계층) ──
-  /// 카드·시트가 놓이는 면. 순백이 아니라 페이퍼 색상(hue 33°)을 유지한
-  /// 채 밝기만 올린 값 — 따뜻한 종이 위의 순백은 차가운 구멍으로 읽힌다
+  // ── 중성 램프 (웜 그레이, hue 33~39°) ──
+  /// 카드·시트가 놓이는 면. 순백이 아니라 페이퍼 색상을 유지한 채 밝기만
+  /// 올린 값 — 따뜻한 종이 위의 순백은 차가운 구멍으로 읽힌다
   static const surface = Color(0xFFFDFAF5);
 
   /// 시트·다이얼로그처럼 위로 떠오르는 면. surface보다 한 단 밝다
@@ -50,33 +67,73 @@ class GoColors {
   /// 뒤가 비쳐야 하는 면(탭바). surface 90%
   static const surfaceVeil = Color(0xE6FDFAF5);
 
+  /// 러닝·로비 화면 바탕. 페이퍼보다 한 단 어둡다
+  static const canvas = Color(0xFFEBE4D6);
+  static const surfacePressed = Color(0xFFEDE7DE);
+
+  static const neutral100 = Color(0xFFF6F1E8);
+  static const neutral200 = Color(0xFFE8E1D4);
+  static const neutral300 = Color(0xFFD4CBBC);
+
+  /// 아웃라인 버튼·입력창 테두리. 페이퍼 위 2:1 — 선으로는 충분하다
+  static const neutral400 = Color(0xFFB0A697);
+
+  /// 비활성 글자·플레이스홀더 (페이퍼 위 3.4:1 — 본문으로 쓰지 않는다)
+  static const neutral500 = Color(0xFF857C6F);
+
+  /// 보조 글자 — 페이퍼 위 5.7:1
+  static const neutral600 = Color(0xFF5E5A54);
+  static const neutral700 = Color(0xFF45413A);
+  static const neutral800 = Color(0xFF2E2B26);
+
   /// 그림자 색 — 종이의 색상을 따라간 따뜻한 갈색-검정
   static const shadow = Color(0xFF4A3A24);
 
-  /// 면 안쪽의 헤어라인. ink 22%
+  /// 면 안쪽의 헤어라인. ink 22% (사진 위에서도 보이도록 알파)
   static const line = Color(0x381A1A16);
 
   /// 반드시 읽혀야 하는 구분선. ink 34%
   static const lineStrong = Color(0x571A1A16);
 
-  /// 공명(두 사람의 발이 맞은 순간) — 제품 고유색. ink·canvas 위에서만
-  static const resonance = Color(0xFFD4A84B);
-
-  /// 러닝·로비 화면 바탕. 페이퍼보다 한 단 어둡다
-  static const canvas = Color(0xFFEBE4D6);
-
-  // ── 눌림 색 (손가락이 닿아 있는 동안만) ──
-  static const inkPressed = Color(0xFF35342C);
-  static const coralComponentPressed = Color(0xFFC53F2B);
-  static const coralPressed = Color(0xFFE04A34); // 원색 코랄 면이 눌렸을 때
-  static const greenPressed = Color(0xFF236409);
-  static const limePressed = Color(0xFFAFC935);
-  static const surfacePressed = Color(0xFFEDE7DE);
-  static const pressOverlay = Color(0x141A1A16); // ink 8%
+  /// 면이 없는 것이 눌렸을 때 얹는 잉크 8%
+  static const pressOverlay = Color(0x141A1A16);
 
   /// 선택된 자리에 드리우는 잉크 그림자(탭바 알약). 12% / 눌림 18%
   static const inkVeil = Color(0x1F1A1A16);
   static const inkVeilPressed = Color(0x2E1A1A16);
+
+  // ── 시맨틱 ──
+  /// 완료·온라인·GPS 잡힘·성공 토스트
+  static const successText = Color(0xFF1A6B34); // 페이퍼 위 5.5:1
+  static const successSolid = Color(0xFF1E7A3C); // 흰 글자 5.4:1
+  static const successSolidPressed = Color(0xFF186532);
+  static const successSoft = Color(0xFFDCEFE0);
+  static const successSoftPressed = Color(0xFFCDE6D3);
+
+  /// 연결 불안정·늦음·미등록 — 아직 실패는 아니지만 알아야 하는 것
+  static const warningText = Color(0xFF9A4D00); // 페이퍼 위 5.1:1
+  static const warningSolid = Color(0xFFB45309); // 흰 글자 5.0:1
+  static const warningSolidPressed = Color(0xFF9A4708);
+  static const warningSoft = Color(0xFFFBE7C6);
+  static const warningSoftPressed = Color(0xFFF3DAB0);
+
+  /// 실패 토스트·삭제·차단·탈퇴·유효성 오류
+  static const errorText = Color(0xFFB42323); // 페이퍼 위 5.5:1
+  static const errorSolid = Color(0xFFC42B2B); // 흰 글자 5.6:1
+  static const errorSolidPressed = Color(0xFFA82424);
+  static const errorSoft = Color(0xFFF8DAD6);
+  static const errorSoftPressed = Color(0xFFF0C9C3);
+
+  /// 안내·중립 알림. 지금 앱에는 거의 없다 — 자리만 둔다
+  static const infoText = Color(0xFF1F55C4); // 페이퍼 위 5.6:1
+  static const infoSolid = Color(0xFF2563EB); // 흰 글자 5.2:1
+  static const infoSolidPressed = Color(0xFF1E52C7);
+  static const infoSoft = Color(0xFFDAE4F8);
+  static const infoSoftPressed = Color(0xFFC8D6F2);
+
+  // ── 제품 고유 ──
+  /// 공명(두 사람의 발이 맞은 순간). ink·canvas 위에서만
+  static const resonance = Color(0xFFD4A84B);
 }
 
 /// 면 + 글자(+테두리) 한 세트. 역할 하나가 곧 조합 하나다
@@ -100,32 +157,32 @@ class GoRole {
 /// `GoRoles.of(context).actionPrimary.bg`처럼.
 ///
 /// 팔레트([GoColors])는 값이고 역할은 뜻이다. "코랄"이 아니라 "주 액션",
-/// "올리브"가 아니라 "리워드 글자". 값이 바뀌어도 화면 코드는 그대로다.
+/// "초록"이 아니라 "성공". 값이 바뀌어도 화면 코드는 그대로다.
 ///
-/// ## Color Usage Rules (2026-09-08)
+/// ## Color Usage Rules (2026-09-09)
 ///
 /// 색은 장식이 아니라 **정보 위계·행동의 중요도·상태**를 전하는 수단이다.
+/// 화면에 색이 있으면 그건 "여기 눌러" 아니면 "상태가 이렇다" 둘 중 하나다.
 ///
-/// 1. **Primary**([actionPrimary]) — 가장 중요하거나 가장 먼저 해야 하는 행동.
-///    핵심 CTA, 주요 기능, 중요한 상태·강조. 한 화면에서 주 색이 여럿이면
-///    우선순위가 흩어진다 — 화면당 하나를 원칙으로. 현재 선택된 탭바 항목은
-///    주 색이 아니라 [selection](잉크 그림자 알약)으로 표시한다 — 탭바는 모든
-///    화면에 붙어 있어 여기에 주 색을 쓰면 화면의 CTA와 매번 경쟁한다
-/// 2. **Secondary**([actionSecondary]·[actionComplete]) — 우선순위가 낮은 보조
-///    행동. 보조 CTA, 기록 보기, 필터, 공유, 부가 기능. **덜 중요한 색이 아니라
-///    덜 중요한 역할의 색이다.** 대비와 인지 가능성은 primary와 같아야 한다
-/// 3. **Tertiary / Neutral**([textSecondary]·text 버튼) — 메타 정보, 취소/닫기.
-///    강조는 줄이되 **가독성과 인터랙션 인지는 줄이지 않는다**
-/// 4. **Visibility First** — 모든 색 선택의 첫 기준은 가시성·가독성.
-///    "Primary는 잘 보이고, Secondary는 덜 보이고, Tertiary는 거의 안 보임"으로
-///    구현하지 않는다. 그래서 [textSecondary]는 페이퍼 위 5:1을 지키고, 글자는
-///    12px 아래로 내려가지 않는다
-/// 5. **Do Not Rely on Color Alone** — 선택·오류·성공·중요도를 색 하나로
-///    전하지 않는다. 아이콘·인디케이터·형태·크기·텍스트·모션을 함께 쓴다.
-///    (탭바의 알약, 체크박스의 체크, 스트릭 요일의 체크, 토스트의 아이콘)
-///
-/// **Color establishes hierarchy, but hierarchy must never compromise
-/// visibility, readability, or usability.**
+/// 1. **Primary**([actionPrimary], 브랜드 코랄) — 가장 중요하거나 가장 먼저
+///    해야 하는 행동. 화면당 하나. 현재 선택된 탭바 항목은 주 색이 아니라
+///    [selection](잉크 그림자 알약)이다 — 탭바는 모든 화면에 붙어 있어
+///    여기에 주 색을 쓰면 화면의 CTA와 매번 경쟁한다
+/// 2. **Confirm**([actionComplete], 잉크 면) — 저장·완료·확정. "성공"이 아니라
+///    "확정"이므로 시맨틱 초록이 아니라 잉크다
+/// 3. **Secondary / Tertiary**([actionSecondary]·text 버튼) — 보조 행동,
+///    취소·닫기. **색을 쓰지 않는다**(중성). 덜 중요한 역할이지 덜 보이는
+///    색이 아니다 — 대비는 primary와 같다. 파괴적 행동(지우기·차단·탈퇴)만
+///    [error]
+/// 4. **Status**([success]·[warning]·[error]·[info]) — 상태에만. 글자·아이콘·
+///    테두리는 `.fg`, 옅은 면은 `.bg`. 진한 면이 필요한 칩은 [statusOnline]
+/// 5. **Relation**([self]·[partner]) — 나와 상대. 브랜드 라임·코랄에서 파생한
+///    읽히는 색이고 시맨틱과 **뜻이 다르다**(나 ≠ 성공, 상대 ≠ 오류)
+/// 6. **Visibility First** — 모든 색 선택의 첫 기준은 가시성. 밝은 바탕 위
+///    글자는 4.5:1, 12px 아래로 내려가지 않는다
+/// 7. **Do Not Rely on Color Alone** — 선택·오류·성공·중요도를 색 하나로
+///    전하지 않는다. 아이콘·인디케이터·형태·텍스트·모션을 함께 쓴다.
+///    코랄(브랜드)과 error가 이웃한 색이라 특히 그렇다
 class GoRoles extends ThemeExtension<GoRoles> {
   const GoRoles({
     required this.background,
@@ -140,6 +197,7 @@ class GoRoles extends ThemeExtension<GoRoles> {
     required this.rule,
     required this.textPrimary,
     required this.textSecondary,
+    required this.textDisabled,
     required this.textOnDark,
     required this.link,
     required this.actionPrimary,
@@ -148,18 +206,20 @@ class GoRoles extends ThemeExtension<GoRoles> {
     required this.statusRunning,
     required this.statusOnline,
     required this.reward,
-    required this.positive,
+    required this.success,
+    required this.warning,
+    required this.error,
+    required this.info,
     required this.dark,
     required this.selection,
     required this.self,
     required this.partner,
     required this.selfOnDark,
     required this.partnerOnDark,
-    required this.attention,
     required this.resonance,
   });
 
-  // 면·선
+  // ── 면·선 (중성) ──
   /// 화면 바탕(paper)
   final Color background;
 
@@ -178,60 +238,83 @@ class GoRoles extends ThemeExtension<GoRoles> {
   /// 섹션 사이 1px — 잉크 100%
   final Color rule;
 
-  // 글자
+  // ── 글자 (중성) ──
   final Color textPrimary;
 
-  /// 단위·캡션·비활성
+  /// 단위·캡션
   final Color textSecondary;
+
+  /// 비활성·플레이스홀더. 본문으로 쓰지 않는다
+  final Color textDisabled;
 
   /// 잉크 면 위의 글자
   final Color textOnDark;
+
+  /// 글자 링크 — 중성. 링크임은 색이 아니라 화살표·밑줄로
   final Color link;
 
-  // 액션
-  /// 러닝 시작/정지 등 주 액션. **글자는 굵게 16pt 이상**
+  // ── 액션 ──
+  /// 러닝 시작/GO 등 주 액션 (브랜드 코랄). **글자는 굵게 16pt 이상**
   final GoRole actionPrimary;
 
-  /// 저장·완료
+  /// 저장·완료·확정 — 잉크 면
   final GoRole actionComplete;
 
-  /// 아웃라인 버튼
+  /// 아웃라인·텍스트 버튼 — 중성
   final GoRole actionSecondary;
 
-  // 상태 칩
-  /// 뛰는 중
+  // ── 상태 칩 (진한 면) ──
+  /// 뛰는 중 — 브랜드 코랄 면 (제품 고유 상태)
   final GoRole statusRunning;
 
-  /// 온라인·GPS·완료 — 초록 면 + 흰 글자
+  /// 온라인·GPS·완료 — success solid + 흰 글자
   final GoRole statusOnline;
 
   /// 코인·적립 전용. **리워드 외 사용 금지** — 라임 면 + 잉크 글자
   final GoRole reward;
 
-  /// 밝은 바탕 위의 긍정 상태 **글자·아이콘·테두리**(준비 완료, 이룬 것,
-  /// 성공 토스트). 면이 아니라 글자일 때는 [statusOnline]이 아니라 이것
-  final Color positive;
+  // ── 시맨틱 (옅은 면 + 글자) ──
+  /// 준비 완료·이룬 것·성공 토스트. 글자·아이콘은 `.fg`
+  final GoRole success;
 
-  /// 잉크 면(히어로 카드·세그먼트 활성)
+  /// 연결 안내·늦음·미등록. 글자·아이콘은 `.fg`
+  final GoRole warning;
+
+  /// 실패 토스트·삭제·차단·탈퇴·유효성 오류. 글자·아이콘은 `.fg`
+  final GoRole error;
+
+  /// 안내·중립 알림
+  final GoRole info;
+
+  // ── 잉크 면 ──
+  /// 히어로 카드·세그먼트 활성
   final GoRole dark;
 
-  /// 선택된 자리의 표시 — 잉크를 옅게 드리운 그림자 면 + 잉크 글자.
-  /// 탭바의 선택 알약(2026-09-08 결정: 주 색이 아니라 그림자 느낌으로)
+  /// 선택된 자리의 표시 — 잉크를 옅게 드리운 그림자 면 + 잉크 글자
   final GoRole selection;
 
-  // 관계색 — 아바타 테두리·점. paper 위에서는 다크 앵커
+  // ── 관계색 ──
+  /// 나 — 라임 파생 올리브. 글자·아이콘·옅은 면(18%)
   final Color self;
+
+  /// 상대 — 코랄 파생. 글자·아이콘·옅은 면(18%)
   final Color partner;
 
   /// ink·canvas 위에서만 쓰는 원색(히어로의 점, 공명 캔버스의 링)
   final Color selfOnDark;
   final Color partnerOnDark;
 
-  /// 주의·경고 테두리와 아이콘 (연결 안내, 늦음, 미등록)
-  final Color attention;
-
   /// 공명 골드 — 러닝 화면 전용
   final Color resonance;
+
+  // ── 옛 이름 (2026-09-09 이전). 새 코드는 시맨틱 역할을 쓴다 ──
+  /// [success].fg
+  @Deprecated('roles.success.fg')
+  Color get positive => success.fg;
+
+  /// [warning].fg — 파괴적 행동(지우기·차단)이면 [error].fg
+  @Deprecated('roles.warning.fg 또는 roles.error.fg')
+  Color get attention => warning.fg;
 
   static const light = GoRoles(
     background: GoColors.paper,
@@ -245,24 +328,25 @@ class GoRoles extends ThemeExtension<GoRoles> {
     lineStrong: GoColors.lineStrong,
     rule: GoColors.ink,
     textPrimary: GoColors.ink,
-    textSecondary: GoColors.mid,
+    textSecondary: GoColors.neutral600,
+    textDisabled: GoColors.neutral500,
     textOnDark: GoColors.paper,
-    link: GoColors.coralText,
+    link: GoColors.neutral700,
     actionPrimary: GoRole(
       bg: GoColors.coralComponent,
       fg: GoColors.white,
       pressed: GoColors.coralComponentPressed,
     ),
     actionComplete: GoRole(
-      bg: GoColors.green,
-      fg: GoColors.lime,
-      pressed: GoColors.greenPressed,
+      bg: GoColors.ink,
+      fg: GoColors.paper,
+      pressed: GoColors.inkPressed,
     ),
     actionSecondary: GoRole(
       bg: Color(0x00000000),
-      fg: GoColors.coralText,
-      border: GoColors.coralText,
-      pressed: GoColors.coralVeil,
+      fg: GoColors.ink,
+      border: GoColors.neutral400,
+      pressed: GoColors.pressOverlay,
     ),
     statusRunning: GoRole(
       bg: GoColors.coral,
@@ -270,16 +354,39 @@ class GoRoles extends ThemeExtension<GoRoles> {
       pressed: GoColors.coralPressed,
     ),
     statusOnline: GoRole(
-      bg: GoColors.green,
+      bg: GoColors.successSolid,
       fg: GoColors.white,
-      pressed: GoColors.greenPressed,
+      pressed: GoColors.successSolidPressed,
     ),
     reward: GoRole(
       bg: GoColors.lime,
       fg: GoColors.ink,
       pressed: GoColors.limePressed,
     ),
-    positive: GoColors.green,
+    success: GoRole(
+      bg: GoColors.successSoft,
+      fg: GoColors.successText,
+      border: GoColors.successText,
+      pressed: GoColors.successSoftPressed,
+    ),
+    warning: GoRole(
+      bg: GoColors.warningSoft,
+      fg: GoColors.warningText,
+      border: GoColors.warningText,
+      pressed: GoColors.warningSoftPressed,
+    ),
+    error: GoRole(
+      bg: GoColors.errorSoft,
+      fg: GoColors.errorText,
+      border: GoColors.errorText,
+      pressed: GoColors.errorSoftPressed,
+    ),
+    info: GoRole(
+      bg: GoColors.infoSoft,
+      fg: GoColors.infoText,
+      border: GoColors.infoText,
+      pressed: GoColors.infoSoftPressed,
+    ),
     dark: GoRole(
       bg: GoColors.ink,
       fg: GoColors.paper,
@@ -290,11 +397,10 @@ class GoRoles extends ThemeExtension<GoRoles> {
       fg: GoColors.ink,
       pressed: GoColors.inkVeilPressed,
     ),
-    self: GoColors.green,
-    partner: GoColors.coralText,
+    self: GoColors.selfText,
+    partner: GoColors.partnerText,
     selfOnDark: GoColors.lime,
     partnerOnDark: GoColors.coral,
-    attention: GoColors.coralText,
     resonance: GoColors.resonance,
   );
 
@@ -463,7 +569,7 @@ class GoText {
   static const secondary = TextStyle(
     fontSize: 13,
     height: 1.45,
-    color: GoColors.mid,
+    color: GoColors.neutral600,
   );
 
   /// 섹션 라벨·스탯 라벨. 하나뿐이다 — 9/10/11px 변형을 만들지 말 것
