@@ -56,9 +56,16 @@ class _GoBottomNavState extends State<GoBottomNav> {
 
   static const _tabs = [
     (Icons.home_outlined, Icons.home_rounded, '홈'),
+    (Icons.mail_outline, Icons.mail_rounded, '제안'),
     (Icons.people_alt_outlined, Icons.people_alt_rounded, '우리'),
     (Icons.settings_outlined, Icons.settings_rounded, '설정'),
   ];
+
+  /// 배지가 붙는 탭 — 답해야 할 제안이 있는 곳.
+  ///
+  /// 전에는 '우리'(인덱스 1)에 친구 요청 수를 달았는데, 정작 그 목록은
+  /// 홈에 있었다. 배지가 가리키는 곳과 실제로 가야 하는 곳이 달랐다
+  static const _badgeTab = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -151,7 +158,8 @@ class _GoBottomNavState extends State<GoBottomNav> {
           ),
           Row(children: [
             for (var i = 0; i < _tabs.length; i++)
-              _item(roles, i, badge: i == 1 ? widget.requestCount : 0),
+              _item(roles, i,
+                  badge: i == _badgeTab ? widget.requestCount : 0),
           ]),
         ]),
       );

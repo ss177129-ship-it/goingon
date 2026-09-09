@@ -7,7 +7,10 @@ import 'package:flutter/material.dart';
 import '../services/active_run_guard.dart';
 import '../services/auth_service.dart';
 import '../services/friend_service.dart';
+import '../services/invite.dart';
+import '../services/invite_service.dart';
 import '../services/run_service.dart';
+import '../services/session_rules.dart';
 import '../theme.dart';
 import '../widgets/go_icon_button.dart';
 import '../widgets/go_button.dart';
@@ -32,6 +35,16 @@ class _HomeScreenState extends State<HomeScreen> {
   final _auth = AuthService();
   final _friends = FriendService();
   final _runs = RunService();
+  final _invites = InviteService();
+
+  /// 지금 오가는 제안 전부 — 홈 카드가 사람마다 자기 것을 골라 쓴다
+  StreamSubscription? _invitesSub;
+  List<Invite> _inviteList = const [];
+
+  /// 사용자가 '확인'으로 닫은 결과(거절·만료). 문서는 그대로 남아 있으므로
+  /// 앱이 사는 동안만 기억한다 — 다시 켜면 한 번 더 보이지만, 못 본 채
+  /// 사라지는 것보다는 낫다
+  final Set<String> _dismissed = {};
   StreamSubscription? _incomingSub;
   final Set<String> _handledSessions = {};
   int _openSheets = 0;
@@ -69,6 +82,17 @@ class _HomeScreenState extends State<HomeScreen> {
     _listenIncoming();
     _listenFriends();
     _listenRequests();
+    _listenInvites();
+  }
+
+  void _listenInvites() {
+    _invitesSub?.cancel();
+    _invitesSub = _invites.stream(_auth.uid).listen((list) {
+      if (mounted) setState(() => _inviteList = list);
+    }, onError: (e, stack) {
+      // 제안이 안 보여도 앱의 나머지는 동작한다
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+    });
   }
 
   void _listenRequests() {
@@ -128,6 +152,10 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       for (final doc in snap.docs) {
         if (_handledSessions.contains(doc.id)) continue;
+        // 스트림이 시간으로 잘린 뒤로는 이미 수락·거절한 것까지 실려 온다.
+        // 아직 답하지 않은 것에만 시트를 띄운다 — 안 그러면 로비에서 나온
+        // 직후 방금 수락한 세션의 수락 시트가 다시 뜬다
+        if (doc.data()['status'] != SessionRules.invited) continue;
         // 오래 응답 없는 요청은 뒤늦게 수락 시트로 띄우는 대신 정리함
         // (createdAt이 아직 null이면 serverTimestamp 반영 전이므로 무시하지 않음)
         final createdAt = doc.data()['createdAt'] as Timestamp?;
@@ -273,16 +301,17 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 시트가 두 번 뜨고, 하나는 영영 주인 없이 남는다
   String? _sendingTo;
 
+  /// GO?는 **화면을 바꾸지 않는다**(2026-09-09).
+  ///
+  /// 전에는 세션을 만들자마자 로비로 밀어 넣었다. 상대가 요청을 본 적도
+  /// 없는데 화면 제목이 이미 "함께 달릴 준비"였고, 답이 언제 올지 모르는
+  /// 채로 사용자는 그 화면에 갇혔다. 지금은 홈에 머물고 카드가 상태를
+  /// 말한다 — 폰을 주머니에 넣고 기다려도 된다
   Future<void> _sendGo(String friendUid, String friendName) async {
     if (_sendingTo != null) return; // 연타·다른 행 동시 탭 모두 여기서 막힌다
     setState(() => _sendingTo = friendUid);
     try {
-      final sessionId = await _runs.createSession(_auth.uid, friendUid);
-      if (!mounted) return;
-      await Navigator.push(context, MaterialPageRoute(
-        builder: (_) =>
-            LobbyScreen(sessionId: sessionId, partnerName: friendName),
-      ));
+      await _runs.createSession(_auth.uid, friendUid);
     } catch (e, stack) {
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
       if (!mounted) return;
@@ -292,11 +321,30 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _enterLobby(String sessionId, String partnerName) {
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) =>
+          LobbyScreen(sessionId: sessionId, partnerName: partnerName),
+    ));
+  }
+
+  /// 제안에 얽힌 한 번짜리 동작들 — 실패하면 조용히 넘어가지 않고 알린다
+  Future<void> _inviteAction(Future<void> Function() action, String fail) async {
+    try {
+      await action();
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+      if (!mounted) return;
+      GoToast.error(context, fail);
+    }
+  }
+
   @override
   void dispose() {
     _incomingSub?.cancel();
     _friendsSub?.cancel();
     _requestsSub?.cancel();
+    _invitesSub?.cancel();
     super.dispose();
   }
 
@@ -638,17 +686,50 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _pacemateCard(Map<String, dynamic> f) {
     final name = _displayName(f['name']);
     final uid = f['uid'] as String;
+    var invite = currentInviteFor(_inviteList, uid, DateTime.now());
+    // 사용자가 닫은 결과는 다시 세우지 않는다. 살아 있는 제안은 닫을 수
+    // 없으므로(닫기 버튼 자체가 없다) 여기서 가려질 일이 없다
+    if (invite != null && _dismissed.contains(invite.sessionId)) invite = null;
     return PacemateCard(
       key: ValueKey(uid),
       user: f,
       name: name,
+      invite: invite,
       onOpen: () => _openProfile(f, name),
       onGo: () => _sendGo(uid, name),
       goLoading: _sendingTo == uid,
       // 다른 행을 보내는 중이면 이 행도 눌리지 않는다 — 두 사람에게
       // 동시에 GO?를 보내면 어느 로비로 들어갈지가 경합이 된다
       goEnabled: _sendingTo == null || _sendingTo == uid,
+      onAccept: invite == null
+          ? null
+          : () => _acceptInvite(invite!.sessionId, name),
+      onDecline:
+          invite == null ? null : () => _showDeclineOptions(invite!.sessionId),
+      onCancelInvite: invite == null
+          ? null
+          : () => _inviteAction(() => _runs.cancelSession(invite!.sessionId),
+              '취소하지 못했어요. 다시 시도해 주세요.'),
+      onJoin:
+          invite == null ? null : () => _enterLobby(invite!.sessionId, name),
+      onDismiss: invite == null
+          ? null
+          : () => setState(() => _dismissed.add(invite!.sessionId)),
     );
+  }
+
+  /// 수락은 **문서에 써야 성립한다.** 규칙이 invited인 세션에는 준비도
+  /// 출발도 걸어 주지 않으므로, 쓰기가 실패하면 로비로 보내면 안 된다
+  Future<void> _acceptInvite(String sessionId, String name) async {
+    try {
+      await _runs.acceptSession(sessionId);
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+      if (!mounted) return;
+      GoToast.error(context, '수락하지 못했어요. 다시 시도해 주세요.');
+      return;
+    }
+    if (mounted) _enterLobby(sessionId, name);
   }
 
   void _openProfile(Map<String, dynamic> f, String name) {

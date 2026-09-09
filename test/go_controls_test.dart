@@ -282,8 +282,8 @@ void main() {
               requestCount: requests),
         ));
 
-    /// 탭바 안의 AnimatedContainer는 [미끄러지는 알약, 홈·우리·설정의 눌림 면]
-    /// 순서다 — 알약은 **하나**뿐이라 자리 수만큼 있지 않다
+    /// 탭바 안의 AnimatedContainer는 [미끄러지는 알약, 홈·제안·우리·설정의
+    /// 눌림 면] 순서다 — 알약은 **하나**뿐이라 자리 수만큼 있지 않다
     List<Color?> fills(WidgetTester tester) => tester
         .widgetList<AnimatedContainer>(inside<AnimatedContainer>(GoBottomNav))
         .map((c) => (c.decoration as BoxDecoration).color)
@@ -303,17 +303,24 @@ void main() {
         Colors.transparent,
         Colors.transparent,
         Colors.transparent,
+        Colors.transparent,
       ]);
       final icons = tester
           .widgetList<Icon>(inside<Icon>(GoBottomNav))
           .map((i) => i.color)
           .toList();
-      expect(icons, [R.textSecondary, R.selection.fg, R.textSecondary]);
+      expect(icons, [
+        R.textSecondary,
+        R.selection.fg,
+        R.textSecondary,
+        R.textSecondary,
+      ]);
+      // 배지는 '제안' 탭에 붙는다 — 답해야 할 것이 사는 자리다
       expect(find.text('3'), findsOneWidget, reason: '배지는 알약 위에도 남는다');
 
       // 라벨을 지운 뒤로 탭바에는 글자가 없다 — 아이콘으로 누른다
       await tester.tap(find.byIcon(Icons.settings_outlined));
-      expect(got, 2);
+      expect(got, 3);
     });
 
     testWidgets('선택된 탭은 채워진 아이콘, 나머지는 윤곽선 — 색 말고 형태로도 말한다', (tester) async {
@@ -325,7 +332,8 @@ void main() {
           .toList();
       expect(icons, [
         Icons.home_outlined,
-        Icons.people_alt_rounded,
+        Icons.mail_rounded,
+        Icons.people_alt_outlined,
         Icons.settings_outlined,
       ]);
     });
@@ -335,6 +343,7 @@ void main() {
       await tester.pumpAndSettle();
       for (final icon in [
         Icons.home_rounded,
+        Icons.mail_outline,
         Icons.people_alt_outlined,
         Icons.settings_outlined,
       ]) {
@@ -357,7 +366,7 @@ void main() {
       final at1 = pillX(tester);
 
       // 한 칸 = (너비 − 좌우 여백) ÷ 탭 수
-      expect(at1 - at0, closeTo((390 - 28 * 2) / 3, .01));
+      expect(at1 - at0, closeTo((390 - 28 * 2) / 4, .01));
       // 중간 프레임이 두 자리 **사이**에 있어야 이동이다. 순간이동이면
       // 첫 프레임에 이미 도착해 있다
       expect(onTheWay, greaterThan(at0));
@@ -409,7 +418,7 @@ void main() {
         child: GoBottomNav(index: 0, onChanged: (_) {}),
       )));
       await tester.pumpAndSettle();
-      // [미끄러지는 알약, 홈·우리·설정의 눌림 면]
+      // [미끄러지는 알약, 홈·제안·우리·설정의 눌림 면]
       List<Color?> pills() => tester
           .widgetList<AnimatedContainer>(inside<AnimatedContainer>(GoBottomNav))
           .map((c) => (c.decoration as BoxDecoration).color)
@@ -419,11 +428,12 @@ void main() {
       await g1.up();
       await tester.pumpAndSettle();
       final g2 = await press(tester, find.byIcon(Icons.settings_outlined));
-      expect(pills()[3], R.pressOverlay, reason: '빈 자리는 잉크 8%가 잠깐 깔린다');
+      expect(pills()[4], R.pressOverlay, reason: '빈 자리는 잉크 8%가 잠깐 깔린다');
       await g2.up();
       await tester.pumpAndSettle();
       expect(pills(), [
         R.selection.bg,
+        Colors.transparent,
         Colors.transparent,
         Colors.transparent,
         Colors.transparent,

@@ -1,5 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:goingon/services/invite.dart';
+import 'package:goingon/services/session_rules.dart';
 import 'package:goingon/theme.dart';
 import 'package:goingon/widgets/pacemate_card.dart';
 
@@ -77,6 +80,91 @@ void main() {
     await tester.tap(find.text('지수'));
     await tester.pumpAndSettle();
     expect(opened, 1);
+  });
+
+  group('제안이 오가면 카드의 이야기가 바뀐다', () {
+    Invite inv(String status, {bool incoming = false, DateTime? createdAt,
+        String? msg}) =>
+        Invite.from(
+          's1',
+          {
+            'hostId': incoming ? 'u1' : 'me',
+            'guestId': incoming ? 'me' : 'u1',
+            'status': status,
+            if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt),
+            if (msg != null) 'declineMessage': msg,
+          },
+          'me',
+        )!;
+
+    Future<void> pumpInvite(WidgetTester tester, Invite? invite) =>
+        tester.pumpWidget(MaterialApp(
+          theme: GoTheme.light(),
+          home: Scaffold(
+            body: PacemateCard(
+              user: const {'uid': 'u1'},
+              name: '지수',
+              invite: invite,
+              now: now,
+              onOpen: () {},
+              onGo: () {},
+              onAccept: () {},
+              onDecline: () {},
+              onCancelInvite: () {},
+              onJoin: () {},
+              onDismiss: () {},
+            ),
+          ),
+        ));
+
+    testWidgets('답을 기다리는 중에는 GO?가 사라진다 — 같은 사람을 두 번 부르지 않게',
+        (tester) async {
+      await pumpInvite(tester, inv(SessionRules.invited,
+          createdAt: now.subtract(const Duration(minutes: 5))));
+      expect(find.text('GO?'), findsNothing);
+      expect(find.text('취소'), findsOneWidget);
+      expect(find.textContaining('답을 기다리는 중'), findsOneWidget);
+      expect(find.textContaining('25분 남음'), findsOneWidget);
+    });
+
+    testWidgets('나를 부르고 있으면 답할 두 가지가 선다', (tester) async {
+      await pumpInvite(tester,
+          inv(SessionRules.invited, incoming: true, createdAt: now));
+      expect(find.text('수락'), findsOneWidget);
+      expect(find.text('나중에'), findsOneWidget);
+      expect(find.text('GO?'), findsNothing);
+    });
+
+    testWidgets('수락되면 입장 하나만 남는다', (tester) async {
+      await pumpInvite(tester, inv(SessionRules.accepted));
+      expect(find.text('입장'), findsOneWidget);
+      expect(find.text('준비하러 가요'), findsOneWidget);
+    });
+
+    testWidgets('거절 답장은 그대로 보여준다 — 침묵보다 한 줄이 낫다',
+        (tester) async {
+      await pumpInvite(tester,
+          inv(SessionRules.declined, msg: '30분 뒤 어때요?'));
+      expect(find.text('"30분 뒤 어때요?"'), findsOneWidget);
+      expect(find.text('확인'), findsOneWidget);
+    });
+
+    testWidgets('답장이 없는 거절에도 할 말은 있다', (tester) async {
+      await pumpInvite(tester, inv(SessionRules.declined));
+      expect(find.text('지금은 어렵대요'), findsOneWidget);
+    });
+
+    testWidgets('30분이 지나면 문서가 invited여도 만료로 그린다', (tester) async {
+      await pumpInvite(tester, inv(SessionRules.invited,
+          createdAt: now.subtract(const Duration(minutes: 31))));
+      expect(find.text('답이 오지 않았어요'), findsOneWidget);
+      expect(find.text('취소'), findsNothing);
+    });
+
+    testWidgets('제안이 없으면 평소 카드로 돌아온다', (tester) async {
+      await pumpInvite(tester, null);
+      expect(find.text('GO?'), findsOneWidget);
+    });
   });
 
   testWidgets('다른 사람에게 보내는 중이면 이 카드의 GO?도 잠긴다', (tester) async {

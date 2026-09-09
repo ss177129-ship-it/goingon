@@ -137,4 +137,59 @@ void main() {
     await shared.dispose();
     await source.close();
   });
+
+  test('늦게 붙은 구독자는 마지막 값을 먼저 받는다', () async {
+    // 홈과 '제안' 탭이 같은 목록을 보는데, 두 번째 화면이 다음 변경까지
+    // 빈 채로 앉아 있었다 — 카드에는 제안이 떠 있고 탭은 "없어요"였다
+    final shared = SharedStream<int>();
+    final source = StreamController<int>.broadcast();
+    Stream<int> create() => source.stream;
+
+    final first = <int>[];
+    final subA = shared.of('k', create).listen(first.add);
+    await Future<void>.delayed(Duration.zero);
+    source.add(7);
+    await Future<void>.delayed(Duration.zero);
+    expect(first, [7]);
+
+    final second = <int>[];
+    final subB = shared.of('k', create).listen(second.add);
+    await Future<void>.delayed(Duration.zero);
+    expect(second, [7], reason: '이미 지나간 값이라도 새 구독자는 알아야 한다');
+
+    source.add(9);
+    await Future<void>.delayed(Duration.zero);
+    expect(first, [7, 9]);
+    expect(second, [7, 9]);
+
+    await subA.cancel();
+    await subB.cancel();
+    await source.close();
+  });
+
+  test('모두 떠나면 캐시도 비운다 — 다시 붙을 때 낡은 값을 주지 않게', () async {
+    final shared = SharedStream<int>();
+    var created = 0;
+    final source = StreamController<int>.broadcast();
+    Stream<int> create() {
+      created++;
+      return source.stream;
+    }
+
+    final sub = shared.of('k', create).listen((_) {});
+    await Future<void>.delayed(Duration.zero);
+    source.add(1);
+    await Future<void>.delayed(Duration.zero);
+    await sub.cancel();
+    await Future<void>.delayed(Duration.zero);
+
+    final again = <int>[];
+    final sub2 = shared.of('k', create).listen(again.add);
+    await Future<void>.delayed(Duration.zero);
+    expect(again, isEmpty, reason: '끊긴 뒤의 값은 더 이상 지금이 아니다');
+    expect(created, 2);
+
+    await sub2.cancel();
+    await source.close();
+  });
 }

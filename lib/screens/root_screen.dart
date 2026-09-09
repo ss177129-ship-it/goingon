@@ -4,8 +4,9 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
-import '../services/friend_service.dart';
 import '../services/location_service.dart';
+import '../services/invite.dart';
+import '../services/invite_service.dart';
 import '../services/push_service.dart';
 import '../services/run_recovery.dart';
 import '../services/run_service.dart';
@@ -15,6 +16,7 @@ import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
 import 'finish_screen.dart';
 import 'home_screen.dart';
+import 'invites_screen.dart';
 import 'settings_screen.dart';
 import 'us_screen.dart';
 
@@ -52,21 +54,27 @@ class _RootScreenState extends State<RootScreen>
   }
 
   StreamSubscription? _pushTapSub;
-  StreamSubscription? _requestsSub;
+  StreamSubscription? _invitesSub;
 
-  /// 나에게 온 친구 요청 수 — '우리' 탭 배지. 홈이 같은 스트림을 따로
-  /// 구독하지만, 배지는 어느 탭에 있든 보여야 하므로 셸이 갖는다
-  int _requestCount = 0;
+  /// 답해야 할 제안 수 — '제안' 탭 배지. 홈이 같은 스트림을 따로 구독하지만,
+  /// 배지는 어느 탭에 있든 보여야 하므로 셸이 갖는다.
+  ///
+  /// 전에는 친구 요청 수를 '우리' 탭에 달았다 — 배지가 가리키는 곳과 실제로
+  /// 그 목록이 있는 곳(홈)이 달랐다
+  int _needsAnswer = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _offerRecovery());
     _startPush();
-    _requestsSub =
-        FriendService().incomingRequestsStream(AuthService().uid).listen(
+    _invitesSub = InviteService().stream(AuthService().uid).listen(
       (list) {
-        if (mounted) setState(() => _requestCount = list.length);
+        final now = DateTime.now();
+        final n = list
+            .where((i) => i.cardFor(now) == InviteCard.needsAnswer)
+            .length;
+        if (mounted && n != _needsAnswer) setState(() => _needsAnswer = n);
       },
       onError: (e, stack) {
         // 배지가 없어도 앱은 동작한다
@@ -89,18 +97,21 @@ class _RootScreenState extends State<RootScreen>
     if (pending != null) _onPushTap(pending);
   }
 
-  /// 어떤 알림이든 홈 탭으로 보냄 — 친구 요청은 홈 상단 섹션에 있고,
-  /// 러닝 요청은 홈이 구독 중인 세션 스트림이 수락 시트를 띄워줌
+  /// 알림을 누르면 그것이 사는 자리로 보낸다.
+  ///
+  /// 전에는 무엇이든 홈으로 보내고 payload의 sessionId를 버렸다. 러닝 요청은
+  /// 홈이 띄우는 수락 시트에 기댔는데, 그 시트는 다른 시트가 떠 있거나
+  /// 러닝 중이면 나타나지 않는다 — 알림을 눌렀는데 아무 일도 안 일어났다
   void _onPushTap(PushTap tap) {
     if (!mounted) return;
-    _goTab(0);
+    _goTab(tap.type == 'runRequest' ? 1 : 0);
   }
 
   @override
   void dispose() {
     _tabAnim.dispose();
     _pushTapSub?.cancel();
-    _requestsSub?.cancel();
+    _invitesSub?.cancel();
     super.dispose();
   }
 
@@ -172,6 +183,7 @@ class _RootScreenState extends State<RootScreen>
                   index: _index,
                   children: const [
                     HomeScreen(),
+                    InvitesScreen(),
                     UsScreen(),
                     SettingsScreen(),
                   ],
@@ -181,7 +193,7 @@ class _RootScreenState extends State<RootScreen>
           ),
           GoBottomNav(
             index: _index,
-            requestCount: _requestCount,
+            requestCount: _needsAnswer,
             onChanged: _goTab,
           ),
         ]),

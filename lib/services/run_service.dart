@@ -79,26 +79,36 @@ class RunService {
     });
   }
 
-  /// 나에게 온 제안 — 아직 답하지 않은 것(invited)과 내가 수락해 둔 것(accepted).
-  ///
-  /// 수락한 것까지 포함하는 이유: '제안' 탭이 로비로 들어가는 입구를 계속
-  /// 들고 있어야 한다. 수락하자마자 목록에서 사라지면, 시트를 닫거나 앱을
-  /// 껐다 켠 사람은 들어갈 길을 잃는다
-  Stream<QuerySnapshot<Map<String, dynamic>>> incomingSessions(String myUid) {
-    return _db
-        .collection('sessions')
-        .where('guestId', isEqualTo: myUid)
-        .where('status', whereIn: SessionRules.openStatuses)
-        .snapshots();
-  }
+  /// 제안이 화면에 남아 있는 창. 30분 TTL이 지난 뒤에도 결과(거절 답장·만료)를
+  /// 한동안 보여줘야 하므로 TTL보다 넉넉하다
+  static const recentWindow = Duration(hours: 12);
 
-  /// 내가 보낸 제안 — 답을 기다리는 것과 상대가 수락한 것.
-  /// 보낸 사람은 홈에 머무르므로(2026-09-09), 이 스트림이 그 카드의 상태다
-  Stream<QuerySnapshot<Map<String, dynamic>>> outgoingSessions(String myUid) {
+  /// 나에게 온 제안 — 아직 답하지 않은 것, 내가 수락해 둔 것, 그리고 최근 결과.
+  ///
+  /// **status로 거르지 않고 시간으로 자른다.** 이유가 둘이다:
+  /// - 수락한 것까지 있어야 '제안' 탭이 로비 입구를 계속 들고 있다. 시트를
+  ///   닫거나 앱을 껐다 켠 사람이 들어갈 길을 잃지 않는다
+  /// - 거절·만료된 문서는 지워지지 않고 영영 쌓인다. status로만 거르면
+  ///   쿼리가 해가 갈수록 무거워진다
+  ///
+  /// `createdAt`은 serverTimestamp라 만든 직후에는 null이고, 그동안 이
+  /// 범위 조건에 걸리지 않는다 — 서버 시각이 찍히면 스트림이 다시 울린다
+  Stream<QuerySnapshot<Map<String, dynamic>>> incomingSessions(String myUid) =>
+      _recent('guestId', myUid);
+
+  /// 내가 보낸 제안. 보낸 사람은 홈에 머무르므로(2026-09-09) 이 스트림이
+  /// 그 카드의 상태이고, 거절 답장이 도착하는 곳도 여기다
+  Stream<QuerySnapshot<Map<String, dynamic>>> outgoingSessions(String myUid) =>
+      _recent('hostId', myUid);
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> _recent(String field, String uid) {
+    final since = Timestamp.fromDate(DateTime.now().subtract(recentWindow));
     return _db
         .collection('sessions')
-        .where('hostId', isEqualTo: myUid)
-        .where('status', whereIn: SessionRules.openStatuses)
+        .where(field, isEqualTo: uid)
+        .where('createdAt', isGreaterThan: since)
+        .orderBy('createdAt', descending: true)
+        .limit(30)
         .snapshots();
   }
 

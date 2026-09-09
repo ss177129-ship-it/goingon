@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/invite.dart';
 import '../services/pacemate_status.dart';
 import '../theme.dart';
 import 'avatar_photo.dart';
@@ -31,6 +32,12 @@ class PacemateCard extends StatelessWidget {
     required this.onGo,
     this.goEnabled = true,
     this.goLoading = false,
+    this.invite,
+    this.onAccept,
+    this.onDecline,
+    this.onCancelInvite,
+    this.onJoin,
+    this.onDismiss,
     this.now,
   });
 
@@ -46,6 +53,22 @@ class PacemateCard extends StatelessWidget {
   final bool goEnabled;
   final bool goLoading;
 
+  /// 이 사람과 지금 오가는 제안. null이면 평소 카드(GO?)
+  final Invite? invite;
+
+  /// 받은 제안에 답하기
+  final VoidCallback? onAccept;
+  final VoidCallback? onDecline;
+
+  /// 내가 보낸 제안 물리기
+  final VoidCallback? onCancelInvite;
+
+  /// 수락된 제안 — 로비로
+  final VoidCallback? onJoin;
+
+  /// 거절·만료 안내 닫기
+  final VoidCallback? onDismiss;
+
   /// 테스트에서 시간을 고정하기 위한 구멍
   final DateTime? now;
 
@@ -56,10 +79,53 @@ class PacemateCard extends StatelessWidget {
   /// 있어야 한다 — Stack 안 형제라 자식 관계로는 찾아지지 않는다
   static const dotKey = ValueKey('pacemate-status-dot');
 
+  /// 남은 시간을 사람이 읽는 말로. 초 단위까지 세면 카드가 시계가 된다
+  static String _left(Duration d) {
+    final m = d.inMinutes;
+    return m >= 1 ? '$m분 남음' : '곧 만료돼요';
+  }
+
   @override
   Widget build(BuildContext context) {
     final roles = GoRoles.of(context);
-    final status = PacemateStatus.of(user, now ?? DateTime.now());
+    final at = now ?? DateTime.now();
+    final card = invite?.cardFor(at) ?? InviteCard.none;
+    final status = PacemateStatus.of(user, at);
+
+    // 제안이 오가는 중이면 그것이 이 카드의 이야기다 — 평소의 러닝 상태
+    // 한 줄보다 지금 답해야 할 일이 먼저다
+    final (String? line, Color tone) = switch (card) {
+      InviteCard.waitingAnswer => (
+          [
+            '답을 기다리는 중',
+            if (invite?.remaining(at) case final r?) _left(r),
+          ].join(' · '),
+          roles.textSecondary
+        ),
+      InviteCard.needsAnswer => (
+          [
+            '$name님이 부르고 있어요',
+            if (invite?.remaining(at) case final r?) _left(r),
+          ].join(' · '),
+          roles.warning.fg
+        ),
+      InviteCard.joinable => ('준비하러 가요', roles.success.fg),
+      InviteCard.declined => (
+          invite?.declineMessage?.trim().isNotEmpty == true
+              ? '"${invite!.declineMessage!.trim()}"'
+              : '지금은 어렵대요',
+          roles.textSecondary
+        ),
+      InviteCard.expired => ('답이 오지 않았어요', roles.textSecondary),
+      InviteCard.cancelled => ('그만뒀어요', roles.textSecondary),
+      InviteCard.none => (
+          status.label.isEmpty ? null : status.label,
+          status.tone == PacemateTone.active
+              ? roles.success.fg
+              : roles.textSecondary
+        ),
+    };
+
     return GoCard(
       margin: const EdgeInsets.fromLTRB(22, 0, 22, 10),
       padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
@@ -80,30 +146,56 @@ class PacemateCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                         color: roles.textPrimary)),
                 // 할 말이 없으면 빈 줄로 자리만 차지하지 않는다
-                if (status.label.isNotEmpty) ...[
+                if (line != null) ...[
                   const SizedBox(height: 2),
-                  Text(status.label,
+                  Text(line,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: status.tone == PacemateTone.active
-                              ? roles.success.fg
-                              : roles.textSecondary)),
+                      style: TextStyle(fontSize: 12, color: tone)),
                 ],
               ]),
         ),
         const SizedBox(width: GoSpace.s),
-        GoButton('GO?',
+        _action(card),
+      ]),
+    );
+  }
+
+  /// 카드의 오른쪽 — **상태마다 할 수 있는 일이 하나씩만** 선다.
+  /// 답을 기다리는 중에 GO?가 그대로 남아 있으면 같은 사람을 두 번 부르게 된다
+  Widget _action(InviteCard card) => switch (card) {
+        InviteCard.needsAnswer => Row(mainAxisSize: MainAxisSize.min, children: [
+            GoButton('나중에',
+                kind: GoButtonKind.text,
+                size: GoButtonSize.md,
+                onTap: onDecline),
+            const SizedBox(width: 2),
+            GoButton('수락',
+                kind: GoButtonKind.primary,
+                size: GoButtonSize.md,
+                onTap: onAccept),
+          ]),
+        InviteCard.joinable => GoButton('입장',
+            kind: GoButtonKind.primary, size: GoButtonSize.md, onTap: onJoin),
+        InviteCard.waitingAnswer => GoButton('취소',
+            kind: GoButtonKind.text,
+            size: GoButtonSize.md,
+            onTap: onCancelInvite),
+        InviteCard.declined ||
+        InviteCard.expired ||
+        InviteCard.cancelled =>
+          GoButton('확인',
+              kind: GoButtonKind.text,
+              size: GoButtonSize.md,
+              onTap: onDismiss),
+        InviteCard.none => GoButton('GO?',
             kind: GoButtonKind.primary,
             size: GoButtonSize.md,
             serifLabel: true,
             loading: goLoading,
             enabled: goEnabled,
             onTap: onGo),
-      ]),
-    );
-  }
+      };
 
   /// 사진 + 오른쪽 아래로 걸쳐 나온 상태 점.
   ///

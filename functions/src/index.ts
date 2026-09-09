@@ -203,19 +203,21 @@ export const cleanupSessions = onSchedule(
     // 누군가 그만둔 것이므로 여기서 건드리지 않는다 — 보낸 사람에게
     // 보여줄 문장이 다르다("답이 오지 않았어요" vs "그만뒀어요")
     let expired = 0;
-    {
+    // 'waiting'은 2026-09-09 개편 이전의 이름이다. 앱은 더 이상 그 상태를
+    // 모르므로 화면 어디에도 안 나오고, 남겨 두면 영영 지워지지 않는 유령이
+    // 된다 — 여기서 함께 거둔다
+    for (const status of ['invited', 'waiting']) {
       const snap = await db
         .collection('sessions')
-        .where('status', '==', 'invited')
+        .where('status', '==', status)
         .where('createdAt', '<', staleRequest)
         .limit(400)
         .get();
-      if (!snap.empty) {
-        const batch = db.batch();
-        snap.docs.forEach((d) => batch.update(d.ref, { status: 'expired' }));
-        await batch.commit();
-        expired = snap.size;
-      }
+      if (snap.empty) continue;
+      const batch = db.batch();
+      snap.docs.forEach((d) => batch.update(d.ref, { status: 'expired' }));
+      await batch.commit();
+      expired += snap.size;
     }
 
     const running = await db
