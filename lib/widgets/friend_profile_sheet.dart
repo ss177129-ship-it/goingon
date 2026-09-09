@@ -106,13 +106,15 @@ class _FriendProfileSheet extends StatelessWidget {
             Text('@$username',
                 style: TextStyle(fontSize: 12, color: roles.textSecondary)),
           ],
-          const SizedBox(height: 6),
-          Text(status.label,
-              style: TextStyle(
-                  fontSize: 12,
-                  color: status.tone == PacemateTone.active
-                      ? roles.success.fg
-                      : roles.textSecondary)),
+          if (status.label.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(status.label,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: status.tone == PacemateTone.active
+                        ? roles.success.fg
+                        : roles.textSecondary)),
+          ],
           const SizedBox(height: GoSpace.l),
           _theirRuns(context),
           const SizedBox(height: GoSpace.s),

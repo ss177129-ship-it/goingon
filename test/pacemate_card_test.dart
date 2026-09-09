@@ -36,6 +36,19 @@ void main() {
     expect(find.text('GO?'), findsOneWidget);
   });
 
+  testWidgets('최근 기록이 없으면 상태 줄이 통째로 사라진다 — 빈 줄을 남기지 않는다',
+      (tester) async {
+    await pump(tester, {'uid': 'u1'});
+    expect(find.text('지수'), findsOneWidget);
+    // 이름과 GO? 말고는 아무 글자도 없다
+    final texts = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((t) => t.data)
+        .whereType<String>()
+        .toList();
+    expect(texts, unorderedEquals(['지수', 'GO?']));
+  });
+
   testWidgets('최근 기록이 없으면 상태 점을 찍지 않는다', (tester) async {
     // 회색 점은 상태가 아니라 고장으로 읽히고, 목록에 뜻 없는 동그라미만
     // 늘어난다. 없을 때는 아무것도 그리지 않는 쪽이 정직하다

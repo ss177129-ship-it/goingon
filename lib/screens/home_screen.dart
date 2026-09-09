@@ -716,9 +716,6 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(children: [
         Text('아직 페이스메이트가 없어요',
             style: GoText.heading.copyWith(color: roles.textSecondary)),
-        const SizedBox(height: 6),
-        Text('한 명만 있으면 고잉온이 시작돼요.',
-            style: TextStyle(fontSize: 12, color: roles.textSecondary)),
       ]),
     );
   }

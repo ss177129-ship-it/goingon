@@ -243,10 +243,6 @@ class _UsScreenState extends State<UsScreen> {
               const SizedBox(height: 18),
               Text('${partner['name']}님과\n아직 함께 달리지 않았어요',
                   textAlign: TextAlign.center, style: GoText.heading),
-              const SizedBox(height: 8),
-              Text('한 번만 같이 뛰면, 여기에 우리 기록이 쌓여요.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: roles.textSecondary)),
               const SizedBox(height: 22),
               GoButton('GO? 보내러 홈으로', onTap: () => Navigator.pop(context)),
             ]),
@@ -536,13 +532,7 @@ class _UsScreenState extends State<UsScreen> {
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 12, color: roles.textSecondary)),
       ),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(32, 0, 32, 20),
-        child: Text('우리 둘이 함께 쌓아온 기록이에요.\n여기, 우리 사이에만 있어요.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                fontSize: 12, color: roles.partner, height: 1.6)),
-      ),
+      const SizedBox(height: 20),
     ]);
   }
 

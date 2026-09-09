@@ -58,6 +58,20 @@ void main() {
     expect(PacemateStatus.of(null, now).tone, PacemateTone.quiet);
   });
 
+  test('할 말이 없으면 아무 말도 하지 않는다 — quiet는 라벨이 비어 있다', () {
+    // 전에는 '먼저 불러보세요'라고 적었는데 그건 상태가 아니라 지시였고,
+    // 바로 옆 GO? 버튼이 이미 하는 말이었다. 안내 문장이 되돌아오지 않도록
+    for (final user in [
+      const <String, dynamic>{},
+      {'lastRunWeek': '2026-06-01'},
+      {'monthKey': '2026-08', 'monthKm': 42.0},
+    ]) {
+      final s = PacemateStatus.of(user, now);
+      expect(s.tone, PacemateTone.quiet);
+      expect(s.label, isEmpty, reason: '$user');
+    }
+  });
+
   test('lastRunWeek 형식이 깨져 있어도 화면이 죽지 않는다', () {
     // 옛 데이터·수기 수정으로 파싱 불가능한 값이 들어올 수 있다
     final s = PacemateStatus.of({'lastRunWeek': 'last-week'}, now);

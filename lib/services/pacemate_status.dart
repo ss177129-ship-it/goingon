@@ -66,9 +66,10 @@ class PacemateStatus {
           '이번 달 ${monthKm.toStringAsFixed(1)}km', PacemateTone.steady);
     }
 
-    // 기록이 아예 없는 사람과, 있었지만 뜸해진 사람을 굳이 가르지 않는다.
-    // 둘 다 지금 할 수 있는 일은 같다 — 부르는 것
-    return const PacemateStatus('먼저 불러보세요', PacemateTone.quiet);
+    // 할 말이 없으면 아무 말도 하지 않는다. 전에는 '먼저 불러보세요'라고
+    // 적었는데, 그건 상태가 아니라 지시였고 바로 옆 GO? 버튼이 이미 하는
+    // 말이었다. 카드는 이름만 남기고 한 줄이 통째로 사라진다
+    return const PacemateStatus('', PacemateTone.quiet);
   }
 
   /// 달이 바뀌면 monthKm은 지난달 값이 그대로 남아 있다([monthKey]로만

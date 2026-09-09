@@ -322,14 +322,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _row(
         icon: _soundOn ? Icons.volume_up_outlined : Icons.volume_off_outlined,
         title: '사운드',
-        subtitle: _soundOn ? '공명할 때 소리로도 알려줘요' : '소리를 내지 않아요',
         trailing: GoSwitch(value: _soundOn, onChanged: _setSound),
         onTap: () => _setSound(!_soundOn),
       ),
       _row(
         icon: _briefingOn ? Icons.record_voice_over_outlined : Icons.voice_over_off_outlined,
-        title: '음성 브리핑',
-        subtitle: _briefingOn ? '1km마다 짧게 알려줘요' : '말로 알려주지 않아요',
+        title: '1km마다 음성 안내',
         trailing: GoSwitch(
           value: _briefingOn,
           onChanged: _soundOn ? _setBriefing : null,
@@ -342,7 +340,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _row(
         icon: Icons.block,
         title: '차단 목록',
-        subtitle: '차단한 사람을 확인하고 해제해요',
         onTap: _showBlockedList,
       ),
       // 친구가 없어도 로비 → 러닝 → 완료 전체를 볼 수 있는 통로.
@@ -350,7 +347,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _row(
         icon: Icons.play_circle_outline,
         title: '혼자 미리 체험하기',
-        subtitle: '가상의 페이스메이트와 전체 흐름을 둘러봐요',
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(

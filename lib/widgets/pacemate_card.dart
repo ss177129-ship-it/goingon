@@ -79,15 +79,18 @@ class PacemateCard extends StatelessWidget {
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: roles.textPrimary)),
-                const SizedBox(height: 2),
-                Text(status.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: status.tone == PacemateTone.active
-                            ? roles.success.fg
-                            : roles.textSecondary)),
+                // 할 말이 없으면 빈 줄로 자리만 차지하지 않는다
+                if (status.label.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(status.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: status.tone == PacemateTone.active
+                              ? roles.success.fg
+                              : roles.textSecondary)),
+                ],
               ]),
         ),
         const SizedBox(width: GoSpace.s),
