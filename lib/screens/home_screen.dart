@@ -133,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final createdAt = doc.data()['createdAt'] as Timestamp?;
         if (createdAt != null &&
             DateTime.now().difference(createdAt.toDate()) > kRequestTtl) {
-          _runs.cancelSession(doc.id);
+          _runs.expireSession(doc.id);
           continue;
         }
         // 이미 다른 요청 시트가 떠 있거나 로비/러닝이 진행 중이면 겹쳐
@@ -200,8 +200,20 @@ class _HomeScreenState extends State<HomeScreen> {
           Text('$hostName님이\n같이 달리자고 해요',
               textAlign: TextAlign.center, style: GoText.title),
           const SizedBox(height: GoSpace.section),
-          GoButton('수락하고 함께 달리기', onTap: () {
+          // 수락은 **문서에 써야 성립한다.** 전에는 상태를 그대로 둔 채
+          // 로비로 밀기만 했는데, 지금 규칙에서는 invited인 세션에 준비도
+          // 출발도 걸리지 않으므로 그대로 두면 아무도 달리지 못한다
+          GoButton('수락하고 함께 달리기', onTap: () async {
             Navigator.pop(ctx);
+            try {
+              await _runs.acceptSession(sessionId);
+            } catch (e, stack) {
+              FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+              if (!mounted) return;
+              GoToast.error(context, '수락하지 못했어요. 다시 시도해 주세요.');
+              return;
+            }
+            if (!mounted) return;
             Navigator.push(context, MaterialPageRoute(
               builder: (_) => LobbyScreen(
                   sessionId: sessionId, partnerName: hostName),

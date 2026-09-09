@@ -37,7 +37,7 @@ class RunService {
       'hostId': hostId,
       'guestId': guestId,
       'participants': [hostId, guestId],
-      'status': 'waiting',
+      'status': SessionRules.invited,
       'ready': {hostId: false, guestId: false},
       'createdAt': FieldValue.serverTimestamp(),
     });
@@ -51,7 +51,7 @@ class RunService {
           .collection('sessions')
           .where('hostId', isEqualTo: hostId)
           .where('guestId', isEqualTo: guestId)
-          .where('status', whereIn: ['waiting', 'ready']).get();
+          .where('status', whereIn: SessionRules.openStatuses).get();
       for (final doc in snap.docs) {
         final createdAt = doc.data()['createdAt'] as Timestamp?;
         if (SessionRules.isRequestAlive(createdAt, DateTime.now())) {
@@ -79,12 +79,51 @@ class RunService {
     });
   }
 
-  /// 나에게 온 대기 중 세션 감지 (홈 화면에서 구독)
+  /// 나에게 온 제안 — 아직 답하지 않은 것(invited)과 내가 수락해 둔 것(accepted).
+  ///
+  /// 수락한 것까지 포함하는 이유: '제안' 탭이 로비로 들어가는 입구를 계속
+  /// 들고 있어야 한다. 수락하자마자 목록에서 사라지면, 시트를 닫거나 앱을
+  /// 껐다 켠 사람은 들어갈 길을 잃는다
   Stream<QuerySnapshot<Map<String, dynamic>>> incomingSessions(String myUid) {
     return _db
         .collection('sessions')
         .where('guestId', isEqualTo: myUid)
-        .where('status', whereIn: ['waiting', 'ready']).snapshots();
+        .where('status', whereIn: SessionRules.openStatuses)
+        .snapshots();
+  }
+
+  /// 내가 보낸 제안 — 답을 기다리는 것과 상대가 수락한 것.
+  /// 보낸 사람은 홈에 머무르므로(2026-09-09), 이 스트림이 그 카드의 상태다
+  Stream<QuerySnapshot<Map<String, dynamic>>> outgoingSessions(String myUid) {
+    return _db
+        .collection('sessions')
+        .where('hostId', isEqualTo: myUid)
+        .where('status', whereIn: SessionRules.openStatuses)
+        .snapshots();
+  }
+
+  /// 게스트의 수락
+  Future<void> acceptSession(String sessionId) =>
+      _transition(sessionId, SessionRules.accept);
+
+  /// 게스트의 거절 — 침묵 대신 한 줄 답장을 남길 수 있다
+  Future<void> declineSession(String sessionId, String message) =>
+      _transition(sessionId, (d) => SessionRules.decline(d, message: message));
+
+  /// 답 없이 30분이 지난 요청 정리
+  Future<void> expireSession(String sessionId) =>
+      _transition(sessionId, SessionRules.expire);
+
+  /// 읽고 → 판정하고 → 판정이 나오면 쓴다. 상태 전이는 전부 이 모양이라
+  /// 트랜잭션 껍데기를 한 곳에 둔다
+  Future<void> _transition(String sessionId,
+      Map<String, Object?>? Function(Map<String, dynamic>?) rule) async {
+    final ref = _db.collection('sessions').doc(sessionId);
+    await _db.runTransaction((tx) async {
+      final doc = await tx.get(ref);
+      final update = rule(doc.data());
+      if (update != null) tx.update(ref, update);
+    });
   }
 
   Stream<DocumentSnapshot<Map<String, dynamic>>> sessionStream(String id) =>
@@ -223,19 +262,8 @@ class RunService {
 
   /// 아직 시작 전(waiting/ready)인 세션만 취소함 — 이미 달리는 중이거나
   /// 끝난 세션을 오래된 정리 로직이 뒤늦게 취소해 기록을 날리지 않도록
-  Future<void> cancelSession(String sessionId, {String? declineMessage}) async {
-    final ref = _db.collection('sessions').doc(sessionId);
-    await _db.runTransaction((tx) async {
-      final doc = await tx.get(ref);
-      final update =
-          SessionRules.cancel(doc.data(), declineMessage: declineMessage);
-      if (update != null) tx.update(ref, update);
-    });
-  }
-
-  /// GO? 요청을 거절하며 한 줄 답장을 남김 (침묵 대신 대화)
-  Future<void> declineSession(String sessionId, String message) =>
-      cancelSession(sessionId, declineMessage: message);
+  Future<void> cancelSession(String sessionId) =>
+      _transition(sessionId, SessionRules.cancel);
 
   /// 특정 상대와 함께 끝낸 세션들 — '우리' 탭 집계용
   /// (hostId/guestId 직접 비교 — participants arrayContains는 규칙상 거부됨)

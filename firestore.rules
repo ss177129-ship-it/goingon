@@ -237,6 +237,38 @@ service cloud.firestore {
         return after.diff(before).affectedKeys().hasOnly([request.auth.uid]);
       }
 
+      // ── 상태 전이 (2026-09-09) ────────────────────────────────────
+      //
+      //   invited ──수락──▶ accepted ──둘 다 ready──▶ running ──▶ finished
+      //      │                  │
+      //      ├─거절─▶ declined   └─나감─▶ cancelled
+      //      └─만료─▶ expired
+      //
+      // 전에는 status가 허용 목록에만 들어 있으면 어디로든 갈 수 있었다.
+      // 그래서 호스트가 자기 요청을 스스로 '수락'할 수도, 끝난 세션을
+      // 되살릴 수도 있었다. 여기서 두 가지를 못박는다:
+      //
+      // 1. **수락과 거절은 게스트만.** 초대받은 쪽만 답할 수 있다
+      // 2. **끝난 상태는 끝이다.** finished/declined/expired/cancelled에서
+      //    출발하는 전이는 아래 어디에도 없으므로 전부 거부된다
+      function isGuest() { return request.auth.uid == resource.data.guestId; }
+      function was() { return resource.data.status; }
+      function now_() { return request.resource.data.status; }
+
+      function validTransition() {
+        return now_() == was() ||
+          (was() == 'invited' && now_() == 'accepted' && isGuest()) ||
+          (was() == 'invited' && now_() == 'declined' && isGuest()) ||
+          (was() == 'invited' && now_() in ['expired', 'cancelled']) ||
+          (was() == 'accepted' && now_() in ['running', 'cancelled']) ||
+          (was() == 'running' && now_() == 'finished');
+      }
+
+      // 한 줄 답장은 거절할 때만 붙는다 — 취소·만료에 슬쩍 끼워 넣을 수 없다
+      function declineMessageOk() {
+        return !touched('declineMessage') || now_() == 'declined';
+      }
+
       // GO? 요청은 내가 호스트일 때만, 그리고 상대가 이미 내 페이스메이트일
       // 때만 생성 가능. **`.data.friends`를 직접 읽으면 안 된다** — 필드가
       // 없는 문서에서 평가 에러가 나 조용히 거부된다(contract에서 friends를
@@ -245,7 +277,7 @@ service cloud.firestore {
         request.auth.uid == request.resource.data.hostId &&
         request.resource.data.guestId is string &&
         request.resource.data.guestId != request.auth.uid &&
-        request.resource.data.status == 'waiting' &&
+        request.resource.data.status == 'invited' &&
         !('results' in request.resource.data) &&
         request.resource.data.guestId in
           get(/databases/$(database)/documents/users/$(request.auth.uid))
@@ -261,7 +293,10 @@ service cloud.firestore {
           'startedAt', 'declineMessage', 'live'
         ]) &&
         request.resource.data.status in
-          ['waiting', 'ready', 'running', 'finished', 'cancelled'] &&
+          ['invited', 'accepted', 'running',
+           'finished', 'declined', 'expired', 'cancelled'] &&
+        validTransition() &&
+        declineMessageOk() &&
         (!touched('ready') ||
           onlyMyKey(resource.data.get('ready', {}), request.resource.data.ready)) &&
         (!touched('late') ||

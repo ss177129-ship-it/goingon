@@ -92,7 +92,7 @@ export const onRunRequest = onDocumentCreated(
   'sessions/{sessionId}',
   async (event) => {
     const data = event.data?.data();
-    if (!data || data.status !== 'waiting') return;
+    if (!data || data.status !== 'invited') return;
     const hostId = data.hostId as string;
     const guestId = data.guestId as string;
 
@@ -199,19 +199,23 @@ export const cleanupSessions = onSchedule(
     const staleRequest = new Date(now - 30 * 60 * 1000); // GO? TTL 30분
     const staleRunning = new Date(now - 24 * 60 * 60 * 1000);
 
-    let cancelled = 0;
-    for (const status of ['waiting', 'ready']) {
+    // 답을 기다리다 시간이 다 된 것만 만료다. 수락까지 갔다가 멈춘 것은
+    // 누군가 그만둔 것이므로 여기서 건드리지 않는다 — 보낸 사람에게
+    // 보여줄 문장이 다르다("답이 오지 않았어요" vs "그만뒀어요")
+    let expired = 0;
+    {
       const snap = await db
         .collection('sessions')
-        .where('status', '==', status)
+        .where('status', '==', 'invited')
         .where('createdAt', '<', staleRequest)
         .limit(400)
         .get();
-      if (snap.empty) continue;
-      const batch = db.batch();
-      snap.docs.forEach((d) => batch.update(d.ref, { status: 'cancelled' }));
-      await batch.commit();
-      cancelled += snap.size;
+      if (!snap.empty) {
+        const batch = db.batch();
+        snap.docs.forEach((d) => batch.update(d.ref, { status: 'expired' }));
+        await batch.commit();
+        expired = snap.size;
+      }
     }
 
     const running = await db
@@ -227,7 +231,7 @@ export const cleanupSessions = onSchedule(
     }
 
     logger.info(
-      `세션 정리 완료 — 만료 요청 ${cancelled}건 취소, 멈춘 러닝 ${running.size}건 종료 처리`,
+      `세션 정리 완료 — 만료 요청 ${expired}건, 멈춘 러닝 ${running.size}건 종료 처리`,
     );
   },
 );
