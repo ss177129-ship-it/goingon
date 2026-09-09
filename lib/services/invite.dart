@@ -170,3 +170,76 @@ bool _newer(Invite a, Invite b) {
   if (y == null) return false;
   return x.isAfter(y);
 }
+
+/// 양쪽이 거의 동시에 GO?를 눌러 세션이 둘 생겼을 때, 어느 쪽을 살릴지.
+///
+/// **왜 생기나.** 세션은 hostId/guestId로 방향이 박혀 있어서, 내가 부른 것과
+/// 상대가 부른 것은 서로 다른 문서다. 둘 다 누르면 A→B와 B→A가 동시에
+/// 존재하고, 두 사람 모두 "내가 불렀는데 상대도 나를 부르고 있다"는 화면을
+/// 보게 된다. 답할 것이 둘인데 하고 싶은 일은 하나다.
+///
+/// **어떻게 접나.** 두 기기가 서로 상의하지 않고 같은 답을 내야 하므로,
+/// 데이터에만 의존하는 고정된 기준을 쓴다 — **uid 사전순으로 앞선 사람이
+/// 호스트인 쪽을 살린다.** 시간(createdAt)으로 정하면 서버 시각이 아직
+/// 안 찍힌 문서가 있어 두 기기가 다른 답을 낼 수 있다.
+///
+/// 살아남은 쪽은 **수락된 것으로 본다.** 둘 다 GO?를 눌렀다는 것은 둘 다
+/// 달리고 싶다는 뜻이고, 거기서 다시 "수락하시겠어요?"를 묻는 것은 이미
+/// 한 대답을 또 시키는 것이다.
+class InviteMerge {
+  /// 살릴 세션
+  final Invite keep;
+
+  /// 접을 세션
+  final Invite drop;
+
+  /// 내가 [keep]의 게스트인가 — 수락을 쓸 수 있는 사람은 게스트뿐이다
+  final bool iAmGuestOfKeep;
+
+  const InviteMerge({
+    required this.keep,
+    required this.drop,
+    required this.iAmGuestOfKeep,
+  });
+}
+
+/// 겹친 제안들을 어떻게 접을지. 겹치지 않으면 빈 목록
+List<InviteMerge> inviteCollisions(
+  Iterable<Invite> invites,
+  String myUid,
+  DateTime now,
+) {
+  final byPartner = <String, List<Invite>>{};
+  for (final i in invites) {
+    if (!i.isOpen(now)) continue;
+    (byPartner[i.partnerUid] ??= []).add(i);
+  }
+
+  final merges = <InviteMerge>[];
+  byPartner.forEach((partnerUid, list) {
+    final mine = list.where((i) => i.direction == InviteDirection.outgoing);
+    final theirs = list.where((i) => i.direction == InviteDirection.incoming);
+    if (mine.isEmpty || theirs.isEmpty) return;
+
+    // 이미 수락된 쪽이 있으면 그쪽이 이긴다 — 사람이 내린 답이 규칙보다 앞선다
+    final accepted = list.where((i) => i.status == SessionRules.accepted);
+    final Invite keep;
+    if (accepted.isNotEmpty) {
+      keep = accepted.first;
+    } else {
+      // uid 사전순으로 앞선 사람이 호스트인 쪽
+      final iAmCanonicalHost = myUid.compareTo(partnerUid) < 0;
+      keep = iAmCanonicalHost ? mine.first : theirs.first;
+    }
+    for (final other in list) {
+      if (identical(other, keep)) continue;
+      merges.add(InviteMerge(
+        keep: keep,
+        drop: other,
+        iAmGuestOfKeep: keep.direction == InviteDirection.incoming &&
+            keep.status == SessionRules.invited,
+      ));
+    }
+  });
+  return merges;
+}

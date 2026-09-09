@@ -160,4 +160,76 @@ void main() {
       expect(currentInviteFor([old, fresh], you, now)?.sessionId, 's2');
     });
   });
+
+  group('동시에 GO? — 두 기기가 같은 답을 내야 한다', () {
+    // me < you (사전순). 그러므로 me가 호스트인 쪽이 살아남는다
+    Invite out(String id, {String status = SessionRules.invited}) =>
+        Invite.from(id, doc(status: status), me)!;
+    Invite inc(String id, {String status = SessionRules.invited}) =>
+        Invite.from(id, doc(host: you, guest: me, status: status), me)!;
+
+    test('한쪽만 있으면 접을 것이 없다', () {
+      expect(inviteCollisions([out('a')], me, now), isEmpty);
+      expect(inviteCollisions([inc('b')], me, now), isEmpty);
+      expect(inviteCollisions(const [], me, now), isEmpty);
+    });
+
+    test('겹치면 uid가 앞선 사람이 호스트인 쪽을 살린다', () {
+      final m = inviteCollisions([out('mine'), inc('theirs')], me, now);
+      expect(m, hasLength(1));
+      expect(m.single.keep.sessionId, 'mine', reason: 'me < you');
+      expect(m.single.drop.sessionId, 'theirs');
+    });
+
+    test('상대 기기도 같은 답을 낸다 — 기준이 데이터에만 있기 때문', () {
+      // you 관점에서는 방향이 뒤집힌다. 그래도 살아남는 세션은 같아야 한다
+      final theirView = [
+        Invite.from('mine', doc(), you)!, // you에게는 incoming
+        Invite.from('theirs', doc(host: you, guest: me), you)!, // outgoing
+      ];
+      final m = inviteCollisions(theirView, you, now);
+      expect(m.single.keep.sessionId, 'mine');
+      expect(m.single.drop.sessionId, 'theirs');
+    });
+
+    test('내가 살아남는 쪽의 게스트면 수락해야 한다', () {
+      // you 관점: 살아남는 'mine'에서 you는 게스트다
+      final theirView = [
+        Invite.from('mine', doc(), you)!,
+        Invite.from('theirs', doc(host: you, guest: me), you)!,
+      ];
+      expect(inviteCollisions(theirView, you, now).single.iAmGuestOfKeep,
+          isTrue);
+      // 내 관점: 살아남는 'mine'의 호스트는 나다
+      expect(
+          inviteCollisions([out('mine'), inc('theirs')], me, now)
+              .single
+              .iAmGuestOfKeep,
+          isFalse);
+    });
+
+    test('이미 수락된 쪽이 있으면 그쪽이 이긴다 — 사람의 답이 규칙보다 앞선다', () {
+      final m = inviteCollisions(
+          [out('mine'), inc('theirs', status: SessionRules.accepted)],
+          me,
+          now);
+      expect(m.single.keep.sessionId, 'theirs');
+      expect(m.single.drop.sessionId, 'mine');
+      // 이미 수락됐으므로 또 수락할 것이 없다
+      expect(m.single.iAmGuestOfKeep, isFalse);
+    });
+
+    test('끝난 제안은 겹침으로 세지 않는다', () {
+      final m = inviteCollisions(
+          [out('mine'), inc('old', status: SessionRules.declined)], me, now);
+      expect(m, isEmpty);
+    });
+
+    test('다른 사람과의 제안은 서로 안 건드린다', () {
+      final other = Invite.from('x', doc(guest: 'zzz'), me)!;
+      final m = inviteCollisions([out('mine'), inc('theirs'), other], me, now);
+      expect(m, hasLength(1));
+      expect(m.single.drop.sessionId, 'theirs');
+    });
+  });
 }

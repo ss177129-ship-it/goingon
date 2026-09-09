@@ -29,7 +29,18 @@ class RunService {
   /// 같은 친구에게 아직 응답 없는 요청이 남아 있으면 새로 만들지 않고 그것을
   /// 재사용함 — 안 그러면 GO?를 여러 번 누를 때마다 waiting 세션이 쌓이고,
   /// 상대는 수락한 뒤에도 남은 요청 시트를 계속 보게 됨
+  /// 상대가 이미 나를 부르고 있으면 **새로 만드는 대신 그것을 수락한다.**
+  /// 둘 다 GO?를 눌렀다는 건 둘 다 달리고 싶다는 뜻이고, 세션을 하나 더
+  /// 만들면 두 사람 모두 "내가 불렀는데 상대도 나를 부른다"를 보게 된다.
+  ///
+  /// 이걸로도 완전한 동시 입력은 못 막는다(둘 다 상대 문서를 보기 전에
+  /// 만들면 두 개가 생긴다) — 그건 [inviteCollisions]가 뒤에서 접는다
   Future<String> createSession(String hostId, String guestId) async {
+    final theirs = await _findIncomingInvite(myUid: hostId, fromUid: guestId);
+    if (theirs != null) {
+      await acceptSession(theirs);
+      return theirs;
+    }
     final existing = await _findPendingSession(hostId, guestId);
     if (existing != null) return existing;
 
@@ -61,6 +72,31 @@ class RunService {
     } catch (_) {
       // 인덱스/네트워크 문제로 확인에 실패하면 새로 만드는 쪽으로 — 중복
       // 세션은 불편할 뿐이지만, 여기서 던지면 GO? 자체가 막힘
+    }
+    return null;
+  }
+
+  /// 그 사람이 나에게 보낸, 아직 답하지 않은 요청
+  Future<String?> _findIncomingInvite({
+    required String myUid,
+    required String fromUid,
+  }) async {
+    try {
+      final snap = await _db
+          .collection('sessions')
+          .where('hostId', isEqualTo: fromUid)
+          .where('guestId', isEqualTo: myUid)
+          .where('status', isEqualTo: SessionRules.invited)
+          .get();
+      for (final doc in snap.docs) {
+        final createdAt = doc.data()['createdAt'] as Timestamp?;
+        if (SessionRules.isRequestAlive(createdAt, DateTime.now())) {
+          return doc.id;
+        }
+      }
+    } catch (_) {
+      // 확인에 실패하면 평소대로 새로 만든다 — 겹침은 불편할 뿐이지만
+      // 여기서 던지면 GO? 자체가 막힌다
     }
     return null;
   }

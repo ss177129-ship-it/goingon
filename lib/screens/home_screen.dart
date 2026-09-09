@@ -45,6 +45,10 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 앱이 사는 동안만 기억한다 — 다시 켜면 한 번 더 보이지만, 못 본 채
   /// 사라지는 것보다는 낫다
   final Set<String> _dismissed = {};
+
+  /// 이미 접기를 시도한 세션 — 스트림이 다시 울릴 때마다 같은 쓰기를
+  /// 되풀이하지 않는다
+  final Set<String> _merging = {};
   StreamSubscription? _incomingSub;
   final Set<String> _handledSessions = {};
   int _openSheets = 0;
@@ -89,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _invitesSub?.cancel();
     _invitesSub = _invites.stream(_auth.uid).listen((list) {
       if (mounted) setState(() => _inviteList = list);
+      _resolveCollisions(list);
     }, onError: (e, stack) {
       // 제안이 안 보여도 앱의 나머지는 동작한다
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
@@ -318,6 +323,23 @@ class _HomeScreenState extends State<HomeScreen> {
       GoToast.error(context, '요청을 보내지 못했어요. 다시 시도해 주세요.');
     } finally {
       if (mounted) setState(() => _sendingTo = null);
+    }
+  }
+
+  /// 양쪽이 동시에 GO?를 눌러 세션이 둘 생긴 것을 접는다.
+  ///
+  /// 두 기기가 각자 같은 판정을 내리고 **자기가 할 수 있는 것만** 한다 —
+  /// 접는 것은 누구든, 수락은 게스트만(규칙이 그렇게 막는다). 겹쳐 불러도
+  /// 두 번째 쓰기는 SessionRules가 null을 돌려 아무 일도 하지 않는다
+  void _resolveCollisions(List<Invite> list) {
+    final merges = inviteCollisions(list, _auth.uid, DateTime.now());
+    for (final m in merges) {
+      if (_merging.contains(m.drop.sessionId)) continue;
+      _merging.add(m.drop.sessionId);
+      _runs.cancelSession(m.drop.sessionId).catchError((_) {});
+      if (m.iAmGuestOfKeep) {
+        _runs.acceptSession(m.keep.sessionId).catchError((_) {});
+      }
     }
   }
 
