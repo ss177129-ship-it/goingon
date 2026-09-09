@@ -47,14 +47,14 @@ void main() {
     expect(r.attention, r.warning.fg);
   });
 
-  double _lum(Color c) {
+  double lum(Color c) {
     double f(double v) =>
         v <= 0.03928 ? v / 12.92 : math.pow((v + 0.055) / 1.055, 2.4).toDouble();
     return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b);
   }
 
   double contrast(Color a, Color b) {
-    final la = _lum(a), lb = _lum(b);
+    final la = lum(a), lb = lum(b);
     return (math.max(la, lb) + .05) / (math.min(la, lb) + .05);
   }
 
