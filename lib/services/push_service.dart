@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 
 /// 앱을 켜지 않아도 친구 요청·러닝 요청을 받기 위한 푸시 알림.
@@ -125,8 +126,28 @@ class PushService {
       }
       await Future.delayed(Duration(seconds: attempt + 1)); // 1,2,3,4,5,6초
     }
-    lastRegistrationError ??= 'APNs 토큰을 받지 못했어요';
+    // 왜 못 받았는지는 플러그인이 NSLog로만 남기고 Dart로 올려주지 않는다.
+    // AppDelegate가 그 콜백을 붙잡아 두므로 여기서 물어본다 — 이게 없으면
+    // "못 받았어요"에서 더 나아가지 못하고, 실기기 로그를 볼 수 없는
+    // 상황에서는 그대로 막힌다 (2026-09-11에 실제로 막혔다)
+    final detail = await _apnsFailureDetail();
+    lastRegistrationError ??=
+        detail == null ? 'APNs 토큰을 받지 못했어요' : 'APNs 등록 실패 — $detail';
     debugPrint('푸시 토큰 등록 실패: $lastRegistrationError');
+  }
+
+  static const _diag = MethodChannel('goingon/push_diag');
+
+  /// 네이티브가 받은 APNs 등록 실패 사유. 없으면 null.
+  Future<String?> _apnsFailureDetail() async {
+    try {
+      final r = await _diag.invokeMapMethod<String, dynamic>('apnsStatus');
+      if (r == null) return null;
+      if (r['registered'] == true) return '등록은 됐는데 토큰이 비어 있어요';
+      return r['error'] as String?;
+    } catch (_) {
+      return null; // 채널이 없는 빌드(시뮬레이터 등)에서는 조용히 넘어간다
+    }
   }
 
   /// 설정 화면에서 "지금 다시 시도" 용.

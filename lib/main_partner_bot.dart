@@ -35,6 +35,7 @@ import 'package:flutter/material.dart';
 
 import 'firebase_env.dart';
 import 'services/auth_service.dart';
+import 'services/cheer/cheer.dart';
 import 'services/friend_service.dart';
 import 'services/live_share.dart';
 import 'services/run_service.dart';
@@ -75,6 +76,13 @@ class BotScenario {
 
   /// live 갱신 간격.
   static const liveEvery = Duration(seconds: 3);
+
+  /// 결과를 낸 뒤 상대에게 응원을 하나 남기기까지.
+  ///
+  /// 이걸 봇이 하는 이유: `onCheer` 푸시는 이 앱에서 **가장 안 깨지면 안 되는
+  /// 경로**인데(상대가 나를 부르는 순간), 사람 둘이 있어야만 밟힌다. 그리고
+  /// 시뮬레이터는 APNs 토큰을 못 받으므로 받는 쪽은 실기기여야 한다.
+  static const cheerAfterFinish = Duration(seconds: 5);
 
   /// 봇이 달리는 페이스(km당 초)와 케이던스 기준값.
   static const paceSecPerKm = 330;
@@ -149,11 +157,15 @@ class _BotScreen extends StatefulWidget {
 class _BotScreenState extends State<_BotScreen> {
   final _runs = RunService();
   final _friends = FriendService();
+  final _cheers = CheerService();
   final _log = <String>[];
   final _scroll = ScrollController();
 
   String _phase = '시작하는 중';
   String? _uid;
+
+  /// 지금 세션의 상대. 응원을 보낼 곳이라 들고 있는다.
+  String? _partnerUid;
 
   /// 이미 손댄 것들. 스트림은 같은 문서를 여러 번 흘려보내므로,
   /// 이게 없으면 한 초대에 수락을 여러 번 던진다.
@@ -285,6 +297,7 @@ class _BotScreenState extends State<_BotScreen> {
         final status = doc.data()['status'] as String?;
         if (status != SessionRules.invited) continue;
         if (!_handledSessions.add(doc.id)) continue;
+        _partnerUid = doc.data()['hostId'] as String?;
         _say('초대 도착: ${doc.id}');
         _handleSession(doc.id, uid);
       }
@@ -398,6 +411,7 @@ class _BotScreenState extends State<_BotScreen> {
         kcal: (km * 62).round(),
       );
       _say('제출 완료: ${km.toStringAsFixed(2)}km / ${elapsed.inSeconds}초');
+      await _sendCheer(uid, sessionId);
       _setPhase('기다리는 중');
     } catch (e) {
       _say('결과 제출 실패: $e');
@@ -405,6 +419,22 @@ class _BotScreenState extends State<_BotScreen> {
     }
     _currentSessionSub?.cancel();
     _currentSessionSub = null;
+  }
+
+  /// 상대에게 응원을 하나 남긴다 — 문서만 만들고 발송은 서버(`onCheer`)가 한다.
+  Future<void> _sendCheer(String uid, String sessionId) async {
+    final to = _partnerUid;
+    if (to == null) {
+      _say('응원 보낼 상대를 모릅니다');
+      return;
+    }
+    await Future<void>.delayed(BotScenario.cheerAfterFinish);
+    try {
+      await _cheers.send(fromUid: uid, toUid: to, runId: sessionId);
+      _say('응원 보냄 → $to (푸시는 서버가 보낸다)');
+    } catch (e) {
+      _say('응원 실패: $e');
+    }
   }
 
   // ── 화면 ────────────────────────────────────────────────────────────
