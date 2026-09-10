@@ -1,19 +1,29 @@
-import 'package:flutter/foundation.dart';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goingon/firebase_env.dart';
 import 'package:goingon/firebase_options.dart';
 import 'package:goingon/firebase_options_staging.dart';
 
-/// 이 파일이 지키는 약속은 하나다: **표지판이 없으면 운영이다.**
+/// 이 파일이 지키는 약속은 둘이다.
 ///
-/// 왜 테스트로까지 못 박는가. `GO_ENV`는 컴파일 시점 상수라 TestFlight·
-/// App Store 빌드에는 `--dart-define`이 안 들어간다. 그래서 기본값이 한 번
-/// 잘못 바뀌면 **릴리즈 빌드가 조용히 연습실 데이터를 보게 된다.** 화면은
-/// 멀쩡히 뜨고 로그인도 되기 때문에 눈으로는 못 잡는다 — 리뷰어가 자기
-/// 기록이 사라졌다고 말해줘야 아는 종류의 사고다.
+/// 1. **표지판이 없으면 운영이다.** `GO_ENV`는 컴파일 시점 상수라
+///    TestFlight·App Store 빌드에는 `--dart-define`이 안 들어간다.
+/// 2. **커밋된 plist도 언제나 운영이다.** iOS에서는 plist가 실제 스위치라,
+///    연습실 상태로 커밋되면 리뷰어 빌드가 연습실 데이터를 보게 된다.
 ///
-/// `flutter test`는 `--dart-define` 없이 도니까, 여기서 보이는 값이 곧
-/// 릴리즈 빌드가 보게 될 값이다.
+/// 둘 다 조용히 틀리는 종류다 — 앱은 멀쩡히 뜨고 로그인도 되기 때문에
+/// 화면으로는 잡을 수 없다. `flutter test`는 `--dart-define` 없이 도니까,
+/// 여기서 보이는 값이 곧 릴리즈 빌드가 보게 될 값이다.
+String _projectIdOf(String path) {
+  final text = File(path).readAsStringSync();
+  final m = RegExp(
+    r'<key>PROJECT_ID</key>\s*<string>([^<]+)</string>',
+  ).firstMatch(text);
+  expect(m, isNotNull, reason: '$path 에서 PROJECT_ID를 못 찾았다');
+  return m!.group(1)!;
+}
+
 void main() {
   group('표지판이 없을 때', () {
     test('연습실이 아니다', () {
@@ -21,12 +31,38 @@ void main() {
       expect(FirebaseEnv.label, 'prod');
     });
 
-    test('운영 프로젝트를 가리킨다', () {
-      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    test('운영 프로젝트를 기대한다', () {
+      expect(FirebaseEnv.expected.projectId, 'goingon-c12f3');
+      expect(FirebaseEnv.expected.appId, DefaultFirebaseOptions.ios.appId);
+    });
+  });
 
-      expect(FirebaseEnv.options.projectId, 'goingon-c12f3');
-      expect(FirebaseEnv.options.appId, DefaultFirebaseOptions.ios.appId);
+  group('커밋된 plist', () {
+    const active = 'ios/Runner/GoogleService-Info.plist';
+
+    test('활성 plist는 운영이다 — 연습실인 채로 커밋되면 안 된다', () {
+      expect(_projectIdOf(active), 'goingon-c12f3',
+          reason: '연습실 상태로 커밋됐다. ./tools/env.sh prod 를 실행할 것');
+    });
+
+    test('활성 plist가 prod 사본과 같다', () {
+      expect(
+        File(active).readAsStringSync(),
+        File('ios/Runner/GoogleService-Info-prod.plist').readAsStringSync(),
+      );
+    });
+
+    test('연습실 사본은 연습실을 가리킨다', () {
+      expect(_projectIdOf('ios/Runner/GoogleService-Info-staging.plist'),
+          'goingon-staging');
+    });
+
+    test('plist와 Dart 설정이 같은 곳을 말한다', () {
+      // 둘이 갈라지면 verify()가 멀쩡한 실행을 어긋났다고 판정하거나,
+      // 반대로 어긋난 실행을 통과시킨다
+      expect(_projectIdOf(active), DefaultFirebaseOptions.ios.projectId);
+      expect(_projectIdOf('ios/Runner/GoogleService-Info-staging.plist'),
+          StagingFirebaseOptions.ios.projectId);
     });
   });
 
@@ -42,13 +78,25 @@ void main() {
     });
 
     test('번들ID는 같다 — 그래서 pbxproj를 안 건드려도 된다', () {
-      // Firebase 프로젝트가 다르면 번들ID는 겹쳐도 된다. 이 덕분에 프로비저닝
-      // 프로파일도 entitlements도 그대로 쓴다. 이게 깨지면 연습실 접속에
-      // Xcode 설정 변경이 따라붙게 되므로, 값이 갈라지면 알아야 한다.
       expect(
         StagingFirebaseOptions.ios.iosBundleId,
         DefaultFirebaseOptions.ios.iosBundleId,
       );
+    });
+  });
+
+  group('EnvMismatch', () {
+    test('연습실을 보고 있으면 운영으로 되돌리라고 말한다', () {
+      const e = EnvMismatch(
+          flag: 'prod', expected: 'goingon-c12f3', actual: 'goingon-staging');
+      expect(e.remedy, './tools/env.sh prod');
+    });
+
+    test('운영을 보고 있으면 연습실로 가라고 말한다', () {
+      const e = EnvMismatch(
+          flag: 'staging', expected: 'goingon-staging', actual: 'goingon-c12f3');
+      expect(e.remedy, './tools/env.sh staging');
+      expect(e.toString(), contains('goingon-staging'));
     });
   });
 }

@@ -28,7 +28,20 @@ const _kHasLaunchedBeforeKey = 'has_launched_before';
 void main() {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
-    await Firebase.initializeApp(options: FirebaseEnv.options);
+    // 설정은 GoogleService-Info.plist에서 온다. 네이티브가 main()보다 먼저
+    // [DEFAULT] 앱을 만들어 두기 때문에, 여기서 다른 options를 넘기면
+    // duplicate-app이 나고 그 예외가 runApp()을 막아 런치 스크린인 채로
+    // 멈춘다 (FirebaseEnv 주석 참조). 그래서 options 없이 초기화하고,
+    // 그게 의도한 프로젝트인지만 확인한다
+    await Firebase.initializeApp();
+    try {
+      FirebaseEnv.verify();
+    } on EnvMismatch catch (e) {
+      // 어긋난 채로 계속 가면 개발 빌드나 봇이 운영 데이터를 건드리게 된다.
+      // 화면만 봐서는 알 수 없는 종류라 여기서 멈추고 사람에게 말한다
+      runApp(_EnvMismatchApp(e));
+      return;
+    }
 
     FlutterError.onError = (details) {
       FlutterError.presentError(details);
@@ -47,6 +60,48 @@ void main() {
   }, (error, stack) {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
   });
+}
+
+/// plist와 `GO_ENV`가 어긋났을 때 대신 뜨는 화면.
+///
+/// 앱을 그냥 죽이지 않는 이유: 예외가 runApp()을 막으면 런치 스크린인 채로
+/// 멈춰서 "왜 안 뜨지"만 남는다. 실제로 그 상태를 한 번 진단하느라 시간을
+/// 썼다. 필요한 것은 무엇이 어긋났고 무엇을 치면 되는지다.
+class _EnvMismatchApp extends StatelessWidget {
+  const _EnvMismatchApp(this.error);
+
+  final EnvMismatch error;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: GoTheme.light(),
+      home: Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Text('환경이 어긋났어요', style: GoTheme.serif(24)),
+                const SizedBox(height: 14),
+                Text(
+                  'GO_ENV=${error.flag} 는 ${error.expected} 를 기대했는데\n'
+                  'plist는 ${error.actual} 를 가리키고 있습니다.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 13, height: 1.5),
+                ),
+                const SizedBox(height: 20),
+                // 폰트는 지정하지 않는다 — 번들에 없는 패밀리(monospace 등)를
+                // 부르면 이 환경에서는 폴백이 없어 두부가 된다
+                Text(error.remedy, style: const TextStyle(fontSize: 13)),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class GoingOnApp extends StatelessWidget {
