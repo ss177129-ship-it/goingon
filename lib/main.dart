@@ -17,7 +17,7 @@ import 'services/auth_service.dart';
 import 'theme.dart';
 import 'widgets/splash_motion/goingon_brand_motion.dart';
 
-import 'firebase_options.dart';
+import 'firebase_env.dart';
 import 'services/hidden_invites.dart';
 
 const _kHasLaunchedBeforeKey = 'has_launched_before';
@@ -28,9 +28,7 @@ const _kHasLaunchedBeforeKey = 'has_launched_before';
 void main() {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    await Firebase.initializeApp(options: FirebaseEnv.options);
 
     FlutterError.onError = (details) {
       FlutterError.presentError(details);
