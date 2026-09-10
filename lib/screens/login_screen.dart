@@ -1,7 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import '../firebase_env.dart';
 import '../services/auth_service.dart';
 import '../theme.dart';
 import '../widgets/go_button.dart';
@@ -72,6 +74,42 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  /// 연습실 전용 테스트 로그인.
+  ///
+  /// 왜 필요한가: 2인 흐름을 검증하려면 봇과 마주 볼 사람이 하나 필요한데,
+  /// Apple 로그인은 시뮬레이터에 iCloud 계정이 들어가 있어야 동작한다.
+  /// 그 준비 때문에 검증 한 번의 비용이 올라가면 결국 검증을 덜 하게 된다.
+  ///
+  /// **릴리즈에는 들어가지 않는다.** `FirebaseEnv.isStaging`은 컴파일 시점
+  /// 상수라 플래그 없이 빌드하면 false로 굳고, 이 분기와 아래 버튼이
+  /// 통째로 제거된다. 게다가 이메일/비밀번호 제공자 자체가 연습실에만
+  /// 켜져 있어서, 설령 코드가 남아도 운영에서는 로그인이 거부된다 —
+  /// 두 겹이다.
+  Future<void> _continueAsTester() async {
+    setState(() => _loading = true);
+    try {
+      final auth = FirebaseAuth.instance;
+      const email = 'tester@goingon.test';
+      const password = 'goingon-staging-tester';
+      try {
+        await auth.signInWithEmailAndPassword(email: email, password: password);
+      } on FirebaseAuthException catch (e) {
+        if (e.code != 'user-not-found' && e.code != 'invalid-credential') {
+          rethrow;
+        }
+        await auth.createUserWithEmailAndPassword(
+            email: email, password: password);
+      }
+      if (!mounted) return;
+      await _afterAuth('테스터');
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
+      if (!mounted) return;
+      setState(() => _loading = false);
+      GoToast.error(context, '테스트 로그인 실패: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final roles = GoRoles.of(context);
@@ -113,6 +151,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   kind: GoButtonKind.secondary,
                   enabled: !_loading,
                   onTap: _continueWithGoogle),
+              // 연습실에서만 그린다 — 릴리즈 빌드에서는 상수 false라
+              // 이 가지가 통째로 사라진다 (_continueAsTester 주석 참조)
+              if (FirebaseEnv.isStaging) ...[
+                const SizedBox(height: GoSpace.m),
+                GoButton('테스터로 계속하기 (연습실)',
+                    kind: GoButtonKind.secondary,
+                    enabled: !_loading,
+                    onTap: _continueAsTester),
+              ],
               // **이용약관·개인정보처리방침 고지를 뺐다**(2026-09-01).
               //
               // 예전에는 "계속하면 이용약관과 개인정보처리방침에 동의하는
