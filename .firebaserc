@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "prod": "goingon-c12f3",
+    "staging": "goingon-staging"
+  }
+}
