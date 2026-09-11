@@ -2,6 +2,22 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 
+/// 글자 삼색 묶음 — 밝은 바탕과 어두운 바탕에서 같은 위젯을 쓰기 위한 것.
+///
+/// 러닝 화면만 잉크로 내려앉으므로, 여기서만 [GoRoles]를 벗어난다.
+/// null이면 평소대로 역할 토큰을 쓴다
+class RunTextTone {
+  const RunTextTone({
+    required this.primary,
+    required this.secondary,
+    required this.disabled,
+  });
+
+  final Color primary;
+  final Color secondary;
+  final Color disabled;
+}
+
 /// 러닝 화면의 한 진영 — 나 또는 상대.
 ///
 /// **두 진영이 같은 위젯을 쓰는 것이 이 파일의 전부다.** 페이스는 페이스끼리,
@@ -23,6 +39,7 @@ class RunStatBlock extends StatelessWidget {
     this.footnote,
     this.stale = false,
     this.staleNote,
+    this.tone,
   });
 
   /// 진영 이름 — '나' 또는 상대 닉네임
@@ -53,12 +70,21 @@ class RunStatBlock extends StatelessWidget {
   /// 얼마나 낡았는지 ('14초 전'). [stale]일 때만 쓰인다
   final String? staleNote;
 
+  /// 어두운 바탕에서 쓸 글자색. null이면 [GoRoles]
+  final RunTextTone? tone;
+
   @override
   Widget build(BuildContext context) {
     final roles = GoRoles.of(context);
-    final valueColor = stale ? roles.textDisabled : color;
-    final kmColor = stale ? roles.textDisabled : roles.textPrimary;
-    final captionColor = stale ? roles.textDisabled : roles.textSecondary;
+    final t = tone ??
+        RunTextTone(
+          primary: roles.textPrimary,
+          secondary: roles.textSecondary,
+          disabled: roles.textDisabled,
+        );
+    final valueColor = stale ? t.disabled : color;
+    final kmColor = stale ? t.disabled : t.primary;
+    final captionColor = stale ? t.disabled : t.secondary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,7 +96,7 @@ class RunStatBlock extends StatelessWidget {
             height: 7,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: stale ? roles.textDisabled : color,
+              color: stale ? t.disabled : color,
             ),
           ),
           const SizedBox(width: 7),
@@ -87,7 +113,7 @@ class RunStatBlock extends StatelessWidget {
             const SizedBox(width: 6),
             Text('· $staleNote',
                 maxLines: 1,
-                style: _label(roles.textDisabled)
+                style: _label(t.disabled)
                     .copyWith(fontWeight: FontWeight.w500, letterSpacing: .4)),
           ],
         ]),
@@ -160,6 +186,7 @@ class PaceFootnote extends StatelessWidget {
     required this.deltaSeconds,
     required this.fasterThanAverage,
     required this.fastColor,
+    this.tone,
   });
 
   final String averagePace;
@@ -169,15 +196,24 @@ class PaceFootnote extends StatelessWidget {
   final bool fasterThanAverage;
   final Color fastColor;
 
+  /// 어두운 바탕에서 쓸 글자색
+  final RunTextTone? tone;
+
   @override
   Widget build(BuildContext context) {
     final roles = GoRoles.of(context);
+    final t = tone ??
+        RunTextTone(
+          primary: roles.textPrimary,
+          secondary: roles.textSecondary,
+          disabled: roles.textDisabled,
+        );
     final base = TextStyle(
       fontSize: 12,
       height: 1.3,
       fontWeight: FontWeight.w500,
       letterSpacing: .8,
-      color: roles.textSecondary,
+      color: t.secondary,
     );
     final d = deltaSeconds;
     return Row(children: [
@@ -188,7 +224,7 @@ class PaceFootnote extends StatelessWidget {
           width: 3,
           height: 3,
           decoration: BoxDecoration(
-              shape: BoxShape.circle, color: roles.textSecondary),
+              shape: BoxShape.circle, color: t.secondary),
         ),
         const SizedBox(width: 8),
         Flexible(
@@ -198,7 +234,7 @@ class PaceFootnote extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: base.copyWith(
               fontWeight: FontWeight.w700,
-              color: fasterThanAverage ? fastColor : roles.textSecondary,
+              color: fasterThanAverage ? fastColor : t.secondary,
             ),
           ),
         ),

@@ -31,6 +31,8 @@ import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
 import '../widgets/resonance_canvas.dart';
 import '../widgets/run_stat_block.dart';
+import '../widgets/world/run_world.dart';
+import '../widgets/world/world_palette.dart';
 import 'finish_screen.dart';
 
 /// 강제 종료 대비 스냅샷을 남기는 최소 간격.
@@ -55,6 +57,9 @@ const _kMinDeltaSeconds = 4;
 /// 쓰기 게이트(3초 간격 + 10초 하트비트)가 한 번 건너뛰었다고 상대를
 /// 지워버리면 안 된다. 하트비트의 두 배 남짓으로 잡는다
 const _kPartnerStaleAfter = Duration(seconds: 22);
+
+/// 세계가 기준 속도로 흐르는 페이스(km당 초). 5'30"이다
+const double _kWorldBasePace = 330;
 
 /// 러닝 화면 — 각자 GPS로 기록하고, 케이던스·페이스·거리를 실시간으로
 /// 주고받아 공명을 만든다. 합산은 여전히 완료 후에 한다
@@ -162,6 +167,10 @@ class _RunScreenState extends State<RunScreen>
   void initState() {
     super.initState();
     ActiveRunGuard.active = true;
+    // 시간대는 시작할 때 한 번만 정한다. 매 프레임 `DateTime.now()`로 고르면
+    // 19시를 넘기는 러닝에서 달리는 도중에 노을이 밤으로 뒤집히고, 그 순간
+    // 층 일곱 개의 [ui.Picture]가 프레임 안에서 통째로 다시 구워진다
+    _worldTime = WorldPalette.timeFor(DateTime.now());
     if (kDebugMode) _resonanceLog = ResonanceEventLog.attach(_resonance);
     // 데모는 가상 파트너가, 실세션은 상대의 live 데이터가 발맞춤을 만든다.
     // 둘 다 결국 engine.addSample로 들어가는 같은 경로다
@@ -374,6 +383,24 @@ class _RunScreenState extends State<RunScreen>
         .pushLive(widget.sessionId, AuthService().uid, state)
         // 부가 정보라 실패해도 러닝을 멈추지 않는다. 3초 뒤 또 시도한다
         .catchError((_) {});
+  }
+
+  /// 세계가 흐르는 속도. 빨라지면 도시가 빨리 흐른다.
+  ///
+  /// **숫자보다 이쪽이 훨씬 직관적이다.** 페이스는 역수 단위라 머리로 한 번
+  /// 뒤집어야 하지만, 도시가 빨리 흐르는 것은 몸으로 바로 읽힌다.
+  ///
+  /// 상·하한을 두는 이유: 신호등에 서면 0으로 수렴해 세계가 얼어붙고,
+  /// GPS가 튀면 배경이 순간이동한다. 부드럽게 따라가는 것은 [RunWorld]가 한다
+  double get _worldSpeed {
+    final p = _instantSecPerKm;
+    // 멈춰 서면 30초 창의 거리가 0이 되어 페이스가 무한대다. 이것은 '모름'이
+    // 아니라 '가장 느림'이다 — 1.0으로 돌리면 걷다가 서는 순간 도시가 오히려
+    // 빨라진다(걷기 0.5 → 정지 1.0)
+    if (p != null && p.isInfinite) return 0.5;
+    // 창이 아직 안 찼거나 값이 헛것이면 기준 속도
+    if (p == null || p.isNaN || p <= 0) return 1;
+    return (_kWorldBasePace / p).clamp(0.5, 2.0);
   }
 
   /// 유한한 값만 반올림한다. `double.infinity.round()`는 던진다 —
@@ -685,14 +712,6 @@ class _RunScreenState extends State<RunScreen>
     };
   }
 
-  /// 공명일 때만 골드. 그 외에는 잉크 —
-  /// 상태어가 관계 띠로 내려온 뒤로는 '상대의 상태'가 아니라 '우리의 상태'다.
-  /// 그래서 관계색(코랄)을 벗는다
-  Color _stateColor(GoRoles roles) =>
-      _resonance.hasCloseness && _syncState == SyncState.resonant
-          ? roles.resonance
-          : roles.textPrimary;
-
   @override
   Widget build(BuildContext context) {
     final roles = GoRoles.of(context);
@@ -739,6 +758,10 @@ class _RunScreenState extends State<RunScreen>
     );
   }
 
+  /// 배경 위에서도 숫자가 읽히게 하는 그림자. 스크림만으로는 모자란다 —
+  /// 도시의 불빛과 숫자가 같은 밝기로 겹치는 자리가 반드시 생긴다
+  List<Shadow> get _numShadow => GoRoles.of(context).runDark.numShadow;
+
   /// 캡션 라벨 — 이 화면에서 34px 미만이 허용되는 **유일한** 글자.
   /// 달리는 사람은 3초 이상 화면을 못 본다는 전제에서, 값은 크게 두고
   /// 값이 무엇인지 알려주는 꼬리표만 작게 남긴다
@@ -750,27 +773,105 @@ class _RunScreenState extends State<RunScreen>
           height: 1.3,
           fontWeight: FontWeight.w600,
           letterSpacing: 1.2,
-          color: color ?? GoRoles.of(context).textSecondary,
+          color: color ?? _tone.secondary,
+          shadows: _numShadow,
         ),
       );
 
   Widget _runBody() {
-    final roles = GoRoles.of(context);
+    // 러닝 화면만 앱에서 떼어낸다. 로비까지는 종이, 달리기 시작하면 잉크로
+    // 내려앉는다 — 그 전환 자체가 "시작했다"는 신호가 되고, 야간 러닝의
+    // 눈부심과 OLED 배터리까지 같이 해결된다.
+    //
+    // 그리고 밝은 종이 위에서는 어떤 색도 빛날 수 없다. 라임이 형광으로
+    // 살아나려면 어둠이 필요하다
+    final time = _worldTime;
     return Scaffold(
-      backgroundColor: roles.canvas,
-      body: SafeArea(
-        // 고정 높이 자식 사이에 Expanded 하나가 있는 Column이라, 작은 기기에서는
-        // 고정분의 합이 화면을 넘겨 가운데 캔버스가 0으로 눌리고 결국 넘친다.
-        // 숫자를 줄여 자리를 만든다 — 고리를 먼저 희생시키지 않는다
-        child: LayoutBuilder(builder: (context, c) => _runColumn(roles, c)),
+      backgroundColor: GoRoles.of(context).runDark.bg,
+      body: Stack(children: [
+        Positioned.fill(
+          child: RunWorld(speed: _worldSpeed, time: time, enabled: !_finishing),
+        ),
+        _scrims(time),
+        Positioned.fill(
+          child: SafeArea(
+            child: LayoutBuilder(builder: (context, c) => _runColumn(time, c)),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  /// 배경 위에서 숫자가 이기게 하는 장치.
+  ///
+  /// 처음에는 배경이 숫자를 그대로 삼켰고, 스크림을 세게 넣으니 이번엔
+  /// 배경이 죽었다. 지금은 **좁고 옅게** 깔고 숫자 자체에 그림자를 준다.
+  /// 이 균형은 실기에서 다시 잡아야 한다 — 한여름 대낮 야외는 또 다르다
+  Widget _scrims(WorldTime time) {
+    final v = WorldPalette.veil(time);
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: LayoutBuilder(builder: (context, c) {
+          // 고정 높이(200 + 252)는 세로 452pt 아래에서 Column을 넘긴다.
+          // 화면이 작아지면 스크림도 같이 줄어야 한다
+          final h = c.maxHeight.isFinite ? c.maxHeight : 844.0;
+          final top = math.min(200.0, h * .26);
+          final bottom = math.min(252.0, h * .32);
+          return Column(children: [
+            Container(
+              height: top,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    v.withValues(alpha: .84),
+                    v.withValues(alpha: .48),
+                    v.withValues(alpha: 0),
+                  ],
+                  stops: const [0, .56, 1],
+                ),
+              ),
+            ),
+            const Spacer(),
+            Container(
+              height: bottom,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    v.withValues(alpha: .90),
+                    v.withValues(alpha: .54),
+                    v.withValues(alpha: 0),
+                  ],
+                  stops: const [0, .46, 1],
+                ),
+              ),
+            ),
+          ]);
+        }),
       ),
     );
   }
 
+  /// 시작할 때 정한 시간대. 러닝 중에는 바뀌지 않는다
+  late final WorldTime _worldTime;
+
   /// SE(세로 약 600pt)에서도 캔버스가 남도록 하는 문턱
   static const _kTightHeight = 700.0;
 
-  Widget _runColumn(GoRoles roles, BoxConstraints c) {
+  /// 어둠 위의 글자 세 색
+  RunTextTone get _tone {
+    final dark = GoRoles.of(context).runDark;
+    return RunTextTone(
+      primary: dark.text,
+      secondary: dark.textSecondary,
+      disabled: dark.textDisabled,
+    );
+  }
+
+  Widget _runColumn(WorldTime time, BoxConstraints c) {
     final delta = _paceDelta;
     const gutter = EdgeInsets.symmetric(horizontal: 26);
     final tight = c.maxHeight < _kTightHeight;
@@ -779,143 +880,144 @@ class _RunScreenState extends State<RunScreen>
     final partnerPaceSize = tight ? 38.0 : 46.0;
     final partnerKmSize = tight ? 30.0 : 36.0;
     final gap = tight ? 10.0 : 16.0;
+    final dark = GoRoles.of(context).runDark;
+    final night = time == WorldTime.night;
+    final me = dark.self(night: night);
+    final you = dark.partner(night: night);
 
     return Column(children: [
-          const SizedBox(height: 10),
-          // ── 상단: 유일한 공유값(시간)과 연결 상태 ──
-          Padding(
-            padding: gutter,
-            child: Row(
+      const SizedBox(height: 10),
+      Padding(
+        padding: gutter,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(_timeText,
-                        style: GoTheme.serif(26, color: roles.textPrimary)),
-                    const SizedBox(width: 8),
-                    _caption('함께'),
-                  ],
-                ),
-                Row(children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _partnerStale
-                          ? roles.textDisabled
-                          : roles.statusOnline.bg,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  _caption(_partnerStale ? '신호 약함' : '연결됨',
-                      color: _partnerStale ? roles.textDisabled : null),
-                ]),
+                Text(_timeText,
+                    style: GoTheme.serif(26, color: dark.text)
+                        .copyWith(shadows: _numShadow)),
+                const SizedBox(width: 8),
+                _caption('함께'),
               ],
             ),
-          ),
-          const SizedBox(height: 14),
-
-          // ── 상대 진영 ──
-          // 위가 상대, 아래가 나. 이 순서는 화면 전체에서 한 번도 뒤집히지 않는다
-          Padding(
-            padding: gutter,
-            child: RunStatBlock(
-              name: widget.partnerName,
-              color: roles.partner,
-              pace: _partnerPaceText,
-              km: _partnerKmText,
-              paceLabel: '페이스',
-              paceSize: partnerPaceSize,
-              kmSize: partnerKmSize,
-              stale: _partnerStale,
-              staleNote: _partnerStaleNote,
-            ),
-          ),
-
-          // ── 두 고리 (탭·스와이프·길게 누르기로 신호) ──
-          // 신호에는 글자가 붙지 않는다 — 보낸 것은 잔상으로, 받은 것은
-          // 상대 고리의 맥동과 햅틱으로만 온다
-          Expanded(
-            child: Listener(
-              behavior: HitTestBehavior.opaque,
-              onPointerDown: _onGesturePointerDown,
-              onPointerUp: _onGesturePointerUp,
-              onPointerCancel: _onGesturePointerCancel,
-              child: ResonanceCanvas(
-                engine: _resonance,
-                myCadence: () => _myCadence,
-                // 낡은 값은 여기서 끊는다. 화면이 옛 발구름을 계속 그리면
-                // 상대가 멈춘 뒤에도 나란히 달리는 것처럼 보인다
-                partnerCadence: _freshPartnerCadence,
+            Row(children: [
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _partnerStale ? dark.textDisabled : dark.online,
+                ),
               ),
-            ),
-          ),
-
-          // ── 상태어와 두 사람의 케이던스 ──
-          AnimatedSwitcher(
-            duration: GoMotion.update,
-            child: Text(_stateWord,
-                key: ValueKey(_stateWord),
-                style: TextStyle(
-                  fontSize: tight ? 22 : 26,
-                  fontWeight: FontWeight.w700,
-                  height: 1.2,
-                  letterSpacing: -.3,
-                  color: _stateColor(roles),
-                )),
-          ),
-          const SizedBox(height: 8),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            _caption(
-                '${widget.partnerName} ${_partnerLive?.cadenceSpm?.round() ?? '—'}',
-                color: _partnerStale ? roles.textDisabled : roles.partner),
-            const SizedBox(width: 22),
-            _caption('나 ${_myCadence?.round() ?? '—'}', color: roles.self),
-          ]),
-          SizedBox(height: gap),
-
-          // ── 내 진영 — 큰 숫자는 '지금' 페이스, 아래 한 줄이 기준점 ──
-          Padding(
-            padding: gutter,
-            child: RunStatBlock(
-              name: '나',
-              color: roles.self,
-              pace: _currentPaceText,
-              km: _km.toStringAsFixed(2),
-              paceLabel: '지금 페이스',
-              paceSize: myPaceSize,
-              kmSize: myKmSize,
-              footnote: PaceFootnote(
-                averagePace: _averagePaceText,
-                deltaSeconds: delta?.$1,
-                fasterThanAverage: delta?.$2 ?? false,
-                fastColor: roles.self,
-              ),
-            ),
-          ),
-
-          SizedBox(height: gap + 2),
-          _stopButton(),
-          const SizedBox(height: 5),
-          _caption('길게 누르면 종료'),
-          // 위치를 "항상 허용"으로 못 받은 경우에만 — 화면이 꺼지면 거리가
-          // 멈추므로, 사용자가 이유를 모른 채 기록을 잃지 않도록 알려줌
-          if (_screenMustStayOn) ...[
-            const SizedBox(height: 10),
-            Padding(
-              padding: gutter,
-              // canvas 위에서 amber는 2.5:1로 읽히지 않는다. amberDark는 4.6:1
-              child: _caption('화면을 끄면 거리가 멈춰요 — 위치를 "항상 허용"으로 바꾸면 꺼도 기록돼요',
-                  color: roles.warning.fg),
-            ),
+              const SizedBox(width: 6),
+              _caption(_partnerStale ? '신호 약함' : '연결됨'),
+            ]),
           ],
-          SizedBox(height: tight ? GoSpace.m : GoSpace.section),
-        ]);
+        ),
+      ),
+      const SizedBox(height: 14),
+
+      // 위가 상대, 아래가 나. 이 순서는 화면 전체에서 한 번도 뒤집히지 않는다
+      Padding(
+        padding: gutter,
+        child: RunStatBlock(
+          name: widget.partnerName,
+          color: you,
+          pace: _partnerPaceText,
+          km: _partnerKmText,
+          paceLabel: '페이스',
+          paceSize: partnerPaceSize,
+          kmSize: partnerKmSize,
+          stale: _partnerStale,
+          staleNote: _partnerStaleNote,
+          tone: _tone,
+        ),
+      ),
+
+      Expanded(
+        child: Listener(
+          behavior: HitTestBehavior.opaque,
+          onPointerDown: _onGesturePointerDown,
+          onPointerUp: _onGesturePointerUp,
+          onPointerCancel: _onGesturePointerCancel,
+          child: ResonanceCanvas(
+            engine: _resonance,
+            myCadence: () => _myCadence,
+            partnerCadence: _freshPartnerCadence,
+            selfColor: me,
+            partnerColor: you,
+          ),
+        ),
+      ),
+
+      AnimatedSwitcher(
+        duration: GoMotion.update,
+        child: Text(_stateWord,
+            key: ValueKey(_stateWord),
+            style: TextStyle(
+              fontSize: tight ? 22 : 26,
+              fontWeight: FontWeight.w700,
+              height: 1.2,
+              letterSpacing: -.3,
+              color: _resonance.hasCloseness && _syncState == SyncState.resonant
+                  ? dark.resonance
+                  : dark.text,
+              shadows: _numShadow,
+            )),
+      ),
+      const SizedBox(height: 8),
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        _caption(
+            '${widget.partnerName} ${_finiteRound(_partnerLive?.cadenceSpm) ?? '—'}',
+            color: _partnerStale ? _tone.disabled : you),
+        const SizedBox(width: 22),
+        _caption('나 ${_finiteRound(_myCadence) ?? '—'}', color: me),
+      ]),
+      SizedBox(height: gap),
+
+      // 큰 숫자는 '지금' 페이스, 아래 한 줄이 기준점
+      Padding(
+        padding: gutter,
+        child: RunStatBlock(
+          name: '나',
+          color: me,
+          pace: _currentPaceText,
+          km: _km.toStringAsFixed(2),
+          paceLabel: '지금 페이스',
+          paceSize: myPaceSize,
+          kmSize: myKmSize,
+          tone: _tone,
+          footnote: PaceFootnote(
+            averagePace: _averagePaceText,
+            deltaSeconds: delta?.$1,
+            fasterThanAverage: delta?.$2 ?? false,
+            fastColor: me,
+            tone: _tone,
+          ),
+        ),
+      ),
+
+      SizedBox(height: gap + 2),
+      _stopButton(),
+      const SizedBox(height: 5),
+      _caption('길게 누르면 종료'),
+      // 위치를 "항상 허용"으로 못 받은 경우에만 — 화면이 꺼지면 거리가
+      // 멈추므로, 사용자가 이유를 모른 채 기록을 잃지 않도록 알려줌
+      if (_screenMustStayOn) ...[
+        const SizedBox(height: 10),
+        Padding(
+          padding: gutter,
+          child: _caption('화면을 끄면 거리가 멈춰요 — 위치를 "항상 허용"으로 바꾸면 꺼도 기록돼요',
+              color: dark.warning),
+        ),
+      ],
+      SizedBox(height: tight ? GoSpace.m : GoSpace.section),
+    ]);
   }
 
   /// 멈춤 — 러닝 중 유일한 주요 조작이라 터치 타겟을 76pt로 잡았다
@@ -925,7 +1027,7 @@ class _RunScreenState extends State<RunScreen>
   /// 눌러야 하는지 알 수 없어서, 사람들이 중간에 손을 떼고 "왜 안 되지"
   /// 하다가 결국 짧게 여러 번 누른다
   Widget _stopButton() {
-    final roles = GoRoles.of(context);
+    final dark = GoRoles.of(context).runDark;
     return GestureDetector(
       onTapDown: _finishing ? null : (_) => _beginStopHold(),
       onTapUp: (_) => _cancelStopHold(),
@@ -950,10 +1052,9 @@ class _RunScreenState extends State<RunScreen>
           Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: roles.surface,
-              // 러닝 화면에서 유일하게 눌러야 하는 것 — 종이에서 떠 있어야
-              // 달리면서 곁눈으로도 "누르는 것"으로 읽힌다
-              boxShadow: GoShadow.raised,
+              // 러닝 화면에서 유일하게 눌러야 하는 것 — 곁눈으로도 "누르는 것"으로
+              // 읽혀야 한다. 어둠 위에서는 그림자가 안 보이므로 옅은 테두리로 띄운다
+              border: Border.all(color: dark.text.withValues(alpha: .30), width: 1.5),
             ),
           ),
           // 링은 누르는 동안에만 그린다. 색은 ink 계열 — lime(나)도
@@ -962,14 +1063,14 @@ class _RunScreenState extends State<RunScreen>
             child: CustomPaint(
               size: const Size.square(_kStopButtonSize),
               painter: _StopHoldPainter(
-                  _stopHold, roles.textPrimary.withValues(alpha: .45)),
+                  _stopHold, dark.text.withValues(alpha: .55)),
             ),
           ),
           Text('멈춤',
               style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: roles.textSecondary)),
+                  color: _tone.secondary)),
         ]),
       ),
     );
