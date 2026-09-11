@@ -26,11 +26,11 @@ import '../services/sound/run_briefing.dart';
 import '../services/sound/soloud_sound_engine.dart';
 import '../services/sound_settings.dart';
 import '../theme.dart';
-import '../widgets/go_card.dart';
 import '../widgets/go_button.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
 import '../widgets/resonance_canvas.dart';
+import '../widgets/run_stat_block.dart';
 import 'finish_screen.dart';
 
 /// 강제 종료 대비 스냅샷을 남기는 최소 간격.
@@ -40,6 +40,21 @@ const _kSnapshotInterval = Duration(seconds: 5);
 
 /// 멈춤 버튼 지름. 러닝 중 주요 조작의 최소 터치 타겟(72pt)보다 크게 잡는다
 const _kStopButtonSize = 76.0;
+
+/// 평균과 비교하기 전에 지나야 하는 거리(km).
+/// 200m 전의 평균은 GPS 오차가 그대로 들어가 있어 기준이 못 된다
+const _kMinDistanceForDelta = 0.2;
+
+/// 이 미만의 차이는 GPS 노이즈다. 화면에 띄우면 숫자가 계속 깜빡인다
+const _kMinDeltaSeconds = 4;
+
+/// **화면에서** 상대를 낡았다고 보기까지의 시간.
+///
+/// 공명 판정의 [CadenceCloseness.staleAfter](6초)보다 길다. 둘은 목적이
+/// 다르다 — 판정은 모르는 것을 아는 척하면 안 되니 엄격해야 하고, 화면은
+/// 쓰기 게이트(3초 간격 + 10초 하트비트)가 한 번 건너뛰었다고 상대를
+/// 지워버리면 안 된다. 하트비트의 두 배 남짓으로 잡는다
+const _kPartnerStaleAfter = Duration(seconds: 22);
 
 /// 러닝 화면 — 각자 GPS로 기록하고, 케이던스·페이스·거리를 실시간으로
 /// 주고받아 공명을 만든다. 합산은 여전히 완료 후에 한다
@@ -66,6 +81,27 @@ class _RunScreenState extends State<RunScreen>
   double _km = 0;
   bool _gpsOk = true;
   bool _finishing = false;
+
+  /// **최근 30초 구간의 페이스(km당 초).** 화면의 큰 숫자가 이 값이다.
+  ///
+  /// 계산은 [RunAccumulator]가 이미 하고 있었다(`paceSmoothingWindow: 30s`가
+  /// `RunFilterConfig.current`에 켜져 있다). 여기까지 배선이 없었을 뿐이다.
+  ///
+  /// 왜 평균이 아니라 이것인가: 25분에 4.6km를 뛴 뒤 전력 질주를 해도
+  /// 누적 평균은 5초쯤밖에 안 움직인다. 분모가 이미 커져 있기 때문이다.
+  /// 내 행동이 화면을 즉시 바꾸지 않으면 그 숫자는 내 것으로 느껴지지 않는다
+  double? _instantSecPerKm;
+
+  /// 마지막으로 받은 상대의 실시간 상태. 화면에 그대로 그린다
+  LiveState? _partnerLive;
+
+  /// **그 값을 내가 받은 시각.**
+  ///
+  /// 신선도를 `live.at`(상대 폰의 시계)으로 재면 안 된다. 두 기기의 시계는
+  /// 늘 몇 초씩 어긋나 있고, 8초 느린 폰과 달리면 데이터가 3초마다 멀쩡히
+  /// 도착하는데도 화면은 러닝 내내 '신호 약함'으로 남는다. 반대로 빨리 가는
+  /// 폰이면 영영 낡지 않는다. 내 시계 하나로만 재면 그 문제가 사라진다
+  DateTime? _partnerLiveAt;
 
   /// 마지막으로 스냅샷을 남긴 시각 — 타이머와 위치 콜백이 서로 겹쳐 부를 때
   /// 저장이 몰리지 않도록 여기서 간격을 맞춘다
@@ -205,13 +241,26 @@ class _RunScreenState extends State<RunScreen>
     final live = data?['live'] as Map<String, dynamic>?;
     if (live == null) return;
     final myUid = AuthService().uid;
+    LiveState? next;
     for (final entry in live.entries) {
       if (entry.key == myUid) continue;
-      final state =
-          LiveState.fromMap(Map<String, dynamic>.from(entry.value as Map));
+      // 구버전이 스칼라를 써 넣었을 수도 있다. 캐스트가 던지면 스트림 구독이
+      // 통째로 죽어 러닝 내내 상대가 안 보인다
+      final raw = entry.value;
+      if (raw is! Map) continue;
+      final state = LiveState.fromMap(Map<String, dynamic>.from(raw));
       if (state == null) continue;
       (_partnerCadence as LivePartnerCadence)
           .update(spm: state.cadenceSpm, at: state.at);
+      next = state;
+    }
+    // 화면에도 그린다 — 예전에는 케이던스만 꺼내 쓰고 페이스·거리를 버렸다.
+    // setState는 루프 밖에서 한 번만 부른다
+    if (next != null && mounted) {
+      setState(() {
+        _partnerLive = next;
+        _partnerLiveAt = DateTime.now();
+      });
     }
   }
 
@@ -223,9 +272,22 @@ class _RunScreenState extends State<RunScreen>
     if (widget.demo) {
       // 미리보기: GPS 없이 가상 거리 증가 (시뮬레이터는 실제 GPS가 없어요)
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        final t = DateTime.now().difference(_startedAt!).inSeconds;
+        // 미리보기는 첫인상이다. 상대 칸이 비어 있으면 고장난 화면으로 읽힌다 —
+        // 두 사람이 실제로 달리는 것처럼 값을 만들어 넣는다
+        _myCadence = 176 + 4 * math.sin(t / 11);
         setState(() {
-          _seconds = DateTime.now().difference(_startedAt!).inSeconds;
-          _km = _seconds * 0.003; // 약 5'30"/km 페이스
+          _seconds = t;
+          _km = t * 0.003; // 약 5'30"/km 페이스
+          _instantSecPerKm = 325 + 15 * math.sin(t / 14);
+          _partnerLive = LiveState(
+            paceSecPerKm: 330,
+            instantPaceSecPerKm: (318 + 14 * math.sin(t / 17)).round(),
+            cadenceSpm: 174 + 5 * math.sin(t / 13 + 1.2),
+            km: t * 0.0031,
+            at: DateTime.now(),
+          );
+          _partnerLiveAt = DateTime.now();
         });
         _reportProgress();
       });
@@ -255,7 +317,10 @@ class _RunScreenState extends State<RunScreen>
     }
     _location.start(
       (km) {
-        setState(() => _km = km);
+        setState(() {
+          _km = km;
+          _instantSecPerKm = _location.stats?.instantSecPerKm;
+        });
         // 위치가 갱신될 때도 스냅샷을 남긴다 — 아래 _saveSnapshot 주석 참조
         _saveSnapshot();
         // **배경에서는 이쪽이 유일한 경로다.** 화면이 꺼지면 1초 타이머가
@@ -266,7 +331,12 @@ class _RunScreenState extends State<RunScreen>
       onError: _handleGpsError,
     );
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() => _seconds = _elapsedSeconds);
+      setState(() {
+        _seconds = _elapsedSeconds;
+        // 멈춰 서 있으면 위치 콜백이 아예 안 온다(distanceFilter 5m).
+        // 그때도 현재 페이스는 늘어져야 하므로 타이머에서도 읽는다
+        _instantSecPerKm = _location.stats?.instantSecPerKm;
+      });
       _saveSnapshot();
       _reportProgress();
     });
@@ -288,11 +358,13 @@ class _RunScreenState extends State<RunScreen>
   }
 
   /// 내 상태를 상대에게. [LiveWriteGate]가 3초 간격과 변화량을 함께 보고
-  /// 정한다 — 신호등에 서 있는 동안 초당 한 번씩 쓰지 않기 위해
+  /// 정한다 — 신호등에 서 있는 동안 초당 한 번씩 쓰지 않기 위해.
+  /// 변화가 없어도 하트비트(10초)마다는 쓴다
   void _pushLiveIfChanged(DateTime now) {
     final secPerKm = _km < 0.02 ? null : (_elapsedSeconds / _km).round();
     final state = LiveState(
       paceSecPerKm: secPerKm,
+      instantPaceSecPerKm: _finiteRound(_instantSecPerKm),
       cadenceSpm: _myCadence,
       km: _km,
       at: now,
@@ -304,10 +376,14 @@ class _RunScreenState extends State<RunScreen>
         .catchError((_) {});
   }
 
+  /// 유한한 값만 반올림한다. `double.infinity.round()`는 던진다 —
+  /// 30초 창에 거리가 0이면 즉시 페이스가 무한대가 될 수 있다
+  static int? _finiteRound(double? v) =>
+      (v == null || !v.isFinite) ? null : v.round();
+
   /// 지금 믿을 수 있는 상대 케이던스. 낡았으면 null
-  double? _freshPartnerCadence() =>
-      _partnerCadence.spmAt(
-        elapsed: Duration(seconds: _elapsedSeconds), now: DateTime.now());
+  double? _freshPartnerCadence() => _partnerCadence.spmAt(
+      elapsed: Duration(seconds: _elapsedSeconds), now: DateTime.now());
 
   /// 상대와 내 케이던스로 발맞춤을 만들어 공명 엔진에 넣는다.
   ///
@@ -371,6 +447,9 @@ class _RunScreenState extends State<RunScreen>
   // 아래로 그었는지까지 신경 쓰게 하면 아예 안 쓴다
 
   void _onGesturePointerDown(PointerDownEvent e) {
+    // 두 번째 손가락이 내려오면 첫 타이머는 버린다 — 안 그러면 첫 손가락이
+    // 이미 떨어진 뒤에 '천천히 가자'가 혼자 나간다
+    _holdTimer?.cancel();
     _gestureStart = e.localPosition;
     _holdTimer = Timer(const Duration(milliseconds: 550), () {
       _sendSignal(SignalKind.slow);
@@ -420,11 +499,16 @@ class _RunScreenState extends State<RunScreen>
     await _sound?.stop();
     _location.stop();
     WakelockPlus.disable();
-    final kcal = LocationService.estimateKcal(_seconds);
+    // **_seconds가 아니라 _elapsedSeconds다.** _seconds는 1초 타이머가 올리는
+    // 값이라 화면이 꺼져 있던 동안(실측 35초까지) 밀린다. 화면을 끄고 달리는
+    // 것은 Always 권한을 받았을 때의 정상 경로이므로, 그 차이가 그대로
+    // 제출되는 기록·칼로리·마무리 화면의 오차가 된다
+    final finalSeconds = _elapsedSeconds > _seconds ? _elapsedSeconds : _seconds;
+    final kcal = LocationService.estimateKcal(finalSeconds);
     if (!widget.demo) {
       try {
         await RunService().submitResult(widget.sessionId, AuthService().uid,
-            seconds: _seconds, km: _km, kcal: kcal, mood: mood);
+            seconds: finalSeconds, km: _km, kcal: kcal, mood: mood);
       } catch (e, stack) {
         FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
         if (!mounted) return;
@@ -440,7 +524,7 @@ class _RunScreenState extends State<RunScreen>
       builder: (_) => FinishScreen(
         sessionId: widget.sessionId,
         partnerName: widget.partnerName,
-        mySeconds: _seconds,
+        mySeconds: finalSeconds,
         myKm: _km,
         myKcal: kcal,
         myMood: mood,
@@ -477,7 +561,12 @@ class _RunScreenState extends State<RunScreen>
       confirmLabel: '마치기',
       cancelLabel: '계속 달리기',
     );
-    if (confirmed != true) return;
+    if (confirmed != true) {
+      // 롱프레스가 이기면 onTapUp이 오지 않아 _cancelStopHold가 불리지 않는다.
+      // 여기서 안 풀면 링이 가득 찬 채로 남는다
+      _cancelStopHold();
+      return;
+    }
     if (!mounted) return;
     final mood = await _pickMood();
     if (!mounted) return;
@@ -493,7 +582,8 @@ class _RunScreenState extends State<RunScreen>
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(GoSpace.sheet, GoSpace.xl, GoSpace.sheet, GoSpace.sheetBottom),
+        padding: const EdgeInsets.fromLTRB(
+            GoSpace.sheet, GoSpace.xl, GoSpace.sheet, GoSpace.sheetBottom),
         child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -527,6 +617,82 @@ class _RunScreenState extends State<RunScreen>
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
+  // ── 화면에 쓸 값들 ──
+
+  /// 큰 숫자 — 지금 페이스. 창(30초)이 아직 안 찼으면 평균으로 대신한다.
+  /// 빈 칸을 보여주면 "고장났다"로 읽힌다
+  String get _currentPaceText {
+    final inst = _instantSecPerKm;
+    if (inst == null) return LocationService.pace(_km, _seconds);
+    return LocationService.formatPace(inst);
+  }
+
+  String get _averagePaceText => LocationService.pace(_km, _seconds);
+
+  /// 평균 대비 지금. (차이 초, 지금이 더 빠른가). 비교할 게 없으면 null
+  (int, bool)? get _paceDelta {
+    final inst = _instantSecPerKm;
+    if (inst == null ||
+        !inst.isFinite ||
+        _km < _kMinDistanceForDelta ||
+        _seconds <= 0) {
+      return null;
+    }
+    final avg = _seconds / _km;
+    if (!avg.isFinite) return null;
+    // 20분/km를 넘으면 페이스 자체를 `--'--"`로 감추므로(formatPace),
+    // 그 옆에 "41초 빠름"을 붙이면 보여주지도 않은 숫자와의 차이를 말하게 된다
+    if (avg > 1200 || inst > 1200) return null;
+    final diff = (avg - inst).round(); // 양수 = 지금이 더 빠르다
+    if (diff.abs() < _kMinDeltaSeconds) return null;
+    return (diff.abs(), diff > 0);
+  }
+
+  /// 상대의 신호가 낡았는가. 낡으면 **값은 남기고 채도만 뺀다** —
+  /// 사라지면 상대가 없어지고, 흐려지면 상대가 멀어진다
+  bool get _partnerStale {
+    final at = _partnerLiveAt;
+    if (at == null) return true;
+    return DateTime.now().difference(at) > _kPartnerStaleAfter;
+  }
+
+  String? get _partnerStaleNote {
+    final at = _partnerLiveAt;
+    if (at == null) return null;
+    final gap = math.max(0, DateTime.now().difference(at).inSeconds);
+    return gap < 60 ? '$gap초 전' : '${gap ~/ 60}분 전';
+  }
+
+  String get _partnerPaceText {
+    final sec = _partnerLive?.displayPaceSecPerKm;
+    if (sec == null) return "--'--\"";
+    return LocationService.formatPace(sec.toDouble());
+  }
+
+  String get _partnerKmText =>
+      (_partnerLive?.km ?? 0).toStringAsFixed(2);
+
+  /// 상태어 — 이 화면의 두 번째 주인공.
+  ///
+  /// 발맞춤 값이 없는 실제 세션에서는 상태를 아는 척하지 않고 '함께'만 쓴다
+  String get _stateWord {
+    if (!_resonance.hasCloseness) return '함께';
+    return switch (_syncState) {
+      SyncState.drifting => '각자의 리듬',
+      SyncState.approaching => '가까워져요',
+      SyncState.aligned => '나란히',
+      SyncState.resonant => '공명',
+    };
+  }
+
+  /// 공명일 때만 골드. 그 외에는 잉크 —
+  /// 상태어가 관계 띠로 내려온 뒤로는 '상대의 상태'가 아니라 '우리의 상태'다.
+  /// 그래서 관계색(코랄)을 벗는다
+  Color _stateColor(GoRoles roles) =>
+      _resonance.hasCloseness && _syncState == SyncState.resonant
+          ? roles.resonance
+          : roles.textPrimary;
+
   @override
   Widget build(BuildContext context) {
     final roles = GoRoles.of(context);
@@ -543,7 +709,8 @@ class _RunScreenState extends State<RunScreen>
               const SizedBox(height: 10),
               Text('달린 거리를 재려면 위치 접근이 필요해요.\n좌표는 기기 밖으로 나가지 않아요.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, height: 1.5, color: roles.textSecondary)),
+                  style: TextStyle(
+                      fontSize: 13, height: 1.5, color: roles.textSecondary)),
               const SizedBox(height: GoSpace.section),
               GoButton('설정 열기',
                   icon: Icons.settings_outlined,
@@ -572,7 +739,6 @@ class _RunScreenState extends State<RunScreen>
     );
   }
 
-
   /// 캡션 라벨 — 이 화면에서 34px 미만이 허용되는 **유일한** 글자.
   /// 달리는 사람은 3초 이상 화면을 못 본다는 전제에서, 값은 크게 두고
   /// 값이 무엇인지 알려주는 꼬리표만 작게 남긴다
@@ -588,66 +754,92 @@ class _RunScreenState extends State<RunScreen>
         ),
       );
 
-  /// 상태어 — 이 화면의 두 번째 주인공.
-  ///
-  /// 발맞춤 값이 없는 실제 세션에서는 상태를 아는 척하지 않고 '함께'만 쓴다
-  /// ([ResonanceEngine.hasCloseness] 주석 참조)
-  String get _stateWord {
-    if (!_resonance.hasCloseness) return '함께';
-    return switch (_syncState) {
-      SyncState.drifting => '각자의 리듬',
-      SyncState.approaching => '가까워져요',
-      SyncState.aligned => '나란히',
-      SyncState.resonant => '공명',
-    };
-  }
-
-  /// 공명일 때만 골드. 그 외에는 상대의 색(coral) — 색 배정은 섞지 않는다
-  Color get _stateColor =>
-      _resonance.hasCloseness && _syncState == SyncState.resonant
-          ? GoRoles.of(context).resonance
-          : GoRoles.of(context).partner;
-
   Widget _runBody() {
     final roles = GoRoles.of(context);
     return Scaffold(
       backgroundColor: roles.canvas,
       body: SafeArea(
-        child: Column(children: [
-          const SizedBox(height: 8),
-          // ── 내 페이스 — 곁눈으로 0.5초 안에 읽혀야 하는 단 하나의 숫자 ──
-          // 나(limeDark)와 상대(coralDark)는 각각 독립된 카드. 색은 테두리에만
+        // 고정 높이 자식 사이에 Expanded 하나가 있는 Column이라, 작은 기기에서는
+        // 고정분의 합이 화면을 넘겨 가운데 캔버스가 0으로 눌리고 결국 넘친다.
+        // 숫자를 줄여 자리를 만든다 — 고리를 먼저 희생시키지 않는다
+        child: LayoutBuilder(builder: (context, c) => _runColumn(roles, c)),
+      ),
+    );
+  }
+
+  /// SE(세로 약 600pt)에서도 캔버스가 남도록 하는 문턱
+  static const _kTightHeight = 700.0;
+
+  Widget _runColumn(GoRoles roles, BoxConstraints c) {
+    final delta = _paceDelta;
+    const gutter = EdgeInsets.symmetric(horizontal: 26);
+    final tight = c.maxHeight < _kTightHeight;
+    final myPaceSize = tight ? 52.0 : 64.0;
+    final myKmSize = tight ? 40.0 : 48.0;
+    final partnerPaceSize = tight ? 38.0 : 46.0;
+    final partnerKmSize = tight ? 30.0 : 36.0;
+    final gap = tight ? 10.0 : 16.0;
+
+    return Column(children: [
+          const SizedBox(height: 10),
+          // ── 상단: 유일한 공유값(시간)과 연결 상태 ──
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: GoCard(
-              padding: const EdgeInsets.symmetric(vertical: GoSpace.m),
-              child: Column(children: [
-                _caption('나 · 페이스', color: roles.self),
-                Text(LocationService.pace(_km, _seconds),
-                    style: GoTheme.serif(68, color: roles.self)
-                        .copyWith(height: 1.1)),
-                _caption('km당'),
-                const SizedBox(height: GoSpace.m),
-                Container(height: GoStroke.rule, color: roles.lineStrong),
-                const SizedBox(height: GoSpace.m),
-                // ── 상대 상태어 ──
-                _caption('${widget.partnerName} · 상태', color: roles.partner),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 400),
-                  child: Text(_stateWord,
-                      key: ValueKey(_stateWord),
-                      style: TextStyle(
-                          fontSize: 44,
-                          fontWeight: FontWeight.w700,
-                          color: _stateColor)
-                          .copyWith(height: 1.2)),
+            padding: gutter,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(_timeText,
+                        style: GoTheme.serif(26, color: roles.textPrimary)),
+                    const SizedBox(width: 8),
+                    _caption('함께'),
+                  ],
                 ),
-              ]),
+                Row(children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _partnerStale
+                          ? roles.textDisabled
+                          : roles.statusOnline.bg,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  _caption(_partnerStale ? '신호 약함' : '연결됨',
+                      color: _partnerStale ? roles.textDisabled : null),
+                ]),
+              ],
             ),
           ),
-          // ── 겹치는 두 원 (탭·스와이프·길게 누르기로 신호) ──
+          const SizedBox(height: 14),
+
+          // ── 상대 진영 ──
+          // 위가 상대, 아래가 나. 이 순서는 화면 전체에서 한 번도 뒤집히지 않는다
+          Padding(
+            padding: gutter,
+            child: RunStatBlock(
+              name: widget.partnerName,
+              color: roles.partner,
+              pace: _partnerPaceText,
+              km: _partnerKmText,
+              paceLabel: '페이스',
+              paceSize: partnerPaceSize,
+              kmSize: partnerKmSize,
+              stale: _partnerStale,
+              staleNote: _partnerStaleNote,
+            ),
+          ),
+
+          // ── 두 고리 (탭·스와이프·길게 누르기로 신호) ──
           // 신호에는 글자가 붙지 않는다 — 보낸 것은 잔상으로, 받은 것은
-          // 상대 원의 맥동과 햅틱으로만 온다
+          // 상대 고리의 맥동과 햅틱으로만 온다
           Expanded(
             child: Listener(
               behavior: HitTestBehavior.opaque,
@@ -663,28 +855,51 @@ class _RunScreenState extends State<RunScreen>
               ),
             ),
           ),
-          // ── 함께 달린 것 ──
+
+          // ── 상태어와 두 사람의 케이던스 ──
+          AnimatedSwitcher(
+            duration: GoMotion.update,
+            child: Text(_stateWord,
+                key: ValueKey(_stateWord),
+                style: TextStyle(
+                  fontSize: tight ? 22 : 26,
+                  fontWeight: FontWeight.w700,
+                  height: 1.2,
+                  letterSpacing: -.3,
+                  color: _stateColor(roles),
+                )),
+          ),
+          const SizedBox(height: 8),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            _caption(
+                '${widget.partnerName} ${_partnerLive?.cadenceSpm?.round() ?? '—'}',
+                color: _partnerStale ? roles.textDisabled : roles.partner),
+            const SizedBox(width: 22),
+            _caption('나 ${_myCadence?.round() ?? '—'}', color: roles.self),
+          ]),
+          SizedBox(height: gap),
+
+          // ── 내 진영 — 큰 숫자는 '지금' 페이스, 아래 한 줄이 기준점 ──
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Container(
-              decoration: BoxDecoration(
-                color: roles.surface,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                      color: roles.pressOverlay,
-                      blurRadius: 6, offset: const Offset(0, 1)),
-                ],
+            padding: gutter,
+            child: RunStatBlock(
+              name: '나',
+              color: roles.self,
+              pace: _currentPaceText,
+              km: _km.toStringAsFixed(2),
+              paceLabel: '지금 페이스',
+              paceSize: myPaceSize,
+              kmSize: myKmSize,
+              footnote: PaceFootnote(
+                averagePace: _averagePaceText,
+                deltaSeconds: delta?.$1,
+                fasterThanAverage: delta?.$2 ?? false,
+                fastColor: roles.self,
               ),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(children: [
-                _togetherCell(_timeText, '시간'),
-                _togetherDivider(),
-                _togetherCell(_km.toStringAsFixed(1), 'km'),
-              ]),
             ),
           ),
-          const SizedBox(height: 14),
+
+          SizedBox(height: gap + 2),
           _stopButton(),
           const SizedBox(height: 5),
           _caption('길게 누르면 종료'),
@@ -693,16 +908,14 @@ class _RunScreenState extends State<RunScreen>
           if (_screenMustStayOn) ...[
             const SizedBox(height: 10),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
+              padding: gutter,
               // canvas 위에서 amber는 2.5:1로 읽히지 않는다. amberDark는 4.6:1
               child: _caption('화면을 끄면 거리가 멈춰요 — 위치를 "항상 허용"으로 바꾸면 꺼도 기록돼요',
                   color: roles.warning.fg),
             ),
           ],
-          const SizedBox(height: GoSpace.section),
-        ]),
-      ),
-    );
+          SizedBox(height: tight ? GoSpace.m : GoSpace.section),
+        ]);
   }
 
   /// 멈춤 — 러닝 중 유일한 주요 조작이라 터치 타겟을 76pt로 잡았다
@@ -720,6 +933,10 @@ class _RunScreenState extends State<RunScreen>
       onLongPress: _finishing
           ? null
           : () {
+              // 컨트롤러를 세우지 않으면 다음 프레임에 리스너가 _stopHold를
+              // 진행 중이던 값(~0.8)으로 되돌려, 링이 가득 찼다가 다시 줄었다
+              // 차오른다
+              _stopHoldController.stop();
               // 링이 다 찼다는 것을 손으로도 알려준다 — 여기서부터는
               // 손을 떼도 확인 다이얼로그가 뜬다
               HapticFeedback.mediumImpact();
@@ -769,18 +986,6 @@ class _RunScreenState extends State<RunScreen>
       _stopHold.value = 0;
     }
   }
-
-  Widget _togetherCell(String value, String label) => Expanded(
-        child: Column(children: [
-          Text(value,
-              style: GoTheme.serif(40, color: GoRoles.of(context).textPrimary)
-                  .copyWith(height: 1.1)),
-          _caption(label),
-        ]),
-      );
-
-  Widget _togetherDivider() =>
-      Container(width: 1, height: 44, color: GoRoles.of(context).lineStrong);
 }
 
 /// 멈춤 버튼 테두리를 따라 차오르는 진행 링.

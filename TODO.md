@@ -51,8 +51,43 @@
 
 시뮬레이터 화면은 접근성 클릭(§5.1)으로 직접 눌러 확인한다. 아래는 그걸로도 안 되는 것들 — 실기기·계정 2개·시스템 UI가 필요하다.
 
-### 2.1 푸시 알림 — 마지막 한 걸음
+### 2.1 푸시 알림 — APNs 토큰이 실기기에서 발급되지 않는다 (2026-09-11 조사)
 Blaze·APNs 키·Functions 배포·서명 검증·TestFlight 업로드는 전부 끝났다.
+
+**막힌 지점**: `getAPNSToken()`이 계속 `null`이라 FCM 토큰까지 못 간다.
+정상 조건을 전부 확인했는데도 그렇다 — 그래서 흔한 원인은 이미 다 아니다.
+
+| 확인한 것 | 결과 | 어떻게 확인했나 |
+|---|---|---|
+| App ID의 푸시 기능 | ✅ 켜짐 | ASC API `/v1/bundleIds?include=bundleIdCapabilities` |
+| 프로비저닝 프로파일 | ✅ `aps-environment: development` | `security cms -D -i embedded.mobileprovision` |
+| 서명된 바이너리 | ✅ 같은 entitlement | `codesign -d --entitlements -` |
+| 알림 권한 | ✅ 허용 | iOS 설정 → 알림 → Goingon |
+| 등록 호출 | ✅ 자동 | 플러그인이 초기화 때 `registerForRemoteNotifications` 호출 (소스 확인) |
+| 기기·네트워크 APNs | ✅ 정상 | 같은 폰에서 다른 앱 푸시는 온다 |
+
+**다음에 할 것 — 여기서부터 시작한다:**
+
+- [ ] `push_service.dart`의 `_apnsFailureDetail()`이 **채널 실패와 콜백 없음을 구분**하게 고칠 것.
+      지금은 `catch (_) → null`이라 둘이 같은 문구로 보인다. 이게 원인 판정을 막는
+      **유일한 지점**이다. 세 번째 상태('채널 안 붙음')를 따로 돌려주면 된다
+- [ ] 그다음 설정 탭 → "알림" 문구 하나로 갈래가 정해진다:
+      `APNs 등록 실패 — <domain code: 설명>` = iOS가 거부한 것, 그 문구가 원인
+      `등록은 됐는데 토큰이 비어 있어요` = FCM 쪽 문제
+      `APNs 토큰을 받지 못했어요` = iOS가 성공도 실패도 응답하지 않은 것
+      `채널 안 붙음`(추가할 것) = 진단 자체가 안 돈 것 — 위 판정은 무효
+
+**실기기 작업 시 주의:**
+- **debug 빌드는 기기에서 단독 실행이 안 된다** — iOS 14+ 제약. 맥에 연결된
+  `flutter run` 상태에서만 돈다. 폰에 남겨두면 "실행되지 않는 앱"이 된다.
+  로그를 봐야 할 때만 debug로 띄우고, 끝나면 profile로 되돌릴 것
+- **실행 중인 앱 위에 새 빌드를 설치하면 예전 프로세스가 얼어붙는다.**
+  화면은 남는데 탭이 하나도 안 먹어서 앱 버그로 오해하기 쉽다. 설치 전에
+  `xcrun devicectl device process terminate` 로 먼저 죽일 것
+- **케이블로 연결할 것.** 무선이면 `flutter logs`도 `--console`도 아무것도
+  못 읽고, clean profile 빌드가 16분 걸린다. 케이블이면 로그가 보인다
+- `script -q /dev/null flutter run ...` 로 감싸면 출력이 버퍼링되지 않아
+  로그를 읽을 수 있다. 그냥 실행하면 한 줄도 안 나온다
 
 - [ ] TestFlight 업로드 — `./tools/ship-testflight.sh` (**요청받았을 때만 실행**)
 - [ ] 폰에 설치 → 알림 권한 "허용" (RootScreen 진입 시 묻는다. 계정당 한 번뿐 — 기기 prefs `push_permission_asked_v1`)
@@ -88,6 +123,12 @@ Blaze·APNs 키·Functions 배포·서명 검증·TestFlight 업로드는 전부
 - [ ] 차단 후 상대가 검색하면 "그런 아이디를 쓰는 사람이 없어요"
 - [ ] 차단 해제 후 다시 연결되는지
 - [ ] **`runs` 목록의 관계 갈래** — 상대 계정에 실제 러닝이 있어야 밟힌다. 상대가 달린 뒤 그 리듬이 보이는지
+- [x] ~~A가 요청 → B에게 카드 → 수락 → 양쪽 목록에 반영~~ **(2026-09-11, 파트너 봇으로 관통)**
+      이 과정에서 `friendRequests` 생성 규칙에 `cheer`가 빠져 **18일간 요청이 전부
+      거부되던 버그**를 잡았다. 수정 후 연습실·운영 모두 배포됨
+- [x] ~~GO? → 수락 → 로비 준비 상태 양방향 전파 → 러닝 → 결과 제출~~ **(2026-09-11)**
+      `./tools/env.sh staging` 후 `flutter run -t lib/main_partner_bot.dart
+      --dart-define=GO_ENV=staging -d <두 번째 시뮬레이터>` — 90초면 한 판이 돈다
 - [ ] **라이브 동기화** — 상대 원이 움직이는지 / 발을 맞췄을 때 공명(골드·종소리·햅틱)이 뜨는지 / 한 명이 앱을 배경으로 내려도 사라지지 않는지 / Always 권한 없이 화면 유지 모드일 때도 같은지
 - [ ] 30분 러닝 후 Firestore 쓰기 횟수 — 인당 600회 이하 예상
 

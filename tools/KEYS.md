@@ -19,7 +19,7 @@
 ├── appstore.env                      # ASC 자격증명 (키 ID·Issuer ID)
 ├── apple/
 │   ├── AuthKey_A958S6968W.p8         # ✅ App Store Connect API 키 (goingon-ci, Admin)
-│   └── AuthKey_4FX4S6SZNR.p8         # APNs 추정 — ASC 키 목록에 없음
+│   └── AuthKey_4FX4S6SZNR.p8         # ✅ APNs 키 (Firebase Cloud Messaging)
 └── goingon-firebase-adminsdk.json
 
 ~/.appstoreconnect/private_keys/
@@ -90,7 +90,32 @@ curl -s -w "\nHTTP %{http_code}\n" \
 
 ## APNs 키는 어느 게 쓰이고 있나
 
-`~/.secrets/apple/`의 두 키 중 **어느 쪽이 Firebase에 올라가 있는지 아직 확인 안 됨.**
-[Firebase 콘솔 → 프로젝트 설정 → Cloud Messaging](https://console.firebase.google.com/project/goingon-c12f3/settings/cloudmessaging)
-에서 등록된 키 ID를 보면 알 수 있다. 확인되면 안 쓰는 쪽은
-Apple Developer 포털에서 **폐기(Revoke)**하는 게 안전하다 — 살아 있는 키는 곧 열린 문이다.
+**확인 완료(2026-09-10). 두 키 모두 쓰이고 있으며, 폐기할 키는 없다.**
+
+| 키 ID | 용도 | 등록된 곳 |
+|---|---|---|
+| `4FX4S6SZNR` | APNs (푸시 발송) | Firebase Cloud Messaging — 운영·연습실 양쪽 |
+| `A958S6968W` | App Store Connect API | `tools/ship-testflight.sh` (`appstore.env`) |
+
+전에는 "둘 중 하나는 안 쓰는 키일 테니 폐기하자"고 적어 뒀는데, 실제로는
+**용도가 갈리는 두 키**였다. 헷갈렸던 이유는 파일 이름 규칙(`AuthKey_<키ID>.p8`)이
+같아서 파일만 봐서는 구분이 안 되기 때문이다.
+
+확인 방법 — [Firebase 콘솔 → Cloud Messaging](https://console.firebase.google.com/project/goingon-c12f3/settings/cloudmessaging)에
+등록된 키 ID를 보면 APNs 쪽이 확정되고, 나머지가 ASC 쪽이다.
+
+## 팀 ID
+
+`R4JD49GK34`. APNs 키를 Firebase에 올릴 때 키 ID와 함께 물어본다.
+
+출처는 `ios/Runner.xcodeproj/project.pbxproj`의 `DEVELOPMENT_TEAM`이다 —
+Apple Developer 포털을 열지 않아도 여기서 확인할 수 있다.
+
+## 연습실(staging) 프로젝트도 같은 키를 쓴다
+
+`goingon-staging`은 운영과 **같은 번들ID**(`com.chanwoong.goingon`)로 등록돼 있어서
+APNs 키도 같은 것을 올린다. 키 하나가 팀 전체의 푸시를 담당하므로, 프로젝트마다
+새 키를 만들 필요가 없다.
+
+> **주의:** APNs 키가 틀려도 **업로드는 그냥 성공한다.** 푸시가 조용히 안 오는
+> 것으로만 드러나기 때문에, 올린 뒤에는 실제로 한 번 받아 봐야 확인된 것이다.

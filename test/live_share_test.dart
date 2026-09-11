@@ -10,9 +10,13 @@ void main() {
   final t0 = DateTime.utc(2026, 8, 17, 7);
 
   LiveState state(
-          {double km = 1.0, double? cadence = 170, int seconds = 0}) =>
+          {double km = 1.0,
+          double? cadence = 170,
+          int? instantPace,
+          int seconds = 0}) =>
       LiveState(
         paceSecPerKm: 330,
+        instantPaceSecPerKm: instantPace,
         cadenceSpm: cadence,
         km: km,
         at: t0.add(Duration(seconds: seconds)),
@@ -31,12 +35,48 @@ void main() {
           isFalse);
     });
 
-    test('3초가 지나도 변한 게 없으면 안 쓴다', () {
+    test('3초가 지나도 변한 게 없으면 하트비트 전까지는 안 쓴다', () {
       // 신호등에 서 있는 동안 초당 한 번씩 쓰지 않기 위해
       final gate = LiveWriteGate();
       gate.shouldWrite(state(seconds: 0));
-      expect(gate.shouldWrite(state(seconds: 10)), isFalse);
-      expect(gate.shouldWrite(state(seconds: 60)), isFalse);
+      expect(gate.shouldWrite(state(seconds: 4)), isFalse);
+      expect(gate.shouldWrite(state(seconds: 9)), isFalse);
+    });
+
+    test('변한 게 없어도 10초마다 한 번은 쓴다 (2026-09-11 하트비트)', () {
+      // 쓰기가 통째로 멎으면 상대 화면이 "신호 약함"으로 떨어진다.
+      // 멀쩡히 연결돼 있는데 화면이 네트워크를 의심하면 안 된다
+      final gate = LiveWriteGate();
+      gate.shouldWrite(state(seconds: 0));
+      expect(gate.shouldWrite(state(seconds: 10)), isTrue);
+      expect(gate.shouldWrite(state(seconds: 15)), isFalse,
+          reason: '하트비트는 마지막 쓰기부터 다시 센다');
+      expect(gate.shouldWrite(state(seconds: 20)), isTrue);
+    });
+
+    test('1분 정지 동안의 쓰기는 하트비트 횟수(6)를 넘지 않는다', () {
+      final gate = LiveWriteGate();
+      gate.shouldWrite(state(seconds: 0));
+      var writes = 0;
+      for (var i = 1; i <= 60; i++) {
+        if (gate.shouldWrite(state(seconds: i))) writes++;
+      }
+      expect(writes, 6);
+    });
+
+    test('지금 페이스가 8초 넘게 바뀌면 쓴다', () {
+      // 보폭만 늘려 빨라지면 케이던스가 거의 안 변한다 — 여기서 못 잡으면
+      // 상대 화면에 끝내 도착하지 않는다
+      final gate = LiveWriteGate();
+      gate.shouldWrite(state(instantPace: 330, seconds: 0));
+      expect(gate.shouldWrite(state(instantPace: 325, seconds: 4)), isFalse);
+      expect(gate.shouldWrite(state(instantPace: 320, seconds: 5)), isTrue);
+    });
+
+    test('지금 페이스가 생긴 것도 소식이다', () {
+      final gate = LiveWriteGate();
+      gate.shouldWrite(state(instantPace: null, seconds: 0));
+      expect(gate.shouldWrite(state(instantPace: 330, seconds: 4)), isTrue);
     });
 
     test('10m를 움직였으면 쓴다', () {
@@ -141,6 +181,23 @@ void main() {
       expect(after.km, 3.2);
       expect(after.cadenceSpm, 178);
       expect(after.at.millisecondsSinceEpoch, before.at.millisecondsSinceEpoch);
+    });
+
+    test('지금 페이스도 보낸 그대로 돌아온다', () {
+      final after =
+          LiveState.fromMap(state(instantPace: 312).toMap())!;
+      expect(after.instantPaceSecPerKm, 312);
+      expect(after.displayPaceSecPerKm, 312);
+    });
+
+    test('구버전 앱은 지금 페이스를 안 보낸다 — 화면은 평균으로 떨어진다', () {
+      final old = LiveState.fromMap({
+        'paceSecPerKm': 330,
+        'km': 1.0,
+        'at': t0.millisecondsSinceEpoch,
+      })!;
+      expect(old.instantPaceSecPerKm, isNull);
+      expect(old.displayPaceSecPerKm, 330);
     });
 
     test('시각이 없는 조각은 버린다 — 신선도를 판정할 수 없다', () {

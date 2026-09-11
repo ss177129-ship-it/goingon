@@ -16,6 +16,13 @@ class LocationService {
 
   double get totalKm => _accumulator?.totalKm ?? 0;
 
+  /// 지금까지의 누적 상태 — 현재 페이스·평균 페이스·스플릿.
+  ///
+  /// 트래킹 전에는 null. `start()`의 콜백 시그니처를 바꾸지 않고 이 getter로
+  /// 여는 이유: 콜백을 바꾸면 데모 경로까지 같이 고쳐야 하는데, 호출부가
+  /// 콜백 안에서 이걸 읽으면 되는 일이라 얻는 게 없다
+  RunStats? get stats => _accumulator?.stats;
+
   /// Always 권한까지 받았는지 — 이때만 배경 위치 추적을 켬.
   /// When In Use만 있는데 배경 추적을 강제로 켜면 iOS가 앱을 강제 종료시킴
   bool _canRunInBackground = false;
@@ -89,15 +96,33 @@ class LocationService {
   static int estimateKcal(int seconds) =>
       (9.8 * 65 * (seconds / 3600)).round();
 
-  /// 분'초" 페이스 문자열
+  /// km당 초 → 분'초" 문자열.
+  ///
+  /// 값을 직접 받는다 — 현재 페이스(최근 30초)는 거리·시간의 나눗셈이 아니라
+  /// [RunAccumulator]가 계산해 주는 값이라 [pace]의 시그니처로는 못 쓴다.
+  static String formatPace(double secPerKm) {
+    if (secPerKm.isNaN || secPerKm.isInfinite || secPerKm <= 0) {
+      return "--'--\"";
+    }
+    var m = secPerKm ~/ 60;
+    var s = (secPerKm % 60).round();
+    // 59.6초가 60으로 반올림되면 5'60"이 된다
+    if (s == 60) {
+      m += 1;
+      s = 0;
+    }
+    // 20분/km를 넘으면 걷다 못해 서 있는 것이다. 숫자를 키워 보여주느니
+    // 모른다고 하는 편이 정직하다
+    if (m >= 20) return "--'--\"";
+    return "$m'${s.toString().padLeft(2, '0')}\"";
+  }
+
+  /// 누적 평균 페이스 문자열.
   /// 너무 이른 거리(20m 미만)에서는 GPS 오차가 상대적으로 커서 계산 안 함 —
   /// 예전엔 50m 기준이라 걷는 속도에선 30~40초 넘게 빈 값만 보여서
   /// 마치 안 되는 것처럼 느껴졌음
   static String pace(double km, int seconds) {
     if (km < 0.02) return "--'--\"";
-    final secPerKm = seconds / km;
-    final m = secPerKm ~/ 60;
-    final s = (secPerKm % 60).round();
-    return "$m'${s.toString().padLeft(2, '0')}\"";
+    return formatPace(seconds / km);
   }
 }

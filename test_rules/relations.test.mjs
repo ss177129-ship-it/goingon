@@ -17,6 +17,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  serverTimestamp,
   setDoc,
   updateDoc,
   writeBatch,
@@ -59,6 +60,88 @@ beforeEach(async () => {
       toUid: B,
       cheer: 'cheer',
     });
+  });
+});
+
+/** 앱의 sendRequest가 실제로 던지는 문서와 같은 모양 */
+function requestPayload(from, to) {
+  return {
+    fromUid: from,
+    toUid: to,
+    cheer: 'cheer',
+    createdAt: serverTimestamp(),
+  };
+}
+
+// 이 describe가 없어서 규칙과 앱이 18일간 어긋나 있었다(2026-08-24~09-11).
+//
+// 아래 다른 테스트들은 요청 문서를 `withSecurityRulesDisabled`로 심어놓고
+// **수락·거절만** 봤다. 그래서 규칙의 허용 키 목록에 `cheer`가 빠진 것을
+// 아무도 밟지 않았고, 실제 앱에서는 페이스메이트 요청이 전부
+// permission-denied로 죽었다. 화면에는 "처리하지 못했어요"만 떠서
+// 원인이 보이지 않았다.
+//
+// 교훈은 규칙 하나가 아니라 절차다: **규칙 테스트에서 문서를 심을 때는
+// 앱이 실제로 던지는 경로로 심어야 한다.** 규칙을 끄고 심으면 그 쓰기는
+// 검증에서 통째로 빠진다.
+describe('요청 보내기 (create) — 앱이 실제로 던지는 모양', () => {
+  it('앱과 같은 페이로드는 통과한다', async () => {
+    const db = env.authenticatedContext(C).firestore();
+    await assertSucceeds(
+      setDoc(doc(db, 'friendRequests', edge(C, A)), requestPayload(C, A)),
+    );
+  });
+
+  it('cheer가 없어도 통과한다 — 옛 빌드가 갑자기 막히면 안 된다', async () => {
+    const db = env.authenticatedContext(C).firestore();
+    await assertSucceeds(
+      setDoc(doc(db, 'friendRequests', edge(C, A)), {
+        fromUid: C,
+        toUid: A,
+        createdAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it('모르는 키가 섞이면 막힌다 — 목록은 여전히 닫혀 있다', async () => {
+    const db = env.authenticatedContext(C).firestore();
+    await assertFails(
+      setDoc(doc(db, 'friendRequests', edge(C, A)), {
+        ...requestPayload(C, A),
+        note: '자유 텍스트는 없다',
+      }),
+    );
+  });
+
+  it('남의 이름으로 보낼 수 없다', async () => {
+    const db = env.authenticatedContext(C).firestore();
+    await assertFails(
+      setDoc(doc(db, 'friendRequests', edge(A, B)), requestPayload(A, B)),
+    );
+  });
+
+  it('문서 id가 보낸사람_받는사람과 다르면 막힌다', async () => {
+    const db = env.authenticatedContext(C).firestore();
+    await assertFails(
+      setDoc(doc(db, 'friendRequests', edge(C, B)), requestPayload(C, A)),
+    );
+  });
+
+  it('자기 자신에게 보낼 수 없다', async () => {
+    const db = env.authenticatedContext(C).firestore();
+    await assertFails(
+      setDoc(doc(db, 'friendRequests', edge(C, C)), requestPayload(C, C)),
+    );
+  });
+
+  it('상대가 나를 차단했으면 보낼 수 없다', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', A), { name: 'A', blocked: [C] });
+    });
+    const db = env.authenticatedContext(C).firestore();
+    await assertFails(
+      setDoc(doc(db, 'friendRequests', edge(C, A)), requestPayload(C, A)),
+    );
   });
 });
 

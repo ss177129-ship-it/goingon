@@ -100,4 +100,34 @@ void main() {
       expect(theirs(t), CadenceRadius.radiusNominal);
     });
   });
+
+  group('센서가 헛것을 볼 때 — NaN·무한대 (2026-09-11)', () {
+    test('NaN은 clamp를 통과하므로 입구에서 기준 크기로 막는다', () {
+      // NaN이 지수 평활의 누산기에 한 번 섞이면 러닝이 끝날 때까지
+      // 고리가 다시 그려지지 않는다
+      expect(CadenceRadius.forCadence(double.nan), CadenceRadius.radiusNominal);
+      expect(CadenceRadius.forCadence(double.infinity),
+          CadenceRadius.radiusNominal);
+    });
+
+    test('한쪽이 NaN이면 둘 다 아는 경로를 타지 않는다', () {
+      final t = CadenceRadius.targets(
+          myCadence: double.nan,
+          partnerCadence: 170,
+          hasCloseness: false,
+          closeness: 0);
+      expect(mine(t).isFinite, isTrue);
+      expect(theirs(t).isFinite, isTrue);
+    });
+
+    test('발맞춤 값이 NaN이어도 반지름은 유한하다', () {
+      final t = CadenceRadius.targets(
+          myCadence: null,
+          partnerCadence: null,
+          hasCloseness: true,
+          closeness: double.nan);
+      expect(mine(t), CadenceRadius.radiusNominal);
+      expect(theirs(t), CadenceRadius.radiusNominal);
+    });
+  });
 }
