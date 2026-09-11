@@ -62,6 +62,30 @@ void main() {
     expect(find.byKey(PacemateCard.dotKey), findsOneWidget);
   });
 
+  testWidgets('메시지 버튼은 넘겼을 때만 서고, 누르면 대화로 간다', (tester) async {
+    await pump(tester, const {'name': '지수'});
+    expect(find.byIcon(Icons.chat_bubble_outline), findsNothing,
+        reason: '콜백이 없으면 죽은 버튼을 그리지 않는다');
+
+    var opened = 0;
+    await tester.pumpWidget(MaterialApp(
+      theme: GoTheme.light(),
+      home: Scaffold(
+        body: PacemateCard(
+          user: const {'name': '지수'},
+          name: '지수',
+          now: now,
+          onOpen: () {},
+          onGo: () {},
+          onMessage: () => opened++,
+        ),
+      ),
+    ));
+    await tester.tap(find.byIcon(Icons.chat_bubble_outline));
+    expect(opened, 1);
+    expect(find.text('GO?'), findsOneWidget, reason: 'GO?는 그대로 남는다');
+  });
+
   testWidgets('카드 전체가 눌린다 — ⋯ 하나가 유일한 입구였던 자리', (tester) async {
     var opened = 0;
     await tester.pumpWidget(MaterialApp(

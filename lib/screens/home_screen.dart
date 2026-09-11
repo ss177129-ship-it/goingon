@@ -24,6 +24,7 @@ import '../widgets/go_avatar.dart';
 import '../widgets/pacemate_card.dart';
 import '../widgets/friend_profile_sheet.dart';
 import 'lobby_screen.dart';
+import 'thread_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -517,6 +518,7 @@ class _HomeScreenState extends State<HomeScreen> {
       invite: invite,
       onOpen: () => _openProfile(f, name),
       onGo: () => _sendGo(uid, name),
+      onMessage: () => _openThread(uid, name),
       goLoading: _sendingTo == uid,
       // 다른 행을 보내는 중이면 이 행도 눌리지 않는다 — 두 사람에게
       // 동시에 GO?를 보내면 어느 로비로 들어갈지가 경합이 된다
@@ -536,8 +538,19 @@ class _HomeScreenState extends State<HomeScreen> {
       // 다시 조회하면서 숫자가 깜빡인다('우리' 탭이 같은 함정을 밟았다)
       togetherFuture: _runs.finishedSessionsWith(_auth.uid, uid),
       onGo: () => _sendGo(uid, name),
+      onMessage: () => _openThread(uid, name),
       onDisconnect: () => _confirmRemoveFriend(uid, name),
       onBlock: () => _confirmBlock(uid, name),
+    );
+  }
+
+  /// 홈에서 대화로 바로 간다. 대화 탭을 거치면 세 번인 길을 한 번으로
+  void _openThread(String uid, String name) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ThreadScreen(partnerUid: uid, partnerName: name),
+      ),
     );
   }
 

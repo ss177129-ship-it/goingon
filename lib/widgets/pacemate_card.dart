@@ -6,6 +6,7 @@ import '../theme.dart';
 import 'avatar_photo.dart';
 import 'go_avatar.dart';
 import 'go_button.dart';
+import 'go_icon_button.dart';
 import 'go_card.dart';
 
 /// 홈의 주인공 — 페이스메이트 한 명.
@@ -38,6 +39,7 @@ class PacemateCard extends StatelessWidget {
     this.onDecline,
     this.onCancelInvite,
     this.onJoin,
+    this.onMessage,
     this.now,
   });
 
@@ -52,6 +54,14 @@ class PacemateCard extends StatelessWidget {
   final VoidCallback onGo;
   final bool goEnabled;
   final bool goLoading;
+
+  /// 이 사람과의 대화를 바로 연다(v1.1).
+  ///
+  /// 없으면 버튼도 없다. 있으면 GO? **왼쪽**에 글자색 아이콘으로 선다 —
+  /// 색은 GO? 하나만 갖는다는 규칙은 그대로다. 대화가 홈 → 대화 탭 → 행 →
+  /// 화면, 세 번을 눌러야 닿는 자리였는데, 상대가 거기 있는지 물어보는
+  /// 것이 이 구조의 유일한 존재 신호라면 그 길은 한 번이어야 한다
+  final VoidCallback? onMessage;
 
   /// 이 카드에서 제안에 답할 수 있는가.
   ///
@@ -169,6 +179,16 @@ class PacemateCard extends StatelessWidget {
               ]),
         ),
         const SizedBox(width: GoSpace.s),
+        if (onMessage != null) ...[
+          GoIconButton(
+            icon: Icons.chat_bubble_outline,
+            size: 22,
+            color: roles.textSecondary,
+            tooltip: '$name님에게 메시지',
+            onTap: onMessage!,
+          ),
+          const SizedBox(width: 2),
+        ],
         _action(card),
       ]),
     );

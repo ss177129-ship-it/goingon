@@ -35,6 +35,7 @@ Future<void> showFriendProfileSheet(
   required String myUid,
   required Future<List<Map<String, dynamic>>> togetherFuture,
   required VoidCallback onGo,
+  required VoidCallback onMessage,
   required VoidCallback onDisconnect,
   required VoidCallback onBlock,
 }) {
@@ -56,6 +57,7 @@ Future<void> showFriendProfileSheet(
         myUid: myUid,
         togetherFuture: togetherFuture,
         onGo: onGo,
+        onMessage: onMessage,
         onDisconnect: onDisconnect,
         onBlock: onBlock,
       ),
@@ -70,6 +72,7 @@ class _FriendProfileSheet extends StatelessWidget {
     required this.myUid,
     required this.togetherFuture,
     required this.onGo,
+    required this.onMessage,
     required this.onDisconnect,
     required this.onBlock,
   });
@@ -79,6 +82,10 @@ class _FriendProfileSheet extends StatelessWidget {
   final String myUid;
   final Future<List<Map<String, dynamic>>> togetherFuture;
   final VoidCallback onGo;
+
+  /// 이 사람과의 대화를 연다. 함께 달리기 아래에 **두 번째 행동**으로 선다 —
+  /// GO?는 30분짜리 약속이고, 말 한마디는 그보다 가벼운 접촉이다
+  final VoidCallback onMessage;
   final VoidCallback onDisconnect;
   final VoidCallback onBlock;
 
@@ -126,6 +133,15 @@ class _FriendProfileSheet extends StatelessWidget {
                 kind: GoButtonKind.primary, size: GoButtonSize.md, onTap: () {
               Navigator.pop(context);
               onGo();
+            }),
+          ),
+          const SizedBox(height: GoSpace.s),
+          SizedBox(
+            width: double.infinity,
+            child: GoButton('메시지 보내기',
+                kind: GoButtonKind.secondary, size: GoButtonSize.md, onTap: () {
+              Navigator.pop(context);
+              onMessage();
             }),
           ),
           const SizedBox(height: GoSpace.xs),
