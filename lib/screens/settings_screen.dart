@@ -16,6 +16,7 @@ import '../widgets/go_toast.dart';
 import 'lobby_screen.dart';
 import 'login_screen.dart';
 import 'profile_edit_screen.dart';
+import '../widgets/wordmark_header.dart';
 
 /// 버전은 **번들에서 직접 읽는다.** 예전에는 여기 문자열을 박아뒀는데,
 /// pubspec이 0.1.1+10까지 가는 동안 이 상수만 0.1.0에 남아 있었다.
@@ -291,8 +292,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final roles = GoRoles.of(context);
     return ListView(padding: EdgeInsets.zero, children: [
+      const WordmarkHeader(),
       Padding(
-        padding: const EdgeInsets.fromLTRB(24, 14, 24, 6),
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 6),
         child: const Text('설정', style: GoText.title),
       ),
       const SizedBox(height: GoSpace.m),

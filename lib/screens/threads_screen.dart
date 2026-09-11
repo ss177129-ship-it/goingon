@@ -17,6 +17,7 @@ import '../widgets/go_card.dart';
 import '../widgets/go_group.dart';
 import '../widgets/go_toast.dart';
 import 'thread_screen.dart';
+import '../widgets/wordmark_header.dart';
 
 /// '대화' 탭 — 옛 '제안' 탭의 자리.
 ///
@@ -176,8 +177,9 @@ class _ThreadsScreenState extends State<ThreadsScreen> {
     return ListView(
       padding: EdgeInsets.zero,
       children: [
+        const WordmarkHeader(),
         const Padding(
-          padding: EdgeInsets.fromLTRB(22, 18, 22, 10),
+          padding: EdgeInsets.fromLTRB(22, 8, 22, 10),
           child: Text('대화', style: GoText.title),
         ),
         if (_broken) _notice(),

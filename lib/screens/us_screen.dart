@@ -9,6 +9,7 @@ import '../widgets/go_group.dart';
 import '../widgets/go_button.dart';
 import '../widgets/friend_search_sheet.dart';
 import '../widgets/go_avatar.dart';
+import '../widgets/wordmark_header.dart';
 
 const _kDistanceMilestones = [50, 100, 300, 500, 1000, 2000, 3000, 5000];
 const _kWeekdayLabels = ['월', '화', '수', '목', '금', '토', '일'];
@@ -115,8 +116,9 @@ class _UsScreenState extends State<UsScreen> {
     return ListView(
       padding: EdgeInsets.zero,
       children: [
+        const WordmarkHeader(),
         const Padding(
-          padding: EdgeInsets.fromLTRB(GoSpace.screen, 18, GoSpace.screen, 0),
+          padding: EdgeInsets.fromLTRB(GoSpace.screen, 8, GoSpace.screen, 0),
           child: Text('우리의 여정', style: GoText.label),
         ),
         const SizedBox(height: 80),
@@ -136,8 +138,9 @@ class _UsScreenState extends State<UsScreen> {
   Widget _errorState(VoidCallback onRetry) {
     final roles = GoRoles.of(context);
     return Column(children: [
+      const WordmarkHeader(),
       const Padding(
-        padding: EdgeInsets.fromLTRB(24, 14, 24, 6),
+        padding: EdgeInsets.fromLTRB(24, 8, 24, 6),
         child: Align(
           alignment: Alignment.centerLeft,
           child: Text('우리의 여정', style: GoText.label),
@@ -177,8 +180,9 @@ class _UsScreenState extends State<UsScreen> {
   Widget _noFriendYet() {
     final roles = GoRoles.of(context);
     return Column(children: [
+      const WordmarkHeader(),
       const Padding(
-        padding: EdgeInsets.fromLTRB(24, 14, 24, 6),
+        padding: EdgeInsets.fromLTRB(24, 8, 24, 6),
         child: Align(
           alignment: Alignment.centerLeft,
           child: Text('우리의 여정', style: GoText.label),
@@ -219,8 +223,9 @@ class _UsScreenState extends State<UsScreen> {
   Widget _notRunTogetherYet(Map<String, dynamic> partner) {
     final roles = GoRoles.of(context);
     return Column(children: [
+      const WordmarkHeader(),
       const Padding(
-        padding: EdgeInsets.fromLTRB(24, 14, 24, 6),
+        padding: EdgeInsets.fromLTRB(24, 8, 24, 6),
         child: Align(
           alignment: Alignment.centerLeft,
           child: Text('우리의 여정', style: GoText.label),
@@ -318,8 +323,9 @@ class _UsScreenState extends State<UsScreen> {
 
     return ListView(padding: EdgeInsets.zero, children: [
       // ── 헤더 ──
+      const WordmarkHeader(),
       const Padding(
-        padding: EdgeInsets.fromLTRB(24, 14, 24, 0),
+        padding: EdgeInsets.fromLTRB(24, 8, 24, 0),
         child: Text('우리의 여정', style: GoText.label),
       ),
       Padding(

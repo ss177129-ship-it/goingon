@@ -19,7 +19,7 @@ import '../widgets/friend_search_sheet.dart';
 import '../widgets/go_dialog.dart';
 import '../widgets/go_toast.dart';
 import '../widgets/go_value_switch.dart';
-import '../widgets/goingon_wordmark.dart';
+import '../widgets/wordmark_header.dart';
 import '../widgets/go_avatar.dart';
 import '../widgets/pacemate_card.dart';
 import '../widgets/friend_profile_sheet.dart';
@@ -262,19 +262,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        // ── 상단 워드마크 + 친구 찾기 ──
-        Padding(
-          padding: const EdgeInsets.fromLTRB(22, 10, 12, 6),
-          child: Row(children: [
-            const GoingOnWordmark(height: 18),
-            const Spacer(),
-            GoIconButton(
-              icon: Icons.search,
-              color: roles.textSecondary,
-              onTap: () => showFriendSearchSheet(context),
-              tooltip: '페이스메이트 찾기',
-            ),
-          ]),
+        // ── 상단 워드마크(중앙) + 친구 찾기 ──
+        WordmarkHeader(
+          trailing: GoIconButton(
+            icon: Icons.search,
+            color: roles.textSecondary,
+            onTap: () => showFriendSearchSheet(context),
+            tooltip: '페이스메이트 찾기',
+          ),
         ),
         // ── 연결 문제 안내 ──
         if (_incomingBroken || _friendsError) _connectionNotice(),
