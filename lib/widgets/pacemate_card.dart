@@ -32,6 +32,7 @@ class PacemateCard extends StatelessWidget {
     required this.onGo,
     this.goEnabled = true,
     this.goLoading = false,
+    this.answerable = true,
     this.invite,
     this.onAccept,
     this.onDecline,
@@ -51,6 +52,17 @@ class PacemateCard extends StatelessWidget {
   final VoidCallback onGo;
   final bool goEnabled;
   final bool goLoading;
+
+  /// 이 카드에서 제안에 답할 수 있는가.
+  ///
+  /// **홈은 false다**(v1.1). 답하기는 대화 화면으로 옮겼고, 홈 카드는
+  /// "지금 무슨 일이 오가는지" 한 줄로 알려주고 `GO?`로 시작하는 자리만
+  /// 남는다 — 한 관계에 답할 곳이 둘이면 어느 쪽에서 눌렀는지에 따라
+  /// 화면이 달라지고, 그 차이를 사람이 기억해야 한다.
+  ///
+  /// 기본값이 true인 이유는 기존 테스트 때문이다. 이 카드는 답하기까지
+  /// 할 줄 알고, 홈이 그 능력을 안 쓰기로 한 것이다
+  final bool answerable;
 
   /// 이 사람과 지금 오가는 제안. null이면 평소 카드(GO?)
   final Invite? invite;
@@ -164,39 +176,58 @@ class PacemateCard extends StatelessWidget {
 
   /// 카드의 오른쪽 — **상태마다 할 수 있는 일이 하나씩만** 선다.
   /// 답을 기다리는 중에 GO?가 그대로 남아 있으면 같은 사람을 두 번 부르게 된다
-  Widget _action(InviteCard card) => switch (card) {
-        InviteCard.needsAnswer => Row(mainAxisSize: MainAxisSize.min, children: [
-            GoButton('나중에',
-                kind: GoButtonKind.text,
-                size: GoButtonSize.md,
-                onTap: onDecline),
-            const SizedBox(width: 2),
-            GoButton('수락',
-                kind: GoButtonKind.primary,
-                size: GoButtonSize.md,
-                onTap: onAccept),
-          ]),
-        InviteCard.joinable => GoButton('입장',
-            kind: GoButtonKind.primary, size: GoButtonSize.md, onTap: onJoin),
-        InviteCard.waitingAnswer => GoButton('취소',
-            kind: GoButtonKind.text,
-            size: GoButtonSize.md,
-            onTap: onCancelInvite),
-        // 끝난 제안은 **주 행동을 가로막지 않는다**(2026-09-09). 전에는
-        // GO? 자리에 '확인'이 서서, 다시 부르려면 먼저 안내를 치워야 했다.
-        // 무슨 일이 있었는지는 옆의 한 줄이 이미 말하고 있다
-        InviteCard.declined ||
-        InviteCard.expired ||
-        InviteCard.cancelled ||
-        InviteCard.none =>
-          GoButton('GO?',
-            kind: GoButtonKind.primary,
-            size: GoButtonSize.md,
-            serifLabel: true,
-            loading: goLoading,
-            enabled: goEnabled,
-            onTap: onGo),
-      };
+  Widget _action(InviteCard card) {
+    // 답하기를 대화로 옮긴 화면에서는 상태와 무관하게 GO?만 선다.
+    // **콜백만 null로 두면 안 된다** — switch는 `card`로 갈라지므로
+    // 나중에/수락/입장/취소 버튼이 그대로 그려지고 눌러도 아무 일이
+    // 일어나지 않는 죽은 버튼이 된다
+    if (!answerable) return _goButton(card);
+
+    return switch (card) {
+      InviteCard.needsAnswer => Row(mainAxisSize: MainAxisSize.min, children: [
+          GoButton('나중에',
+              kind: GoButtonKind.text,
+              size: GoButtonSize.md,
+              onTap: onDecline),
+          const SizedBox(width: 2),
+          GoButton('수락',
+              kind: GoButtonKind.primary,
+              size: GoButtonSize.md,
+              onTap: onAccept),
+        ]),
+      InviteCard.joinable => GoButton('입장',
+          kind: GoButtonKind.primary, size: GoButtonSize.md, onTap: onJoin),
+      InviteCard.waitingAnswer => GoButton('취소',
+          kind: GoButtonKind.text,
+          size: GoButtonSize.md,
+          onTap: onCancelInvite),
+      // 끝난 제안은 **주 행동을 가로막지 않는다**(2026-09-09). 전에는
+      // GO? 자리에 '확인'이 서서, 다시 부르려면 먼저 안내를 치워야 했다.
+      // 무슨 일이 있었는지는 옆의 한 줄이 이미 말하고 있다
+      InviteCard.declined ||
+      InviteCard.expired ||
+      InviteCard.cancelled ||
+      InviteCard.none =>
+        _goButton(card),
+    };
+  }
+
+  /// **오가는 중에는 눌리지 않는다.** `answerable: false`인 화면에서도
+  /// 이 규칙은 그대로다 — 상대가 나를 부르고 있는데 내가 또 GO?를 누르면
+  /// 같은 쌍에 세션이 둘 생긴다. `inviteCollisions`가 뒤늦게 접긴 하지만,
+  /// 애초에 눌리지 않는 편이 맞다
+  Widget _goButton(InviteCard card) {
+    final busy = card == InviteCard.waitingAnswer ||
+        card == InviteCard.needsAnswer ||
+        card == InviteCard.joinable;
+    return GoButton('GO?',
+        kind: GoButtonKind.primary,
+        size: GoButtonSize.md,
+        serifLabel: true,
+        loading: goLoading,
+        enabled: goEnabled && !busy,
+        onTap: onGo);
+  }
 
   /// 사진 + 오른쪽 아래로 걸쳐 나온 상태 점.
   ///

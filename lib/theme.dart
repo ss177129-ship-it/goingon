@@ -150,6 +150,22 @@ class GoColors {
   // ── 제품 고유 ──
   /// 공명(두 사람의 발이 맞은 순간). ink·canvas 위에서만
   static const resonance = Color(0xFFDEA52D);
+
+  // ── 러닝 화면의 어둠 (2026-09-11) — [GoRunDark]로만 쓴다 ──
+  static const runInk = Color(0xFF14130E);
+  static const runPaper = Color(0xFFF6EFE2);
+  static const runPaperDim = Color(0x9EF6EFE2);
+  static const runPaperDisabled = Color(0x66F6EFE2);
+  static const runSelfDusk = Color(0xFFDCEF74);
+  static const runSelfNight = lime;
+  static const runPartnerDusk = Color(0xFFFFC4B2);
+  static const runPartnerNight = Color(0xFFFF9E86);
+  static const runOnline = Color(0xFF7FBF52);
+  static const runResonance = Color(0xFFE8C173);
+  static const runWarning = Color(0xFFF2C878);
+  static const runShadowFar = Color(0xE6000000);
+  static const runShadowNear = Color(0xB3000000);
+  static const runHalo = Color(0x59000000);
 }
 
 /// 면 + 글자(+테두리) 한 세트. 역할 하나가 곧 조합 하나다
@@ -167,6 +183,63 @@ class GoRole {
 
   /// 눌려 있는 동안의 면
   final Color pressed;
+}
+
+/// 러닝 화면의 어둠 위 색 한 벌 (2026-09-11 2단계).
+///
+/// 러닝 화면만 앱의 종이에서 떨어져 잉크 위에 선다. 밝은 바탕용 역할
+/// ([GoRoles.textPrimary]·[GoRoles.self]·[GoRoles.warning] 등)은 종이 위
+/// 4.5:1에 맞춘 색이라 어둠 위에서는 가라앉는다 — 그래서 한 벌을 따로 둔다.
+/// 관계색은 시간대(노을/밤)마다 다르다. 노을 하늘 위에서는 원색보다 한 톤
+/// 밝아야 배경과 갈린다
+class GoRunDark {
+  const GoRunDark({
+    required this.bg,
+    required this.text,
+    required this.textSecondary,
+    required this.textDisabled,
+    required this.selfDusk,
+    required this.selfNight,
+    required this.partnerDusk,
+    required this.partnerNight,
+    required this.online,
+    required this.resonance,
+    required this.warning,
+    required this.numShadow,
+    required this.halo,
+  });
+
+  /// 배경이 그려지기 전의 바탕
+  final Color bg;
+  final Color text;
+
+  /// 단위·캡션
+  final Color textSecondary;
+
+  /// 낡은 상대의 값 — 사라지지 않고 색만 빠진다
+  final Color textDisabled;
+  final Color selfDusk, selfNight;
+  final Color partnerDusk, partnerNight;
+
+  /// '연결됨' 점
+  final Color online;
+
+  /// 상태어 '공명'
+  final Color resonance;
+
+  /// 위치 권한 안내
+  final Color warning;
+
+  /// 숫자 그림자. 도시의 불빛과 숫자가 같은 밝기로 겹치는 자리가 반드시
+  /// 생겨서 스크림만으로는 모자란다
+  final List<Shadow> numShadow;
+
+  /// 고리 선과 금빛 점 뒤에 까는 옅은 어둠. 노을 하늘은 고리의 원색과 같은
+  /// 밝기라서, 색을 바꾸지 않고 배경에서 떼어내려면 선 뒤에 한 겹이 필요하다
+  final Color halo;
+
+  Color self({required bool night}) => night ? selfNight : selfDusk;
+  Color partner({required bool night}) => night ? partnerNight : partnerDusk;
 }
 
 /// 역할 토큰. 화면·위젯은 **반드시 이 이름으로만** 색을 쓴다 —
@@ -234,6 +307,7 @@ class GoRoles extends ThemeExtension<GoRoles> {
     required this.selfOnDark,
     required this.partnerOnDark,
     required this.resonance,
+    required this.runDark,
   });
 
   // ── 면·선 (중성) ──
@@ -331,6 +405,10 @@ class GoRoles extends ThemeExtension<GoRoles> {
 
   /// 공명 골드 — 러닝 화면 전용
   final Color resonance;
+
+  // ── 러닝 화면 ──
+  /// 러닝 중 어둠 위의 색 한 벌. 러닝 화면 밖에서 쓰지 않는다
+  final GoRunDark runDark;
 
   // ── 옛 이름 (2026-09-09 이전). 새 코드는 시맨틱 역할을 쓴다 ──
   /// [success].fg
@@ -432,6 +510,25 @@ class GoRoles extends ThemeExtension<GoRoles> {
     selfOnDark: GoColors.lime,
     partnerOnDark: GoColors.coral,
     resonance: GoColors.resonance,
+    runDark: GoRunDark(
+      bg: GoColors.runInk,
+      text: GoColors.runPaper,
+      textSecondary: GoColors.runPaperDim,
+      textDisabled: GoColors.runPaperDisabled,
+      selfDusk: GoColors.runSelfDusk,
+      selfNight: GoColors.runSelfNight,
+      partnerDusk: GoColors.runPartnerDusk,
+      partnerNight: GoColors.runPartnerNight,
+      online: GoColors.runOnline,
+      resonance: GoColors.runResonance,
+      warning: GoColors.runWarning,
+      numShadow: [
+        Shadow(
+            color: GoColors.runShadowFar, blurRadius: 16, offset: Offset(0, 2)),
+        Shadow(color: GoColors.runShadowNear, blurRadius: 4),
+      ],
+      halo: GoColors.runHalo,
+    ),
   );
 
   static GoRoles of(BuildContext context) =>

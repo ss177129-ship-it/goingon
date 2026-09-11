@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -47,6 +48,10 @@ class ResonanceCanvas extends StatefulWidget {
     required this.engine,
     this.myCadence,
     this.partnerCadence,
+    this.selfColor,
+    this.partnerColor,
+    this.resonanceColor,
+    this.haloColor,
   });
 
   final ResonanceEngine engine;
@@ -56,6 +61,21 @@ class ResonanceCanvas extends StatefulWidget {
 
   /// 지금 상대 발구름(spm). 낡은 값은 호출부가 이미 걸러서 null로 준다
   final double? Function()? partnerCadence;
+
+  /// 어둠 위에서 쓸 색. null이면 [GoRoles]의 밝은 바탕용 색을 쓴다.
+  ///
+  /// theme.dart가 `selfOnDark`(원색 라임)·`partnerOnDark`(원색 코랄)를 만들어
+  /// 두고 "ink·canvas 위에서만 쓰는 원색"이라 적어 뒀다 — 러닝 화면이 잉크로
+  /// 내려앉는 순간이 그 색을 쓰라고 비워둔 자리다
+  final Color? selfColor;
+  final Color? partnerColor;
+
+  /// 어둠 위의 금빛. null이면 [GoRoles.resonance]
+  final Color? resonanceColor;
+
+  /// 고리 선과 금빛 점 뒤에 까는 옅은 어둠. null이면 깔지 않는다 —
+  /// 밝은 종이 위에서는 필요 없고, 흐르는 배경 위에서만 쓴다
+  final Color? haloColor;
 
   @override
   State<ResonanceCanvas> createState() => _ResonanceCanvasState();
@@ -199,9 +219,10 @@ class _ResonanceCanvasState extends State<ResonanceCanvas>
         painter: _ResonancePainter(
           frame: _frame,
           engine: widget.engine,
-          selfColor: roles.self,
-          partnerColor: roles.partner,
-          resonanceColor: roles.resonance,
+          selfColor: widget.selfColor ?? roles.self,
+          partnerColor: widget.partnerColor ?? roles.partner,
+          resonanceColor: widget.resonanceColor ?? roles.resonance,
+          haloColor: widget.haloColor,
           bursts: _bursts,
           signals: _signals,
           isBreathing: () => _breathing,
@@ -291,7 +312,61 @@ class _RadiiState {
   double waveMine = 0;
   double waveTheirs = 0;
 
+  /// 누적된 물결 위상(라디안).
+  ///
+  /// **`omega * t`로 쓰면 안 된다.** t는 티커가 시작한 뒤의 경과 초라
+  /// 20분이면 1200쯤 된다. 그 지점에서 케이던스가 0.1 spm만 움직여도
+  /// 위상이 12라디안 건너뛴다 — 물결이 매 프레임 순간이동한다.
+  /// 배경의 `_scroll`과 같은 이유로, 시간이 아니라 **각을 누적한다**
+  double phaseMine = 0;
+  double phaseTheirs = 0;
+
   double lastPaintAt = 0;
+
+  /// 고리 두 개와 아우라의 셰이더 캐시.
+  ///
+  /// `RadialGradient(...).createShader(...)`는 매번 네이티브 그라디언트를
+  /// 새로 만든다. 초당 180개면 30분 러닝에서 그대로 배터리다 — 배경의
+  /// 하늘 셰이더를 캐시한 것과 같은 이유다.
+  ///
+  /// 반지름은 매 프레임 조금씩 움직이므로 **2pt로 양자화해서 키를 만든다.**
+  /// 0.04 → 0.16짜리 옅은 면이라 2pt 차이는 눈에 보이지 않는다
+  final shaders = _ShaderCache();
+}
+
+class _ShaderCache {
+  final _keys =
+      <int, ({double r, int argb, double cx, double cy, double extra})>{};
+  final _shaders = <int, ui.Shader>{};
+
+  /// [extra]는 반지름·색 말고 그라디언트를 바꾸는 값(투명도 세기 등).
+  /// 호출부에서 미리 계단으로 끊어서 넘긴다
+  ui.Shader get(int slot, Offset center, double radius, Color color,
+      List<Color> Function() colors,
+      {double extra = 0}) {
+    // 반지름을 2pt로 양자화한다. 이게 없으면 반지름이 매 프레임 미세하게
+    // 움직이는 탓에 캐시가 한 번도 맞지 않는다
+    final q = (radius / 2).roundToDouble() * 2;
+    final k = _keys[slot];
+    final hit = k != null &&
+        k.r == q &&
+        k.argb == color.toARGB32() &&
+        k.cx == center.dx &&
+        k.cy == center.dy &&
+        k.extra == extra;
+    if (!hit || _shaders[slot] == null) {
+      _keys[slot] = (
+        r: q,
+        argb: color.toARGB32(),
+        cx: center.dx,
+        cy: center.dy,
+        extra: extra
+      );
+      _shaders[slot] = RadialGradient(colors: colors())
+          .createShader(Rect.fromCircle(center: center, radius: q));
+    }
+    return _shaders[slot]!;
+  }
 }
 
 /// 재생 중인 신호 하나.
@@ -333,6 +408,7 @@ class _ResonancePainter extends CustomPainter {
     required this.selfColor,
     required this.partnerColor,
     required this.resonanceColor,
+    this.haloColor,
   }) : super(repaint: frame);
 
   final ValueListenable<double> frame;
@@ -341,6 +417,9 @@ class _ResonancePainter extends CustomPainter {
   final Color selfColor;
   final Color partnerColor;
   final Color resonanceColor;
+
+  /// 선·점 뒤의 옅은 어둠. null이면 그리지 않는다
+  final Color? haloColor;
   final List<double> bursts;
   final List<_SignalAnim> signals;
   final bool Function() isBreathing;
@@ -363,7 +442,16 @@ class _ResonancePainter extends CustomPainter {
 
     final mine = myCadence?.call();
     final theirs = partnerCadence?.call();
-    _advance(t, closeness, mine, theirs);
+
+    // 케이던스에서 각속도를 뽑는다. **스무딩하지 않는다** — 반지름만 부드럽게
+    // 따라가고 위상은 raw다. 여기에 시정수를 걸면 물결이 통째로 사라진다.
+    // 부호가 나와 상대에서 반대라, 두 물결은 서로를 향해 돈다
+    final wMine = -2 * math.pi * (_finite(mine) / 60);
+    final wTheirs = 2 * math.pi * (_finite(theirs) / 60);
+
+    _advance(t, closeness, mine, theirs, wMine, wTheirs);
+    final phMine = radii.phaseMine;
+    final phTheirs = radii.phaseTheirs;
 
     var rMine = unit * radii.mine;
     var rTheirs = unit * radii.theirs;
@@ -374,18 +462,13 @@ class _ResonancePainter extends CustomPainter {
       rTheirs *= breath;
     }
 
-    // 케이던스에서 위상을 뽑는다. **스무딩하지 않는다** — 반지름만 부드럽게
-    // 따라가고 위상은 raw다. 여기에 시정수를 걸면 물결이 통째로 사라진다
-    final wMine = 2 * math.pi * (_finite(mine) / 60);
-    final wTheirs = 2 * math.pi * (_finite(theirs) / 60);
-
     _paintAura(canvas, center, unit, closeness);
     _paintRing(canvas, center, rTheirs, radii.waveTheirs * unit, _kLobes,
-        wTheirs, t, partnerColor, 2.4, .72);
-    _paintRing(canvas, center, rMine, radii.waveMine * unit, _kLobes, -wMine, t,
-        selfColor, 3.4, 1.0);
+        phTheirs, partnerColor, 2.4, .72, 0);
+    _paintRing(canvas, center, rMine, radii.waveMine * unit, _kLobes, phMine,
+        selfColor, 3.4, 1.0, 1);
     _paintMeetings(canvas, center, rMine, rTheirs, radii.waveMine * unit,
-        radii.waveTheirs * unit, wMine, wTheirs, t);
+        radii.waveTheirs * unit, phMine, phTheirs, t);
     _paintBursts(canvas, center, unit, size, t);
     _paintSignals(canvas, center, rMine, rTheirs, unit, t);
   }
@@ -395,11 +478,17 @@ class _ResonancePainter extends CustomPainter {
   /// **시정수가 나와 상대에게 다르다.** 내 것은 150ms, 상대 것은 1초 —
   /// 이 비대칭이 "이게 내 것"이라는 감각을 만든다. 같은 속도로 움직이면
   /// 두 고리는 그냥 두 개의 도형이지 나와 너가 아니다.
-  void _advance(double t, double closeness, double? mine, double? theirs) {
+  void _advance(double t, double closeness, double? mine, double? theirs,
+      double wMine, double wTheirs) {
     final dt = radii.lastPaintAt == 0
         ? 0.016
         : (t - radii.lastPaintAt).clamp(0.0, 0.25);
     radii.lastPaintAt = t;
+
+    // 각을 누적한다. 2π로 접어두지 않으면 몇 시간 뒤 정밀도가 떨어진다
+    const tau = 2 * math.pi;
+    radii.phaseMine = (radii.phaseMine + wMine * dt) % tau;
+    radii.phaseTheirs = (radii.phaseTheirs + wTheirs * dt) % tau;
 
     double alphaFor(Duration tau) =>
         1 - math.exp(-dt / (tau.inMicroseconds / Duration.microsecondsPerSecond));
@@ -429,29 +518,56 @@ class _ResonancePainter extends CustomPainter {
   /// env는 봉우리를 뒤집지 않고 숨만 쉬게 한다([_kBeatDepth] 주석 참고).
   /// 각속도의 부호가 나와 상대에서 반대라, 두 물결은 서로를 향해 돈다
   void _paintRing(Canvas canvas, Offset center, double radius, double amp,
-      int lobes, double omega, double t, Color color, double width, double alpha) {
+      int lobes, double phase, Color color, double width, double alpha,
+      int slot) {
     if (radius <= 0) return;
-    final env = (1 - _kBeatDepth) + _kBeatDepth * math.cos(omega * t);
-    final path = _wavePath(center, radius, amp * env, lobes, omega * t);
+    final env = (1 - _kBeatDepth) + _kBeatDepth * math.cos(phase);
+    final path = _wavePath(center, radius, amp * env, lobes, phase);
 
-    // 면은 같은 색을 아주 옅게 — 고리 안쪽이 비면 화면에 구멍이 뚫린 것처럼 보인다
+    // 면은 같은 색을 아주 옅게 — 고리 안쪽이 비면 화면에 구멍이 뚫린 것처럼 보인다.
+    // 셰이더는 반지름을 2pt로 끊어 캐시한다 (slot 0=상대, 1=나, 2=아우라)
     canvas.drawPath(
       path,
-      Paint()
-        ..shader = RadialGradient(colors: [
-          color.withValues(alpha: 0.04 * alpha),
-          color.withValues(alpha: 0.16 * alpha),
-        ]).createShader(Rect.fromCircle(center: center, radius: radius)),
+      _fillPaint
+        ..shader = radii.shaders.get(
+            slot,
+            center,
+            radius,
+            color,
+            () => [
+                  color.withValues(alpha: 0.04 * alpha),
+                  color.withValues(alpha: 0.16 * alpha),
+                ]),
     );
+    // 노을 하늘은 고리의 원색과 같은 밝기라 선이 배경에 녹는다. 색은 그대로
+    // 두고 선 뒤에 옅은 어둠을 한 겹 깔아 떼어낸다
+    final halo = haloColor;
+    if (halo != null) {
+      canvas.drawPath(
+        path,
+        _haloPaint
+          ..strokeWidth = width + 3
+          ..color = halo.withValues(alpha: halo.a * alpha),
+      );
+    }
     canvas.drawPath(
       path,
-      Paint()
-        ..style = PaintingStyle.stroke
+      _strokePaint
         ..strokeWidth = width
-        ..strokeJoin = StrokeJoin.round
         ..color = color.withValues(alpha: 0.82 * alpha),
     );
   }
+
+  /// 그리기마다 새로 만들지 않는 Paint 셋. `drawPath`는 호출 시점에
+  /// Paint를 디스플레이 리스트로 복사하므로 재사용해도 안전하다
+  static final _fillPaint = Paint();
+  static final _strokePaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeJoin = StrokeJoin.round;
+  static final _auraPaint = Paint();
+  static final _haloPaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeJoin = StrokeJoin.round;
 
   /// 닫힌 Catmull-Rom 곡선. 꺾은선으로 그리면 반지름이 커질수록 각이 보인다 —
   /// 72점이면 이음매 없이 매끄럽고, 점을 늘리는 것보다 싸다
@@ -491,12 +607,12 @@ class _ResonancePainter extends CustomPainter {
       double rTheirs,
       double ampMine,
       double ampTheirs,
-      double wMine,
-      double wTheirs,
+      double phMine,
+      double phTheirs,
       double t) {
     if (!engine.hasCloseness && ampTheirs <= 0.01) return;
-    final envM = (1 - _kBeatDepth) + _kBeatDepth * math.cos(wMine * t);
-    final envT = (1 - _kBeatDepth) + _kBeatDepth * math.cos(wTheirs * t);
+    final envM = (1 - _kBeatDepth) + _kBeatDepth * math.cos(phMine);
+    final envT = (1 - _kBeatDepth) + _kBeatDepth * math.cos(phTheirs);
 
     // 만남으로 볼 거리. 너무 좁으면 영영 안 만나고, 넓으면 늘 만난 것처럼 보인다
     final tolerance = math.max(6.0, (rMine + rTheirs) * 0.035);
@@ -504,22 +620,32 @@ class _ResonancePainter extends CustomPainter {
     final burst = _burstProgress(t);
     final boost = burst == null ? 0.0 : 0.45 * math.exp(-4 * burst);
 
+    // Paint는 루프 밖에서 하나만 만든다 — 108번 새로 만들면 초당 6천 개다
+    final dot = Paint();
+    final haloDot = Paint();
+    final halo = haloColor;
+
     for (var i = 0; i < samples; i++) {
       final th = (i / samples) * 2 * math.pi;
-      final a = rMine + ampMine * envM * math.cos(_kLobes * th + wMine * t);
+      final a = rMine + ampMine * envM * math.cos(_kLobes * th - phMine);
       final b =
-          rTheirs + ampTheirs * envT * math.cos(_kLobes * th - wTheirs * t);
+          rTheirs + ampTheirs * envT * math.cos(_kLobes * th - phTheirs);
       final gap = (a - b).abs();
       if (gap > tolerance) continue;
       final near = 1 - gap / tolerance;
       final strength = (near * near * 0.72 + boost).clamp(0.0, 1.0);
       if (strength < 0.04) continue;
       final r = (a + b) / 2;
-      canvas.drawCircle(
-        Offset(center.dx + math.cos(th) * r, center.dy + math.sin(th) * r),
-        1.2 + 2.8 * strength,
-        Paint()..color = resonanceColor.withValues(alpha: strength),
-      );
+      final pos =
+          Offset(center.dx + math.cos(th) * r, center.dy + math.sin(th) * r);
+      final dotR = 1.2 + 2.8 * strength;
+      // 금빛은 노을 주황과 거의 같은 색이라 뒤에 어둠이 없으면 묻힌다
+      if (halo != null) {
+        haloDot.color = halo.withValues(alpha: halo.a * strength);
+        canvas.drawCircle(pos, dotR + 1.5, haloDot);
+      }
+      dot.color = resonanceColor.withValues(alpha: strength);
+      canvas.drawCircle(pos, dotR, dot);
     }
   }
 
@@ -528,14 +654,22 @@ class _ResonancePainter extends CustomPainter {
     if (closeness <= 0.2) return;
     final radius = unit * 2.0;
     final strength = ((closeness - 0.2) / 0.8).clamp(0.0, 1.0);
+    // 세기는 0.05 단위로 끊는다 — 캐시가 맞아야 캐시다
+    final step = (strength * 20).round() / 20;
     canvas.drawCircle(
       center,
       radius,
-      Paint()
-        ..shader = RadialGradient(colors: [
-          resonanceColor.withValues(alpha: 0.10 * strength),
-          resonanceColor.withValues(alpha: 0),
-        ]).createShader(Rect.fromCircle(center: center, radius: radius)),
+      _auraPaint
+        ..shader = radii.shaders.get(
+            2,
+            center,
+            radius,
+            resonanceColor,
+            () => [
+                  resonanceColor.withValues(alpha: 0.10 * step),
+                  resonanceColor.withValues(alpha: 0),
+                ],
+            extra: step),
     );
   }
 

@@ -69,11 +69,6 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 페이스메이트가 없어요"가 한 프레임 스쳐 지나간다
   bool _friendsLoaded = false;
 
-  // 나에게 온 친구 요청. 푸시가 없어서 앱을 열어야 보이므로, 홈 최상단에
-  // 눈에 띄게 둠 — 놓치면 상대는 무한정 기다리게 됨
-  StreamSubscription? _requestsSub;
-  List<FriendRequest> _requests = const [];
-
   /// GO? 요청 감지가 몇 번까지 자동 재시도할지. 인덱스 누락처럼 시간이
   /// 지나도 낫지 않는 문제일 때 조용히 무한 재구독하는 대신 사용자에게 알림
   static const _kMaxIncomingRetries = 5;
@@ -84,7 +79,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _load();
     _listenIncoming();
     _listenFriends();
-    _listenRequests();
     _listenInvites();
     // '제안' 탭에서 치운 결과가 홈 카드에 남아 있으면 안 된다 — 같은 것을
     // 보는 두 화면이 다른 말을 하는 자리가 또 생긴다
@@ -102,16 +96,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _resolveCollisions(list);
     }, onError: (e, stack) {
       // 제안이 안 보여도 앱의 나머지는 동작한다
-      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
-    });
-  }
-
-  void _listenRequests() {
-    _requestsSub?.cancel();
-    _requestsSub = _friends.incomingRequestsStream(_auth.uid).listen((list) {
-      if (mounted) setState(() => _requests = list);
-    }, onError: (e, stack) {
-      // 요청 목록이 없어도 앱의 나머지는 동작하므로 배너까지 띄우지는 않음
       FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
     });
   }
@@ -219,36 +203,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return s.isEmpty ? '페이스메이트' : s;
   }
 
-  /// "나중에" 선택 시 침묵 대신 한 줄 답장을 고르게 함
-  void _showDeclineOptions(String sessionId) {
-    const options = ['지금은 어려워요', '30분 뒤 어때요?', '오늘은 쉬고 싶어요'];
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: GoRoles.of(context).surfaceHigh,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(GoSpace.sheet, GoSpace.xl, GoSpace.sheet, GoSpace.sheetBottom),
-        child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('어떻게 전할까요?', style: GoText.heading),
-              const SizedBox(height: 16),
-              ...options.map((o) => Padding(
-                    padding: const EdgeInsets.only(bottom: GoSpace.s),
-                    child: GoButton(o,
-                        kind: GoButtonKind.secondary,
-                        onTap: () {
-                          _runs.declineSession(sessionId, o);
-                          Navigator.pop(ctx);
-                        }),
-                  )),
-            ]),
-      ),
-    );
-  }
-
   /// GO?를 보내는 중인 상대의 uid. 세션 생성은 왕복이 있어서 그 사이
   /// 버튼이 그대로면 사람들은 반응이 없다고 생각해 한 번 더 누르고,
   /// 그러면 같은 상대에게 세션이 두 개 만들어진다 — 상대 화면에는 수락
@@ -292,29 +246,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _enterLobby(String sessionId, String partnerName) {
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) =>
-          LobbyScreen(sessionId: sessionId, partnerName: partnerName),
-    ));
-  }
-
-  /// 제안에 얽힌 한 번짜리 동작들 — 실패하면 조용히 넘어가지 않고 알린다
-  Future<void> _inviteAction(Future<void> Function() action, String fail) async {
-    try {
-      await action();
-    } catch (e, stack) {
-      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
-      if (!mounted) return;
-      GoToast.error(context, fail);
-    }
-  }
-
   @override
   void dispose() {
     _incomingSub?.cancel();
     _friendsSub?.cancel();
-    _requestsSub?.cancel();
     _invitesSub?.cancel();
     _hidden.removeListener(_onHiddenChanged);
     super.dispose();
@@ -343,8 +278,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         // ── 연결 문제 안내 ──
         if (_incomingBroken || _friendsError) _connectionNotice(),
-        // ── 나에게 온 친구 요청 ──
-        if (_requests.isNotEmpty) ..._requestSection(),
         // ── 같이 뛰는 사람들 ──
         // 화면의 첫 콘텐츠는 관계다. 이 앱의 값어치는 내 숫자가 아니라
         // 저쪽에 사람이 있다는 것이고, 위계는 그 순서를 따라야 한다
@@ -440,90 +373,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               )),
     );
-  }
-
-  /// 나에게 온 친구 요청 — 프로필 카드보다 위에 둠. 푸시가 없어서 앱을
-  /// 열었을 때 보이는 게 전부이고, 놓치면 상대는 무한정 기다리게 됨
-  List<Widget> _requestSection() {
-    return [
-      const Padding(
-        padding: EdgeInsets.fromLTRB(22, 14, 22, 8),
-        child: Text('나에게 온 요청', style: GoText.label),
-      ),
-      ..._requests.map(_requestRow),
-    ];
-  }
-
-  Widget _requestRow(FriendRequest r) {
-    final name = _displayName(r.name);
-    final roles = GoRoles.of(context);
-    return Container(
-      margin: const EdgeInsets.fromLTRB(22, 0, 22, 8),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: roles.surface,
-        borderRadius: BorderRadius.circular(GoRadius.md),
-        boxShadow: GoShadow.card,
-      ),
-      child: Column(children: [
-        Row(children: [
-          GoAvatar(size: 40, photoUrl: r.photoUrl),
-          const SizedBox(width: GoSpace.m),
-          Expanded(
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('$name님이 함께 달리고 싶어해요',
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: roles.textPrimary)),
-                  if (r.username.isNotEmpty) ...[
-                    const SizedBox(height: 1),
-                    Text('@${r.username}',
-                        style: TextStyle(
-                            fontSize: 12, color: roles.textSecondary)),
-                  ],
-                ]),
-          ),
-        ]),
-        const SizedBox(height: GoSpace.m),
-        Row(children: [
-          Expanded(
-            child: GoButton('거절',
-                kind: GoButtonKind.secondary,
-                size: GoButtonSize.md,
-                onTap: () => _respondToRequest(r, accept: false)),
-          ),
-          const SizedBox(width: GoSpace.s),
-          Expanded(
-            flex: 2,
-            // 홈의 주 색은 GO? 하나. 수락은 "연결을 완성한다"이므로 complete
-            child: GoButton('수락하고 연결',
-                kind: GoButtonKind.complete,
-                size: GoButtonSize.md,
-                onTap: () => _respondToRequest(r, accept: true)),
-          ),
-        ]),
-      ]),
-    );
-  }
-
-  Future<void> _respondToRequest(FriendRequest r, {required bool accept}) async {
-    try {
-      if (accept) {
-        await _friends.acceptRequest(_auth.uid, r.fromUid);
-      } else {
-        // 거절은 조용히 — 상대에게 알리지 않음
-        await _friends.declineRequest(_auth.uid, r.fromUid);
-      }
-      if (!mounted || !accept) return;
-      GoToast.show(context, '${_displayName(r.name)}님과 연결됐어요!');
-    } catch (e, stack) {
-      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
-      if (!mounted) return;
-      GoToast.error(context, '처리하지 못했어요. 다시 시도해 주세요.');
-    }
   }
 
   /// 요청 감지나 친구 목록 구독이 끊겼을 때 — 조용히 실패하지 않고 알림.
@@ -677,32 +526,8 @@ class _HomeScreenState extends State<HomeScreen> {
       // 다른 행을 보내는 중이면 이 행도 눌리지 않는다 — 두 사람에게
       // 동시에 GO?를 보내면 어느 로비로 들어갈지가 경합이 된다
       goEnabled: _sendingTo == null || _sendingTo == uid,
-      onAccept: invite == null
-          ? null
-          : () => _acceptInvite(invite.sessionId, name),
-      onDecline:
-          invite == null ? null : () => _showDeclineOptions(invite.sessionId),
-      onCancelInvite: invite == null
-          ? null
-          : () => _inviteAction(() => _runs.cancelSession(invite.sessionId),
-              '취소하지 못했어요. 다시 시도해 주세요.'),
-      onJoin:
-          invite == null ? null : () => _enterLobby(invite.sessionId, name),
+      answerable: false,
     );
-  }
-
-  /// 수락은 **문서에 써야 성립한다.** 규칙이 invited인 세션에는 준비도
-  /// 출발도 걸어 주지 않으므로, 쓰기가 실패하면 로비로 보내면 안 된다
-  Future<void> _acceptInvite(String sessionId, String name) async {
-    try {
-      await _runs.acceptSession(sessionId);
-    } catch (e, stack) {
-      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false);
-      if (!mounted) return;
-      GoToast.error(context, '수락하지 못했어요. 다시 시도해 주세요.');
-      return;
-    }
-    if (mounted) _enterLobby(sessionId, name);
   }
 
   void _openProfile(Map<String, dynamic> f, String name) {
