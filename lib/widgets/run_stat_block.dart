@@ -11,11 +11,16 @@ class RunTextTone {
     required this.primary,
     required this.secondary,
     required this.disabled,
+    this.shadows = const [],
   });
 
   final Color primary;
   final Color secondary;
   final Color disabled;
+
+  /// 배경 위에서 글자를 떼어내는 그림자. 밝은 종이 위에서는 비워 둔다 —
+  /// 흐르는 도시 위에서는 숫자와 불빛이 같은 밝기로 겹치는 자리가 반드시 생긴다
+  final List<Shadow> shadows;
 }
 
 /// 러닝 화면의 한 진영 — 나 또는 상대.
@@ -106,14 +111,14 @@ class RunStatBlock extends StatelessWidget {
               name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: _label(valueColor),
+              style: _label(valueColor, t.shadows),
             ),
           ),
           if (stale && staleNote != null) ...[
             const SizedBox(width: 6),
             Text('· $staleNote',
                 maxLines: 1,
-                style: _label(t.disabled)
+                style: _label(t.disabled, t.shadows)
                     .copyWith(fontWeight: FontWeight.w500, letterSpacing: .4)),
           ],
         ]),
@@ -123,8 +128,11 @@ class RunStatBlock extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
-                child: _cell(pace, paceLabel, paceSize, valueColor, captionColor)),
-            Expanded(child: _cell(km, 'KM', kmSize, kmColor, captionColor)),
+                child: _cell(pace, paceLabel, paceSize, valueColor,
+                    captionColor, t.shadows)),
+            Expanded(
+                child: _cell(
+                    km, 'KM', kmSize, kmColor, captionColor, t.shadows)),
           ],
         ),
         if (footnote != null) ...[
@@ -136,7 +144,7 @@ class RunStatBlock extends StatelessWidget {
   }
 
   Widget _cell(String value, String caption, double size, Color c,
-      Color captionColor) {
+      Color captionColor, List<Shadow> shadows) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -152,22 +160,25 @@ class RunStatBlock extends StatelessWidget {
             value,
             maxLines: 1,
             softWrap: false,
-            style: GoTheme.serif(size, color: c).copyWith(height: 1.0),
+            style: GoTheme.serif(size, color: c)
+                .copyWith(height: 1.0, shadows: shadows),
           ),
         ),
         const SizedBox(height: 4),
-        Text(caption, maxLines: 1, style: _label(captionColor)),
+        Text(caption, maxLines: 1, style: _label(captionColor, shadows)),
       ],
     );
   }
 
   /// 이 화면에서 34px 미만이 허용되는 유일한 글자 — 값이 무엇인지 알려주는 꼬리표
-  static TextStyle _label(Color c) => TextStyle(
+  static TextStyle _label(Color c, [List<Shadow> shadows = const []]) =>
+      TextStyle(
         fontSize: 12,
         height: 1.3,
         fontWeight: FontWeight.w600,
         letterSpacing: 1.2,
         color: c,
+        shadows: shadows,
       );
 }
 
@@ -214,6 +225,7 @@ class PaceFootnote extends StatelessWidget {
       fontWeight: FontWeight.w500,
       letterSpacing: .8,
       color: t.secondary,
+      shadows: t.shadows,
     );
     final d = deltaSeconds;
     return Row(children: [

@@ -54,5 +54,12 @@ void main() {
     test('숫자 그림자가 비어 있지 않다 — 배경이 숫자를 삼키지 않도록', () {
       expect(dark.runDark.numShadow, isNotEmpty);
     });
+
+    test('고리 뒤의 어둠은 투명하지 않되 불투명하지도 않다', () {
+      // 투명하면 노을 위에서 고리가 녹고, 불투명하면 고리가 검은 테를 두른다
+      final a = dark.runDark.halo.a;
+      expect(a, greaterThan(0));
+      expect(a, lessThan(.6));
+    });
   });
 }

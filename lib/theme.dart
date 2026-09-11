@@ -165,6 +165,7 @@ class GoColors {
   static const runWarning = Color(0xFFF2C878);
   static const runShadowFar = Color(0xE6000000);
   static const runShadowNear = Color(0xB3000000);
+  static const runHalo = Color(0x59000000);
 }
 
 /// 면 + 글자(+테두리) 한 세트. 역할 하나가 곧 조합 하나다
@@ -205,6 +206,7 @@ class GoRunDark {
     required this.resonance,
     required this.warning,
     required this.numShadow,
+    required this.halo,
   });
 
   /// 배경이 그려지기 전의 바탕
@@ -231,6 +233,10 @@ class GoRunDark {
   /// 숫자 그림자. 도시의 불빛과 숫자가 같은 밝기로 겹치는 자리가 반드시
   /// 생겨서 스크림만으로는 모자란다
   final List<Shadow> numShadow;
+
+  /// 고리 선과 금빛 점 뒤에 까는 옅은 어둠. 노을 하늘은 고리의 원색과 같은
+  /// 밝기라서, 색을 바꾸지 않고 배경에서 떼어내려면 선 뒤에 한 겹이 필요하다
+  final Color halo;
 
   Color self({required bool night}) => night ? selfNight : selfDusk;
   Color partner({required bool night}) => night ? partnerNight : partnerDusk;
@@ -521,6 +527,7 @@ class GoRoles extends ThemeExtension<GoRoles> {
             color: GoColors.runShadowFar, blurRadius: 16, offset: Offset(0, 2)),
         Shadow(color: GoColors.runShadowNear, blurRadius: 4),
       ],
+      halo: GoColors.runHalo,
     ),
   );
 

@@ -868,6 +868,7 @@ class _RunScreenState extends State<RunScreen>
       primary: dark.text,
       secondary: dark.textSecondary,
       disabled: dark.textDisabled,
+      shadows: dark.numShadow,
     );
   }
 
@@ -951,6 +952,8 @@ class _RunScreenState extends State<RunScreen>
             partnerCadence: _freshPartnerCadence,
             selfColor: me,
             partnerColor: you,
+            resonanceColor: dark.resonance,
+            haloColor: dark.halo,
           ),
         ),
       ),

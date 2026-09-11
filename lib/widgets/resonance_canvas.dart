@@ -50,6 +50,8 @@ class ResonanceCanvas extends StatefulWidget {
     this.partnerCadence,
     this.selfColor,
     this.partnerColor,
+    this.resonanceColor,
+    this.haloColor,
   });
 
   final ResonanceEngine engine;
@@ -67,6 +69,13 @@ class ResonanceCanvas extends StatefulWidget {
   /// 내려앉는 순간이 그 색을 쓰라고 비워둔 자리다
   final Color? selfColor;
   final Color? partnerColor;
+
+  /// 어둠 위의 금빛. null이면 [GoRoles.resonance]
+  final Color? resonanceColor;
+
+  /// 고리 선과 금빛 점 뒤에 까는 옅은 어둠. null이면 깔지 않는다 —
+  /// 밝은 종이 위에서는 필요 없고, 흐르는 배경 위에서만 쓴다
+  final Color? haloColor;
 
   @override
   State<ResonanceCanvas> createState() => _ResonanceCanvasState();
@@ -212,7 +221,8 @@ class _ResonanceCanvasState extends State<ResonanceCanvas>
           engine: widget.engine,
           selfColor: widget.selfColor ?? roles.self,
           partnerColor: widget.partnerColor ?? roles.partner,
-          resonanceColor: roles.resonance,
+          resonanceColor: widget.resonanceColor ?? roles.resonance,
+          haloColor: widget.haloColor,
           bursts: _bursts,
           signals: _signals,
           isBreathing: () => _breathing,
@@ -398,6 +408,7 @@ class _ResonancePainter extends CustomPainter {
     required this.selfColor,
     required this.partnerColor,
     required this.resonanceColor,
+    this.haloColor,
   }) : super(repaint: frame);
 
   final ValueListenable<double> frame;
@@ -406,6 +417,9 @@ class _ResonancePainter extends CustomPainter {
   final Color selfColor;
   final Color partnerColor;
   final Color resonanceColor;
+
+  /// 선·점 뒤의 옅은 어둠. null이면 그리지 않는다
+  final Color? haloColor;
   final List<double> bursts;
   final List<_SignalAnim> signals;
   final bool Function() isBreathing;
@@ -525,6 +539,17 @@ class _ResonancePainter extends CustomPainter {
                   color.withValues(alpha: 0.16 * alpha),
                 ]),
     );
+    // 노을 하늘은 고리의 원색과 같은 밝기라 선이 배경에 녹는다. 색은 그대로
+    // 두고 선 뒤에 옅은 어둠을 한 겹 깔아 떼어낸다
+    final halo = haloColor;
+    if (halo != null) {
+      canvas.drawPath(
+        path,
+        _haloPaint
+          ..strokeWidth = width + 3
+          ..color = halo.withValues(alpha: halo.a * alpha),
+      );
+    }
     canvas.drawPath(
       path,
       _strokePaint
@@ -540,6 +565,9 @@ class _ResonancePainter extends CustomPainter {
     ..style = PaintingStyle.stroke
     ..strokeJoin = StrokeJoin.round;
   static final _auraPaint = Paint();
+  static final _haloPaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeJoin = StrokeJoin.round;
 
   /// 닫힌 Catmull-Rom 곡선. 꺾은선으로 그리면 반지름이 커질수록 각이 보인다 —
   /// 72점이면 이음매 없이 매끄럽고, 점을 늘리는 것보다 싸다
@@ -594,6 +622,8 @@ class _ResonancePainter extends CustomPainter {
 
     // Paint는 루프 밖에서 하나만 만든다 — 108번 새로 만들면 초당 6천 개다
     final dot = Paint();
+    final haloDot = Paint();
+    final halo = haloColor;
 
     for (var i = 0; i < samples; i++) {
       final th = (i / samples) * 2 * math.pi;
@@ -606,12 +636,16 @@ class _ResonancePainter extends CustomPainter {
       final strength = (near * near * 0.72 + boost).clamp(0.0, 1.0);
       if (strength < 0.04) continue;
       final r = (a + b) / 2;
+      final pos =
+          Offset(center.dx + math.cos(th) * r, center.dy + math.sin(th) * r);
+      final dotR = 1.2 + 2.8 * strength;
+      // 금빛은 노을 주황과 거의 같은 색이라 뒤에 어둠이 없으면 묻힌다
+      if (halo != null) {
+        haloDot.color = halo.withValues(alpha: halo.a * strength);
+        canvas.drawCircle(pos, dotR + 1.5, haloDot);
+      }
       dot.color = resonanceColor.withValues(alpha: strength);
-      canvas.drawCircle(
-        Offset(center.dx + math.cos(th) * r, center.dy + math.sin(th) * r),
-        1.2 + 2.8 * strength,
-        dot,
-      );
+      canvas.drawCircle(pos, dotR, dot);
     }
   }
 

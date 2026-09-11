@@ -415,8 +415,10 @@ void paintTrack(Canvas c, WorldPalette p, double h) {
   b.px(0, kPx, kTile, kPx, p.line, .3);
   b.px(0, kPx * 2, kTile, h - kPx * 2, p.track);
   b.px(0, kPx * 2, kTile, kPx / 2, _mix(p.track, .09), .8);
+  // 차선은 옅게 둔다. 러닝 화면의 큰 숫자가 트랙 높이에 앉는 기기가 있어서
+  // (iPhone 16e, 2026-09-11), 진하면 흰 점선이 숫자를 가로질러 취소선으로 읽힌다
   for (var x = 0.0; x < kTile; x += kPx * 12) {
-    b.px(x, kPx * 2 + (h - kPx * 2) / 2, kPx * 6, kPx, p.line, .5);
+    b.px(x, kPx * 2 + (h - kPx * 2) / 2, kPx * 6, kPx, p.line, .18);
   }
   for (var x = 0.0; x < kTile; x += kPx * 26) {
     b.px(x, kPx / 2, kPx, kPx, p.line, .45);
