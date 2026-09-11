@@ -51,7 +51,7 @@
 
 시뮬레이터 화면은 접근성 클릭(§5.1)으로 직접 눌러 확인한다. 아래는 그걸로도 안 되는 것들 — 실기기·계정 2개·시스템 UI가 필요하다.
 
-### 2.1 푸시 알림 — 원인 둘 다 찾음, 콘솔 작업 하나 남음 (2026-09-11)
+### 2.1 푸시 알림 — 실기기 도착 확인됨 (2026-09-11 23:18), TestFlight 새 빌드만 남음
 
 **푸시는 한 번도 간 적이 없었다.** 원인은 두 겹이었고 첫 번째는 코드로 풀렸다.
 
@@ -67,13 +67,13 @@
    (운영·샌드박스 모두 400 BadDeviceToken = 인증 통과). 즉 파일이 아니라 콘솔에
    올라간 쪽이 틀렸다(다른 파일을 올렸거나 키ID·팀ID 오기).
 
-**남은 것 — 코드가 아니라 콘솔:**
+**콘솔 — 끝남(2026-09-11).** 운영 프로젝트에 APNs 키를 지우고 다시 올린 뒤에도
+한동안 `InvalidProviderToken`이 계속됐고, **약 1시간 뒤(23:18)부터** FCM이 200을 돌려줬다.
+FCM이 APNs용 JWT를 캐시하는 것으로 보인다 — **키를 바꾼 뒤 바로 실패해도 한 시간은 기다려
+볼 것.** 그동안 연습실에 올렸다 운영에 올렸다 헷갈린 일이 있어 연습실 콘솔 이름을
+`goingon STAGING - NOT THE APP`으로 바꿨다.
 
-- [ ] [Firebase 콘솔 → Cloud Messaging](https://console.firebase.google.com/project/goingon-c12f3/settings/cloudmessaging)
-      → Apple 앱 → APNs 인증 키: 기존 것을 지우고 `~/.secrets/apple/AuthKey_4FX4S6SZNR.p8`을
-      키ID `4FX4S6SZNR`, 팀ID `R4JD49GK34`로 다시 올린다 (`tools/KEYS.md` 참고)
-- [ ] 올린 직후 `NODE_PATH=functions/node_modules node tools/push-check.js send 4NuT2u1OPBMFbXyTkKZFQMuvIgN2`
-      → `성공 1 / 실패 0`이어야 한다. 업로드 성공은 아무것도 증명하지 않는다
+- [x] ~~APNs 키 재업로드~~ → `push-check.js send` **성공 1 / 실패 0** (실기기 도착)
 - [ ] TestFlight 새 빌드(`./tools/ship-testflight.sh`, **요청받았을 때만**) — 지금 올라간
       +23은 옛 플러그인이라 토큰을 못 받는다. 새 빌드를 깔아야 다른 계정들도 토큰이 생긴다
 - [ ] 실제 흐름: 상대에게 GO? → 앱을 완전히 종료한 상태에서 잠금화면에 뜨는지.
