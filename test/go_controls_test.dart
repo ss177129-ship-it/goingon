@@ -279,7 +279,7 @@ void main() {
           child: GoBottomNav(
               index: index,
               onChanged: onChanged ?? (_) {},
-              requestCount: requests),
+              badgeCount: requests),
         ));
 
     /// 탭바 안의 AnimatedContainer는 [미끄러지는 알약, 홈·제안·우리·설정의
@@ -332,7 +332,7 @@ void main() {
           .toList();
       expect(icons, [
         Icons.home_outlined,
-        Icons.mail_rounded,
+        Icons.chat_bubble_rounded,
         Icons.people_alt_outlined,
         Icons.settings_outlined,
       ]);
@@ -343,7 +343,7 @@ void main() {
       await tester.pumpAndSettle();
       for (final icon in [
         Icons.home_rounded,
-        Icons.mail_outline,
+        Icons.chat_bubble_outline,
         Icons.people_alt_outlined,
         Icons.settings_outlined,
       ]) {

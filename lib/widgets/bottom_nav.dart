@@ -6,7 +6,7 @@ import '../theme.dart';
 import 'go_badge.dart';
 import 'pressable.dart';
 
-/// 하단 탭 — 홈 / 우리 / 설정 (프로토타입 .nav-bar)
+/// 하단 탭 — 홈 / 대화 / 우리 / 설정
 ///
 /// **화면 맨 아래를 끝까지 덮는다**(2026-09-08). 홈 인디케이터 자리를 남겨
 /// 두면 탭바가 바닥에서 뜬 판때기로 보이고, 그 틈으로 보이는 종이색이
@@ -16,14 +16,18 @@ class GoBottomNav extends StatefulWidget {
   final int index;
   final ValueChanged<int> onChanged;
 
-  /// '우리' 탭 아이콘에 얹을 수 — 나에게 온 친구 요청. 0이면 배지 없음
-  final int requestCount;
+  /// '대화' 탭 아이콘에 얹을 수 — **나에게 온 모든 것**.
+  ///
+  /// 안 읽은 말 + 답해야 할 제안 + 친구 요청을 합친 값이다. 전에는 제안만
+  /// 셌고 친구 요청은 홈에 있으면서 배지가 아예 없었다 — 놓치면 상대는
+  /// 무한정 기다렸다. 셋이 한 탭으로 모이면서 수도 하나가 됐다
+  final int badgeCount;
 
   const GoBottomNav({
     super.key,
     required this.index,
     required this.onChanged,
-    this.requestCount = 0,
+    this.badgeCount = 0,
   });
 
   /// 선택 인디케이터 알약 — 아이콘 뒤에 깔리는 64×36, radius [GoRadius.md]
@@ -49,22 +53,27 @@ class GoBottomNav extends StatefulWidget {
 }
 
 class _GoBottomNavState extends State<GoBottomNav> {
-  /// 지금 손가락이 닿아 있는 탭. 알약 하나를 셋이 나눠 쓰므로 눌림 상태도
+  /// 지금 손가락이 닿아 있는 탭. 알약 하나를 넷이 나눠 쓰므로 눌림 상태도
   /// 여기서 함께 갖는다 — 각 항목이 따로 갖고 있으면, 미끄러져 다니는 알약이
   /// 누구의 눌림을 그려야 하는지 알 수 없다
   int? _pressed;
 
+  /// 두 번째 탭이 '제안'에서 '대화'가 됐다(v1.1).
+  ///
+  /// 제안은 **대화의 한 종류**였지 별도의 사물이 아니었다. 탭을 늘리지 않고
+  /// 이름이 안 맞게 된 탭을 바꿔 끼운다 — 편지 봉투가 아니라 말풍선이다
   static const _tabs = [
     (Icons.home_outlined, Icons.home_rounded, '홈'),
-    (Icons.mail_outline, Icons.mail_rounded, '제안'),
+    (Icons.chat_bubble_outline, Icons.chat_bubble_rounded, '대화'),
     (Icons.people_alt_outlined, Icons.people_alt_rounded, '우리'),
     (Icons.settings_outlined, Icons.settings_rounded, '설정'),
   ];
 
-  /// 배지가 붙는 탭 — 답해야 할 제안이 있는 곳.
+  /// 배지가 붙는 탭 — 나에게 온 것이 모이는 곳.
   ///
-  /// 전에는 '우리'(인덱스 1)에 친구 요청 수를 달았는데, 정작 그 목록은
-  /// 홈에 있었다. 배지가 가리키는 곳과 실제로 가야 하는 곳이 달랐다
+  /// 배지가 가리키는 곳과 실제로 가야 하는 곳이 같아야 한다. 전에는 친구
+  /// 요청 수를 '우리'에 달았는데 정작 그 목록은 홈에 있었고, 그 뒤에는
+  /// 제안만 세면서 친구 요청이 아무 배지도 못 갖게 됐다
   static const _badgeTab = 1;
 
   @override
@@ -127,7 +136,7 @@ class _GoBottomNavState extends State<GoBottomNav> {
     );
   }
 
-  /// 알약 **한 개**가 세 자리를 오간다. 자리마다 알약을 두고 색만 바꾸면
+  /// 알약 **한 개**가 네 자리를 오간다. 자리마다 알약을 두고 색만 바꾸면
   /// "여기 꺼지고 저기 켜졌다"로 읽힌다 — 같은 물체가 밀려가야 어디서 어디로
   /// 갔는지가 눈에 남는다(2026-09-08)
   Widget _row(GoRoles roles) {
@@ -158,8 +167,7 @@ class _GoBottomNavState extends State<GoBottomNav> {
           ),
           Row(children: [
             for (var i = 0; i < _tabs.length; i++)
-              _item(roles, i,
-                  badge: i == _badgeTab ? widget.requestCount : 0),
+              _item(roles, i, badge: i == _badgeTab ? widget.badgeCount : 0),
           ]),
         ]),
       );

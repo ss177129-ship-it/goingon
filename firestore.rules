@@ -226,6 +226,134 @@ service cloud.firestore {
       );
     }
 
+    // ── DM (v1.1) ──────────────────────────────────────────────────
+    //
+    // threadId = "작은uid_큰uid". friendRequests·follows와 같은 결정적 id라
+    // 같은 쌍에 스레드가 둘 생기지 않고, 규칙이 **문서를 읽지 않고 id만 보고**
+    // 참가자를 판정할 수 있다.
+    //
+    // > Firebase Auth uid는 영숫자라 '_'가 없다. 커스텀 uid를 쓰게 되면
+    // > 이 split 가정이 가장 먼저 깨진다.
+    //
+    // **스레드 문서는 클라이언트가 만들지 않는다.** 첫 메시지가 쓰이는 순간
+    // 서버 트리거가 만든다(Admin SDK는 규칙을 우회한다). 그래서
+    //   - 맞팔 게이트가 메시지 쓰기 **한 곳**에만 있으면 되고
+    //   - 두 사람이 동시에 말을 걸어도 경합이 없고
+    //   - 클라이언트가 왕복을 한 번 덜 한다
+    match /threads/{threadId} {
+      function pair() { return threadId.split('_'); }
+
+      // **id가 정렬된 두 조각인지 여기서 못박는다.**
+      //
+      // 이게 없으면 클라이언트가 "큰uid_작은uid"로 뒤집어 써서 같은 쌍에
+      // 스레드를 **둘** 만들 수 있다. 목록에 두 줄이 뜨고, 읽음 처리는 정렬된
+      // 쪽에만 가므로 뒤집힌 쪽의 안 읽음 배지가 영영 안 지워진다.
+      // 조각이 셋 이상인 id("a_b_c")도 hasAny는 통과시키는데, 그러면 아무
+      // 데도 안 닿는 고아 메시지를 무한정 쌓을 수 있다.
+      //
+      // 정렬은 ThreadService.idFor가 하지만 그건 클라이언트다 —
+      // 강제하는 자리는 여기뿐이다. get() 0회로 막힌다
+      function pairOk() {
+        return pair().size() == 2 && pair()[0] < pair()[1];
+      }
+      function involvesMe() {
+        return pairOk() && pair().hasAny([request.auth.uid]);
+      }
+      function touched(field) {
+        return request.resource.data.diff(resource.data).affectedKeys().hasAny([field]);
+      }
+
+      // 읽기는 **id로만** 판정한다 — get() 0회.
+      // 목록 쿼리는 돌아오는 문서마다 규칙이 도는데 여기서 get()을 하면
+      // 스레드 열 개에서 접근 한도(10)를 넘긴다. runs에서 배운 것과 같다.
+      //
+      // 느슨해진 것이 아니다: id에 내 uid가 들어간 쌍만 통과하므로 남의
+      // 대화는 볼 수 없다. 그리고 없는 문서를 확인하는 것이 정상 동작이라
+      // (아직 말을 나눈 적 없는 상대) resource.data를 보면 안 된다 —
+      // friendRequests에서 친구 찾기가 통째로 실패했던 그 함정이다.
+      allow get: if request.auth != null && involvesMe();
+
+      // 목록은 participants arrayContains로 좁혀서 던진다.
+      // 목록에서 resource.data는 문서 내용이 아니라 **쿼리 조건**이므로,
+      // 안 좁히면 조건이 성립하지 않아 쿼리 전체가 거부된다 — 그게 정답이다.
+      // `.get(필드, 기본값)`을 쓰지 않는 이유도 runs와 같다: 기본값이 있으면
+      // 안 좁힌 쿼리가 그 값으로 통과해 버린다.
+      allow list: if request.auth != null &&
+        request.auth.uid in resource.data.participants;
+
+      // 스레드는 서버가 만든다 (위 주석)
+      allow create: if false;
+
+      // 본인이 바꿀 수 있는 것은 **자기 칸뿐**이다.
+      // lastAt·lastPreview·lastSenderId와 unread 증가는 전부 서버가 쓴다.
+      // 클라이언트가 상대 칸을 올릴 수 있으면 안 읽음 수가 조작된다.
+      allow update: if request.auth != null && involvesMe() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['unread', 'muted']) &&
+        (!touched('unread') ||
+          (request.resource.data.unread.diff(resource.data.get('unread', {}))
+            .affectedKeys().hasOnly([request.auth.uid]) &&
+           request.resource.data.unread[request.auth.uid] == 0)) &&
+        (!touched('muted') ||
+          (request.resource.data.muted.diff(resource.data.get('muted', {}))
+            .affectedKeys().hasOnly([request.auth.uid]) &&
+           // 값까지 못박지 않으면 자기 칸에 900KB짜리 문자열을 넣을 수 있고,
+           // 상대는 목록을 열 때마다 그걸 내려받는다
+           request.resource.data.muted[request.auth.uid] is bool));
+
+      // 스레드는 지우지 않는다 — 두 사람이 함께 가진 것이라
+      // 한쪽이 지우면 상대의 대화까지 사라진다
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        // 부모 match의 pairOk()·pair()를 그대로 쓴다 — 판정이 두 벌이면
+        // 언젠가 한쪽만 고쳐진다
+        function inThread() {
+          return involvesMe();
+        }
+        function other() {
+          return pair()[0] == request.auth.uid ? pair()[1] : pair()[0];
+        }
+
+        // 읽기도 id로만 — get() 0회
+        allow get, list: if request.auth != null && inThread();
+
+        // **관계는 쓰기에서만 확인한다.** 쓰기는 문서 하나당 한 번 평가되므로
+        // exists() 둘 + get() 하나가 한도(10) 안에 넉넉히 들어간다.
+        //
+        // 맞팔이 끊기면 과거 대화는 남고 **새 메시지만 그 순간부터** 막힌다.
+        // 대화를 지우는 것보다 정직하다.
+        //
+        // 클라이언트는 'text'만 쓴다. invite·inviteResult·runResult·system은
+        // 세션 문서의 상태 변화를 보고 **서버가** 쓴다 — 상태가 바뀌는 경로가
+        // 여럿이라(수락·거절·만료·취소·결과) 양쪽 클라이언트가 각자 쓰면
+        // 중복되거나 빠진다.
+        //
+        // `at == request.time`을 요구하는 이유: 클라이언트가 시각을 직접
+        // 적을 수 있으면 과거로 적어 남의 말 위에 끼워 넣을 수 있다.
+        allow create: if request.auth != null && inThread() &&
+          request.resource.data.senderId == request.auth.uid &&
+          request.resource.data.type == 'text' &&
+          request.resource.data.at == request.time &&
+          request.resource.data.keys().hasOnly(['senderId', 'type', 'at', 'text']) &&
+          // hasOnly는 부분집합을 허용한다 — text가 **있어야 한다**고 말하는 것은
+          // 아래 `is string`이다. 이걸 `'text' in data ? ... : true` 꼴로 풀면
+          // 본문 없는 메시지가 조용히 통과한다
+          request.resource.data.text is string &&
+          request.resource.data.text.size() > 0 &&
+          // 본문 상한이 없으면 한 번의 쓰기로 문서 한도(1MiB)를 채울 수 있다
+          request.resource.data.text.size() <= 1000 &&
+          exists(/databases/$(database)/documents/follows/$(request.auth.uid + '_' + other())) &&
+          exists(/databases/$(database)/documents/follows/$(other() + '_' + request.auth.uid)) &&
+          !(request.auth.uid in
+            get(/databases/$(database)/documents/users/$(other())).data.get('blocked', []));
+
+        // 메시지는 불변이다. 대화가 사후에 바뀌면 그 대화를 근거로 한
+        // 약속도 같이 흔들린다
+        allow update, delete: if false;
+      }
+    }
+
     match /sessions/{sessionId} {
       function isParticipant() {
         return request.auth != null && (
@@ -426,6 +554,31 @@ service cloud.firestore {
           request.auth.uid == companionUid &&
           request.resource.data.companionUid == request.auth.uid;
       }
+    }
+
+    // 신고 — 쓰기만 열고 읽기는 닫는다.
+    //
+    // 사용자끼리 글을 주고받는 기능이 있으면 앱스토어가 신고·차단·필터를
+    // 요구한다(App Store Review Guideline 1.2 UGC). 차단과 맞팔 게이트는
+    // 이미 있고, 신고가 비어 있던 자리다.
+    //
+    // 읽기를 닫는 이유: 신고당한 사람이 자기 신고를 볼 수 있으면 보복이
+    // 시작된다. 접수함은 콘솔이나 관리자 키로만 연다.
+    match /reports/{reportId} {
+      // 모양을 못박지 않으면 아무나 1MiB짜리 문서를 무한정 넣을 수 있다.
+      // 아무도 못 읽는 컬렉션이라 **청구서가 오기 전까지 안 보인다** —
+      // messages에 상한을 건 것과 같은 이유다
+      allow create: if request.auth != null &&
+        request.resource.data.reporterUid == request.auth.uid &&
+        request.resource.data.keys().hasOnly(
+          ['reporterUid', 'targetUid', 'threadId', 'messageId', 'reason', 'at']) &&
+        request.resource.data.targetUid is string &&
+        request.resource.data.at == request.time &&
+        (!('reason' in request.resource.data) ||
+          (request.resource.data.reason is string &&
+           request.resource.data.reason.size() <= 500));
+
+      allow read, update, delete: if false;
     }
   }
 }

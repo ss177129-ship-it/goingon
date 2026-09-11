@@ -257,3 +257,7 @@ export const cleanupSessions = onSchedule(
     );
   },
 );
+
+// ── DM (v1.1) ──────────────────────────────────────────────────
+export * from './threads';
+export * from './session_messages';
