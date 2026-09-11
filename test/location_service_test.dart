@@ -25,4 +25,26 @@ void main() {
       expect(LocationService.pace(5.0, 1500), "5'00\"");
     });
   });
+
+  group('LocationService.formatPace', () {
+    test('km당 330초면 5\'30"', () {
+      expect(LocationService.formatPace(330), "5'30\"");
+    });
+
+    test('59.6초가 60으로 반올림돼 5\'60"이 되지 않는다', () {
+      expect(LocationService.formatPace(359.6), "6'00\"");
+    });
+
+    test('모르는 값(NaN·무한대·0 이하)은 빈 페이스', () {
+      expect(LocationService.formatPace(double.nan), "--'--\"");
+      expect(LocationService.formatPace(double.infinity), "--'--\"");
+      expect(LocationService.formatPace(0), "--'--\"");
+      expect(LocationService.formatPace(-5), "--'--\"");
+    });
+
+    test('20분/km를 넘으면 서 있는 것 — 숫자 대신 빈 페이스', () {
+      expect(LocationService.formatPace(1199), "19'59\"");
+      expect(LocationService.formatPace(1200), "--'--\"");
+    });
+  });
 }

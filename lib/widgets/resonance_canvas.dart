@@ -9,20 +9,34 @@ import 'package:flutter/services.dart' show HapticFeedback;
 import '../services/resonance.dart';
 import '../theme.dart';
 
-/// 두 개의 동심원 — 이 앱이 "함께 달린다"를 보여주는 유일한 그림.
+/// 두 개의 고리 — 이 앱이 "함께 달린다"를 보여주는 유일한 그림.
 ///
-/// **왜 나란히가 아니라 겹쳐 놓았나** (2026-08-17 재설계): 좌우로 떨어진 두
-/// 원은 "두 사람이 각자 달린다"를 그린다. 우리가 팔려는 것은 두 사람의
-/// 발구름이 하나로 포개지는 순간이라, 같은 중심을 두고 **반지름이 같아지는
-/// 것**이 그 감각에 훨씬 가깝다. 발이 맞으면 두 원이 하나가 된다.
+/// ## 왜 합치지 않고 둘로 두는가 (2026-09-11 재설계)
 ///
-/// 반지름은 **케이던스**가 정한다. 속도가 아니라 발구름인 이유: 속도가 같아도
-/// 보폭이 다르면 발은 안 맞는다. 원의 크기가 곧 "발을 얼마나 빨리 구르는가"다.
+/// 전에는 두 원이 같은 중심에서 반지름만 다른 동심원이었고, 발이 맞으면
+/// 하나가 되는 그림이었다. 아름다웠지만 한 가지를 못 했다 — **"저 원이 나다"**.
+/// 합쳐진 하나에는 내 것이라고 부를 부분이 없다.
 ///
-/// 규칙 하나로 적으면: **연속값은 매 프레임, 순간은 이벤트로.**
+/// 소유는 세 가지에서 생긴다:
+/// 1. **분리** — 내 선과 네 선이 눈에 따로 있어야 한다
+/// 2. **대응** — 내가 한 일이 0.3초 안에 화면에 나타나야 한다. 그래서
+///    [kSelfSmoothing]과 [kPartnerSmoothing]이 다르다. 상대는 어차피
+///    네트워크를 건너오느라 느리니, 그 차이를 숨기지 말고 소유감의 재료로 쓴다
+/// 3. **사건** — 값이 아니라 발구름 하나하나가 보여야 한다. 테두리가
+///    케이던스로 물결친다
+///
+/// 겹침은 별도의 선이 아니라 **두 고리가 만나는 각도에 앉는 금빛**이다.
+/// 그래서 전부 아니면 전무가 아니라 부분 공명이 보인다.
+///
+/// ## 반지름은 여전히 케이던스가 정한다
+///
+/// 속도가 같아도 보폭이 다르면 발은 안 맞는다. 발이 맞으면 두 고리가
+/// 같은 자리로 와서 포개진다 — 이 앱의 원래 명제 그대로다.
+///
+/// 규칙 하나로 적으면: **연속값은 매 프레임, 순간은 이벤트로, 반복 사건은 위상으로.**
 /// 반지름·색은 값을 따라 부드럽게 움직이고, 공명 진입 같은 순간은 이벤트를
-/// 받아 한 번 터진다. 두 경로를 섞으면(값이 문턱을 넘는 걸 매 프레임 확인해
-/// 링을 쏘면) 경계에서 링이 초당 수십 번 겹쳐 터진다 — 판정은 엔진에만 있어야 한다.
+/// 받아 한 번 터지며, 발구름은 케이던스에서 뽑은 위상이 매 프레임 그린다.
+/// **위상은 절대 스무딩하지 않는다** — 스무딩하면 물결이 죽는다.
 ///
 /// 성능: 다시 그리는 것은 [CustomPainter]의 `repaint`에 물린 프레임
 /// 노티파이어뿐이다. **setState로 매 프레임 리빌드하지 않는다.** 화면이
@@ -46,6 +60,28 @@ class ResonanceCanvas extends StatefulWidget {
   @override
   State<ResonanceCanvas> createState() => _ResonanceCanvasState();
 }
+
+/// 내 고리의 시정수. **0.3초를 넘기면 소유감이 끊긴다** —
+/// 내가 한 일이 화면에 나타나기까지 그보다 오래 걸리면 사람은 그것을
+/// 자기 것으로 느끼지 않는다
+const kSelfSmoothing = Duration(milliseconds: 150);
+
+/// 상대 고리의 시정수. 어차피 3초마다 오는 값이라 부드럽게 따라와야 한다.
+/// 소리·상태어와 같은 속도([kSharedSmoothingTimeConstant])를 쓴다
+const kPartnerSmoothing = kSharedSmoothingTimeConstant;
+
+/// 테두리 물결의 마루 개수. 7은 얕고 잦은 물결이 되는 수 —
+/// 적으면 덩어리로 보이고 많으면 톱니로 보인다
+const _kLobes = 7;
+
+/// 물결의 깊이(반지름 대비). 0.06이면 반지름 140px에서 ±8px 정도로,
+/// 곁눈으로 "떨고 있다"가 읽히되 형태는 안 무너진다
+const _kWaveDepth = 0.06;
+
+/// 발구름 한 번의 숨 깊이. 1.0이면 마루와 골이 뒤집혀 3Hz로 깜빡이는데,
+/// 물리적으로는 맞지만 화면에서는 깜빡임으로 읽힌다. 봉우리를 뒤집지 않고
+/// 숨만 쉬게 한다
+const _kBeatDepth = 0.42;
 
 class _ResonanceCanvasState extends State<ResonanceCanvas>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
@@ -130,6 +166,9 @@ class _ResonanceCanvasState extends State<ResonanceCanvas>
         // 티커의 경과 시간은 재시작하면 0부터 다시 흐른다. 옛 시각으로 남은
         // 링은 영영 안 사라지거나 즉시 터지므로 함께 버린다
         _bursts.clear();
+        // 버스트와 같은 이유다 — 옛 시각으로 남은 신호는 p가 음수라 영영
+        // 그려지지도 지워지지도 않는다
+        _signals.clear();
         _radii.lastPaintAt = 0;
         _ticker.start();
       }
@@ -199,8 +238,14 @@ class CadenceRadius {
   /// 케이던스를 모를 때 쓰는 기준 크기. 두 원이 이 자리에서 숨만 쉰다
   static const radiusNominal = 0.76;
 
-  /// 발구름 → 반지름 비율
+  /// 발구름 → 반지름 비율.
+  ///
+  /// **NaN은 clamp를 통과한다** — `num.clamp`는 부등호로 구현돼 있고 NaN과의
+  /// 비교는 전부 false라 `NaN.clamp(0,1)`은 NaN이다. 그 값이 반지름에 한 번
+  /// 섞이면 지수 평활의 누산기가 영영 NaN으로 남아, 케이던스가 정상으로
+  /// 돌아와도 고리가 다시 그려지지 않는다. 그래서 입구에서 막는다
   static double forCadence(double spm) {
+    if (!spm.isFinite) return radiusNominal;
     final n = ((spm - cadenceMin) / (cadenceMax - cadenceMin)).clamp(0.0, 1.0);
     return radiusMin + (radiusMax - radiusMin) * n;
   }
@@ -218,10 +263,13 @@ class CadenceRadius {
     required bool hasCloseness,
     required double closeness,
   }) {
-    if (myCadence != null && partnerCadence != null) {
+    if (myCadence != null &&
+        partnerCadence != null &&
+        myCadence.isFinite &&
+        partnerCadence.isFinite) {
       return (forCadence(myCadence), forCadence(partnerCadence));
     }
-    if (hasCloseness) {
+    if (hasCloseness && closeness.isFinite) {
       final gap = (1 - closeness) * (radiusNominal - radiusMin);
       return (radiusNominal, radiusNominal - gap);
     }
@@ -237,6 +285,12 @@ class CadenceRadius {
 class _RadiiState {
   double mine = CadenceRadius.radiusNominal;
   double theirs = CadenceRadius.radiusNominal;
+
+  /// 물결의 깊이. 케이던스를 모르면 0으로 수렴해 매끄러운 원이 된다 —
+  /// **멈추면 죽어야 한다.** 원은 멈춰도 원이라서 이 처리가 특히 중요하다
+  double waveMine = 0;
+  double waveTheirs = 0;
+
   double lastPaintAt = 0;
 }
 
@@ -244,7 +298,6 @@ class _RadiiState {
 ///
 /// 보낸 신호와 받은 신호는 **방향이 반대**다. 보낸 것은 중심에서 바깥으로
 /// 빠져나가고(내가 보냈다), 받은 것은 상대 원 위에서 맥동한다(상대가 왔다).
-/// 동심원이라 좌우가 없어진 자리를 안팎이 대신한다.
 class _SignalAnim {
   _SignalAnim({
     required this.kind,
@@ -285,7 +338,6 @@ class _ResonancePainter extends CustomPainter {
   final ValueListenable<double> frame;
   final ResonanceEngine engine;
 
-  /// 나·상대·공명의 색. 위젯이 [GoRoles]에서 꺼내 넘긴다
   final Color selfColor;
   final Color partnerColor;
   final Color resonanceColor;
@@ -294,10 +346,11 @@ class _ResonancePainter extends CustomPainter {
   final bool Function() isBreathing;
   final double? Function()? myCadence;
   final double? Function()? partnerCadence;
-
-  /// 부드럽게 따라가는 반지름. **State가 들고 있다** — 페인터는 매 빌드마다
-  /// 새로 만들어지므로 여기 두면 화면이 갱신될 때마다 크기가 튄다
   final _RadiiState radii;
+
+  /// 센서가 헛것을 본 값(NaN·무한대)은 0으로 — 없는 것과 같이 다룬다
+  static double _finite(double? v) =>
+      (v == null || !v.isFinite) ? 0 : v;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -308,42 +361,166 @@ class _ResonancePainter extends CustomPainter {
     if (unit <= 0) return;
     final center = Offset(size.width / 2, size.height / 2);
 
-    _advanceRadii(t, closeness);
+    final mine = myCadence?.call();
+    final theirs = partnerCadence?.call();
+    _advance(t, closeness, mine, theirs);
 
-    // 각자의 발걸음처럼 엇갈려 숨쉬기 (예전 화면에서 이어온 감각)
-    final breath = 2 * math.pi * t / 1.8;
-    final rMine = unit * radii.mine * (1 + 0.02 * math.sin(breath));
-    final rTheirs =
-        unit * radii.theirs * (1 + 0.02 * math.sin(breath + math.pi));
+    var rMine = unit * radii.mine;
+    var rTheirs = unit * radii.theirs;
+    if (isBreathing()) {
+      // 공명을 오래 유지할 때만 도는 아주 느린 숨 — 눈에 띄면 실패다
+      final breath = 1 + 0.02 * math.sin(2 * math.pi * t / 3);
+      rMine *= breath;
+      rTheirs *= breath;
+    }
+
+    // 케이던스에서 위상을 뽑는다. **스무딩하지 않는다** — 반지름만 부드럽게
+    // 따라가고 위상은 raw다. 여기에 시정수를 걸면 물결이 통째로 사라진다
+    final wMine = 2 * math.pi * (_finite(mine) / 60);
+    final wTheirs = 2 * math.pi * (_finite(theirs) / 60);
 
     _paintAura(canvas, center, unit, closeness);
-    _paintRings(canvas, center, rMine, rTheirs);
-    _paintCore(canvas, center, rMine, rTheirs, closeness, t);
+    _paintRing(canvas, center, rTheirs, radii.waveTheirs * unit, _kLobes,
+        wTheirs, t, partnerColor, 2.4, .72);
+    _paintRing(canvas, center, rMine, radii.waveMine * unit, _kLobes, -wMine, t,
+        selfColor, 3.4, 1.0);
+    _paintMeetings(canvas, center, rMine, rTheirs, radii.waveMine * unit,
+        radii.waveTheirs * unit, wMine, wTheirs, t);
     _paintBursts(canvas, center, unit, size, t);
     _paintSignals(canvas, center, rMine, rTheirs, unit, t);
   }
 
-  /// 두 반지름을 목표치로 **공유 시정수(1초)를 따라** 옮긴다.
+  /// 반지름과 물결 깊이를 목표치로 옮긴다.
   ///
-  /// 케이던스는 걸음마다 튀는 값이라 그대로 그리면 원이 덜덜 떨린다.
-  /// 소리·상태어와 같은 속도로 움직여야 화면과 귀가 한 몸으로 느껴진다
-  void _advanceRadii(double t, double closeness) {
+  /// **시정수가 나와 상대에게 다르다.** 내 것은 150ms, 상대 것은 1초 —
+  /// 이 비대칭이 "이게 내 것"이라는 감각을 만든다. 같은 속도로 움직이면
+  /// 두 고리는 그냥 두 개의 도형이지 나와 너가 아니다.
+  void _advance(double t, double closeness, double? mine, double? theirs) {
     final dt = radii.lastPaintAt == 0
         ? 0.016
         : (t - radii.lastPaintAt).clamp(0.0, 0.25);
     radii.lastPaintAt = t;
-    final tau = kSharedSmoothingTimeConstant.inMicroseconds /
-        Duration.microsecondsPerSecond;
-    final alpha = 1 - math.exp(-dt / tau);
+
+    double alphaFor(Duration tau) =>
+        1 - math.exp(-dt / (tau.inMicroseconds / Duration.microsecondsPerSecond));
+    final aSelf = alphaFor(kSelfSmoothing);
+    final aPartner = alphaFor(kPartnerSmoothing);
 
     final (targetMine, targetTheirs) = CadenceRadius.targets(
-      myCadence: myCadence?.call(),
-      partnerCadence: partnerCadence?.call(),
+      myCadence: mine,
+      partnerCadence: theirs,
       hasCloseness: engine.hasCloseness,
       closeness: closeness,
     );
-    radii.mine += (targetMine - radii.mine) * alpha;
-    radii.theirs += (targetTheirs - radii.theirs) * alpha;
+    radii.mine += (targetMine - radii.mine) * aSelf;
+    radii.theirs += (targetTheirs - radii.theirs) * aPartner;
+
+    // 케이던스를 모르면 물결이 잦아들어 매끄러운 원만 남는다
+    final depthMine = (mine != null && mine.isFinite) ? _kWaveDepth : 0.0;
+    final depthTheirs = (theirs != null && theirs.isFinite) ? _kWaveDepth : 0.0;
+    radii.waveMine += (depthMine - radii.waveMine) * aSelf;
+    radii.waveTheirs += (depthTheirs - radii.waveTheirs) * aPartner;
+  }
+
+  /// 발구름으로 물결치는 고리 하나.
+  ///
+  /// r(θ) = R + A·env(t)·cos(nθ − ωt)
+  ///
+  /// env는 봉우리를 뒤집지 않고 숨만 쉬게 한다([_kBeatDepth] 주석 참고).
+  /// 각속도의 부호가 나와 상대에서 반대라, 두 물결은 서로를 향해 돈다
+  void _paintRing(Canvas canvas, Offset center, double radius, double amp,
+      int lobes, double omega, double t, Color color, double width, double alpha) {
+    if (radius <= 0) return;
+    final env = (1 - _kBeatDepth) + _kBeatDepth * math.cos(omega * t);
+    final path = _wavePath(center, radius, amp * env, lobes, omega * t);
+
+    // 면은 같은 색을 아주 옅게 — 고리 안쪽이 비면 화면에 구멍이 뚫린 것처럼 보인다
+    canvas.drawPath(
+      path,
+      Paint()
+        ..shader = RadialGradient(colors: [
+          color.withValues(alpha: 0.04 * alpha),
+          color.withValues(alpha: 0.16 * alpha),
+        ]).createShader(Rect.fromCircle(center: center, radius: radius)),
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = width
+        ..strokeJoin = StrokeJoin.round
+        ..color = color.withValues(alpha: 0.82 * alpha),
+    );
+  }
+
+  /// 닫힌 Catmull-Rom 곡선. 꺾은선으로 그리면 반지름이 커질수록 각이 보인다 —
+  /// 72점이면 이음매 없이 매끄럽고, 점을 늘리는 것보다 싸다
+  Path _wavePath(
+      Offset center, double radius, double amp, int lobes, double phase) {
+    const n = 72;
+    final pts = List<Offset>.generate(n, (i) {
+      final th = (i / n) * 2 * math.pi;
+      final r = radius + amp * math.cos(lobes * th - phase);
+      return Offset(center.dx + math.cos(th) * r, center.dy + math.sin(th) * r);
+    });
+    Offset at(int i) => pts[(i % n + n) % n];
+    final path = Path()..moveTo(pts[0].dx, pts[0].dy);
+    for (var i = 0; i < n; i++) {
+      final p0 = at(i - 1), p1 = at(i), p2 = at(i + 1), p3 = at(i + 2);
+      path.cubicTo(
+        p1.dx + (p2.dx - p0.dx) / 6,
+        p1.dy + (p2.dy - p0.dy) / 6,
+        p2.dx - (p3.dx - p1.dx) / 6,
+        p2.dy - (p3.dy - p1.dy) / 6,
+        p2.dx,
+        p2.dy,
+      );
+    }
+    return path..close();
+  }
+
+  /// 두 고리가 만나는 각도에만 금빛이 앉는다.
+  ///
+  /// 옛 화면은 작은 원 전체를 금빛으로 채웠다 — 공명이 전부 아니면 전무였다.
+  /// 여기서는 각도마다 두 곡선의 거리를 재서 가까운 자리에만 점을 놓으므로
+  /// **부분 공명**이 보인다. "지금 이쪽에서 우리가 만났다"가 그려진다
+  void _paintMeetings(
+      Canvas canvas,
+      Offset center,
+      double rMine,
+      double rTheirs,
+      double ampMine,
+      double ampTheirs,
+      double wMine,
+      double wTheirs,
+      double t) {
+    if (!engine.hasCloseness && ampTheirs <= 0.01) return;
+    final envM = (1 - _kBeatDepth) + _kBeatDepth * math.cos(wMine * t);
+    final envT = (1 - _kBeatDepth) + _kBeatDepth * math.cos(wTheirs * t);
+
+    // 만남으로 볼 거리. 너무 좁으면 영영 안 만나고, 넓으면 늘 만난 것처럼 보인다
+    final tolerance = math.max(6.0, (rMine + rTheirs) * 0.035);
+    const samples = 108;
+    final burst = _burstProgress(t);
+    final boost = burst == null ? 0.0 : 0.45 * math.exp(-4 * burst);
+
+    for (var i = 0; i < samples; i++) {
+      final th = (i / samples) * 2 * math.pi;
+      final a = rMine + ampMine * envM * math.cos(_kLobes * th + wMine * t);
+      final b =
+          rTheirs + ampTheirs * envT * math.cos(_kLobes * th - wTheirs * t);
+      final gap = (a - b).abs();
+      if (gap > tolerance) continue;
+      final near = 1 - gap / tolerance;
+      final strength = (near * near * 0.72 + boost).clamp(0.0, 1.0);
+      if (strength < 0.04) continue;
+      final r = (a + b) / 2;
+      canvas.drawCircle(
+        Offset(center.dx + math.cos(th) * r, center.dy + math.sin(th) * r),
+        1.2 + 2.8 * strength,
+        Paint()..color = resonanceColor.withValues(alpha: strength),
+      );
+    }
   }
 
   /// 가까워질수록 두 사람 사이에 도는 옅은 금빛
@@ -359,69 +536,6 @@ class _ResonancePainter extends CustomPainter {
           resonanceColor.withValues(alpha: 0.10 * strength),
           resonanceColor.withValues(alpha: 0),
         ]).createShader(Rect.fromCircle(center: center, radius: radius)),
-    );
-  }
-
-  /// 나(self)와 상대(partner)의 테두리. 색 배정은 절대 섞지 않는다.
-  /// 면은 같은 색을 옅게 깐 것(5%→20%), 테두리는 65%
-  void _paintRings(Canvas canvas, Offset center, double rMine, double rTheirs) {
-    void ring(double r, Color color) {
-      final rect = Rect.fromCircle(center: center, radius: r);
-      canvas.drawCircle(
-        center,
-        r,
-        Paint()
-          ..shader = RadialGradient(colors: [
-            color.withValues(alpha: 0.05),
-            color.withValues(alpha: 0.20),
-          ]).createShader(rect),
-      );
-      canvas.drawCircle(
-        center,
-        r,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.2
-          ..color = color.withValues(alpha: 0.65),
-      );
-    }
-
-    // 큰 것부터 그려야 작은 원의 테두리가 위로 온다
-    if (rMine >= rTheirs) {
-      ring(rMine, selfColor);
-      ring(rTheirs, partnerColor);
-    } else {
-      ring(rTheirs, partnerColor);
-      ring(rMine, selfColor);
-    }
-  }
-
-  /// 두 원이 겹치는 속(= 작은 원)에 드는 공명색.
-  ///
-  /// 동심원이라 겹침은 늘 작은 원 전체다. 반지름이 같아질수록 그 면적이
-  /// 커지므로, **발이 맞을수록 금빛이 넓어진다**가 저절로 성립한다
-  void _paintCore(Canvas canvas, Offset center, double rMine, double rTheirs,
-      double closeness, double t) {
-    var gold = ((closeness - 0.45) / 0.45).clamp(0.0, 1.0);
-    // 진입 순간에는 속이 한 번 밝아진다 — 링만 퍼지면 사건이 가장자리에서만
-    // 일어나고 정작 두 사람이 만나는 자리는 조용하다
-    final burst = _burstProgress(t);
-    if (burst != null) gold = math.min(1.0, gold + 0.5 * math.exp(-4 * burst));
-    if (gold <= 0) return;
-
-    var r = math.min(rMine, rTheirs);
-    if (isBreathing()) {
-      // 공명을 오래 유지할 때만 도는 아주 느린 숨 — 눈에 띄면 실패다
-      r *= 1 + 0.02 * math.sin(2 * math.pi * t / 3);
-    }
-    canvas.drawCircle(
-      center,
-      r,
-      Paint()
-        ..shader = RadialGradient(colors: [
-          resonanceColor.withValues(alpha: 0.55 * gold),
-          resonanceColor.withValues(alpha: 0.12 * gold),
-        ]).createShader(Rect.fromCircle(center: center, radius: r)),
     );
   }
 
@@ -463,7 +577,7 @@ class _ResonancePainter extends CustomPainter {
     }
   }
 
-  /// 신호 — 보낸 것은 바깥으로 빠져나가고, 받은 것은 상대 원이 맥동한다.
+  /// 신호 — 보낸 것은 바깥으로 빠져나가고, 받은 것은 상대 고리가 맥동한다.
   /// 글자는 붙지 않는다. 방향과 박자가 곧 뜻이다
   void _paintSignals(Canvas canvas, Offset center, double rMine, double rTheirs,
       double unit, double t) {
@@ -478,7 +592,7 @@ class _ResonancePainter extends CustomPainter {
     }
   }
 
-  /// 보낸 신호 — 내 원에서 시작해 바깥으로 흘러 나간다.
+  /// 보낸 신호 — 내 고리에서 시작해 바깥으로 흘러 나간다.
   /// 종류를 구분해 그리지 않는 이유: 보낸 사람은 방금 무슨 제스처를 했는지
   /// 이미 안다. 여기서 확인할 것은 "갔다"뿐이다
   void _paintSent(
@@ -496,7 +610,7 @@ class _ResonancePainter extends CustomPainter {
     );
   }
 
-  /// 받은 신호 — 상대 원(partner)이 종류마다 다른 박자로 맥동한다
+  /// 받은 신호 — 상대 고리가 종류마다 다른 박자로 맥동한다
   void _paintReceived(
       Canvas canvas, Offset center, double rTheirs, SignalKind kind, double p) {
     switch (kind) {
