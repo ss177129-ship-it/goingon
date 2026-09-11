@@ -104,6 +104,27 @@ curl -s -w "\nHTTP %{http_code}\n" \
 확인 방법 — [Firebase 콘솔 → Cloud Messaging](https://console.firebase.google.com/project/goingon-c12f3/settings/cloudmessaging)에
 등록된 키 ID를 보면 APNs 쪽이 확정되고, 나머지가 ASC 쪽이다.
 
+## APNs 키가 살아 있는지 직접 확인하는 법
+
+FCM이 `messaging/third-party-auth-error: Invalid APNs credential`을 돌려주면
+원인이 둘로 갈린다 — **키 파일이 틀렸거나**, **콘솔에 올린 것이 틀렸거나**.
+FCM 오류로는 구분이 안 되므로 애플에 직접 묻는다:
+
+```bash
+python3 tools/apns-probe.py 4FX4S6SZNR R4JD49GK34 ~/.secrets/apple/AuthKey_4FX4S6SZNR.p8 api.push.apple.com
+```
+
+`400 BadDeviceToken`이면 키는 정상(가짜 토큰이라 토큰만 거부된 것)이고 콘솔
+등록이 문제다. `403 InvalidProviderToken`이면 키 자체가 틀렸다.
+
+2026-09-11 결과: `4FX4S6SZNR`은 운영·샌드박스 모두 400(정상), `A958S6968W`는
+403(ASC 키라 당연). 그런데 FCM은 자격 증명 무효 → **콘솔에 올라간 파일이나
+키ID·팀ID가 잘못 들어간 것.** 고치는 곳은 코드가 아니라
+[Firebase 콘솔 → Cloud Messaging](https://console.firebase.google.com/project/goingon-c12f3/settings/cloudmessaging)이다:
+기존 APNs 키를 지우고 `~/.secrets/apple/AuthKey_4FX4S6SZNR.p8`을 키ID
+`4FX4S6SZNR`, 팀ID `R4JD49GK34`로 다시 올린다. 올린 뒤 검증은
+`node tools/push-check.js send <uid>`로 한다 — 업로드 성공은 아무것도 증명하지 않는다.
+
 ## 팀 ID
 
 `R4JD49GK34`. APNs 키를 Firebase에 올릴 때 키 ID와 함께 물어본다.

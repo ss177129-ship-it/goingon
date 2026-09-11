@@ -51,51 +51,50 @@
 
 시뮬레이터 화면은 접근성 클릭(§5.1)으로 직접 눌러 확인한다. 아래는 그걸로도 안 되는 것들 — 실기기·계정 2개·시스템 UI가 필요하다.
 
-### 2.1 푸시 알림 — APNs 토큰이 실기기에서 발급되지 않는다 (2026-09-11 조사)
-Blaze·APNs 키·Functions 배포·서명 검증·TestFlight 업로드는 전부 끝났다.
+### 2.1 푸시 알림 — 원인 둘 다 찾음, 콘솔 작업 하나 남음 (2026-09-11)
 
-**막힌 지점**: `getAPNSToken()`이 계속 `null`이라 FCM 토큰까지 못 간다.
-정상 조건을 전부 확인했는데도 그렇다 — 그래서 흔한 원인은 이미 다 아니다.
+**푸시는 한 번도 간 적이 없었다.** 원인은 두 겹이었고 첫 번째는 코드로 풀렸다.
 
-| 확인한 것 | 결과 | 어떻게 확인했나 |
-|---|---|---|
-| App ID의 푸시 기능 | ✅ 켜짐 | ASC API `/v1/bundleIds?include=bundleIdCapabilities` |
-| 프로비저닝 프로파일 | ✅ `aps-environment: development` | `security cms -D -i embedded.mobileprovision` |
-| 서명된 바이너리 | ✅ 같은 entitlement | `codesign -d --entitlements -` |
-| 알림 권한 | ✅ 허용 | iOS 설정 → 알림 → Goingon |
-| 등록 호출 | ✅ 자동 | 플러그인이 초기화 때 `registerForRemoteNotifications` 호출 (소스 확인) |
-| 기기·네트워크 APNs | ✅ 정상 | 같은 폰에서 다른 앱 푸시는 온다 |
+1. **APNs 토큰이 발급되지 않던 것 — 해결(6e44bc8).** firebase_messaging 15.x가 이 앱의
+   UIScene 구조(`FlutterImplicitEngineDelegate`)에서 등록 콜백을 못 받는 알려진 버그
+   (flutterfire #17859, 16.1.0에서 scene 델리게이트 채택으로 수정). FlutterFire를
+   4.x/16.x 계열로 올리자 실기기(iPhone 14, iOS 26.6)에서 **처음으로**
+   `users/{uid}.fcmTokens`에 토큰이 들어갔다. 아래 표의 "정상"들이 전부 맞았던 이유다 —
+   iOS도 키도 서명도 문제가 없었고 플러그인이 콜백을 놓치고 있었다.
+2. **Firebase 콘솔의 APNs 자격 증명이 무효 — 남음.** 토큰이 생긴 뒤
+   `push-check.js send`가 `messaging/third-party-auth-error: Invalid APNs credential`.
+   로컬 키 `4FX4S6SZNR`은 `tools/apns-probe.py`로 애플에 직접 물어 **정상 확인**
+   (운영·샌드박스 모두 400 BadDeviceToken = 인증 통과). 즉 파일이 아니라 콘솔에
+   올라간 쪽이 틀렸다(다른 파일을 올렸거나 키ID·팀ID 오기).
 
-**다음에 할 것 — 여기서부터 시작한다:**
+**남은 것 — 코드가 아니라 콘솔:**
 
-- [ ] `push_service.dart`의 `_apnsFailureDetail()`이 **채널 실패와 콜백 없음을 구분**하게 고칠 것.
-      지금은 `catch (_) → null`이라 둘이 같은 문구로 보인다. 이게 원인 판정을 막는
-      **유일한 지점**이다. 세 번째 상태('채널 안 붙음')를 따로 돌려주면 된다
-- [ ] 그다음 설정 탭 → "알림" 문구 하나로 갈래가 정해진다:
-      `APNs 등록 실패 — <domain code: 설명>` = iOS가 거부한 것, 그 문구가 원인
-      `등록은 됐는데 토큰이 비어 있어요` = FCM 쪽 문제
-      `APNs 토큰을 받지 못했어요` = iOS가 성공도 실패도 응답하지 않은 것
-      `채널 안 붙음`(추가할 것) = 진단 자체가 안 돈 것 — 위 판정은 무효
+- [ ] [Firebase 콘솔 → Cloud Messaging](https://console.firebase.google.com/project/goingon-c12f3/settings/cloudmessaging)
+      → Apple 앱 → APNs 인증 키: 기존 것을 지우고 `~/.secrets/apple/AuthKey_4FX4S6SZNR.p8`을
+      키ID `4FX4S6SZNR`, 팀ID `R4JD49GK34`로 다시 올린다 (`tools/KEYS.md` 참고)
+- [ ] 올린 직후 `NODE_PATH=functions/node_modules node tools/push-check.js send 4NuT2u1OPBMFbXyTkKZFQMuvIgN2`
+      → `성공 1 / 실패 0`이어야 한다. 업로드 성공은 아무것도 증명하지 않는다
+- [ ] TestFlight 새 빌드(`./tools/ship-testflight.sh`, **요청받았을 때만**) — 지금 올라간
+      +23은 옛 플러그인이라 토큰을 못 받는다. 새 빌드를 깔아야 다른 계정들도 토큰이 생긴다
+- [ ] 실제 흐름: 상대에게 GO? → 앱을 완전히 종료한 상태에서 잠금화면에 뜨는지.
+      DM은 한 번만 와야 하고(`onRunRequest`와 `onThreadMessage` 중복 없음), 거절에 알림이 새로 온다
 
 **실기기 작업 시 주의:**
+- **`flutter run`의 기기 ID는 `00008110-001635211E11401E`.** `devicectl`이 보여주는 UUID
+  (`A42CE0A5-…`)는 flutter가 못 잡는다
+- **케이블로 연결할 것.** 무선이면 profile 빌드+설치가 10분을 넘기고 로그도 안 읽힌다.
+  케이블이면 설치까지 1분 안팎
+- 빌드 중 Firestore Swift에서 `Cannot find type 'ExprBridge' in scope`가 쏟아지면
+  SDK 버전이 바뀐 뒤 SPM 캐시가 옛 판을 문 것 — `rm -rf build/ios/SourcePackages` 후 다시
 - **debug 빌드는 기기에서 단독 실행이 안 된다** — iOS 14+ 제약. 맥에 연결된
   `flutter run` 상태에서만 돈다. 폰에 남겨두면 "실행되지 않는 앱"이 된다.
   로그를 봐야 할 때만 debug로 띄우고, 끝나면 profile로 되돌릴 것
 - **실행 중인 앱 위에 새 빌드를 설치하면 예전 프로세스가 얼어붙는다.**
   화면은 남는데 탭이 하나도 안 먹어서 앱 버그로 오해하기 쉽다. 설치 전에
   `xcrun devicectl device process terminate` 로 먼저 죽일 것
-- **케이블로 연결할 것.** 무선이면 `flutter logs`도 `--console`도 아무것도
-  못 읽고, clean profile 빌드가 16분 걸린다. 케이블이면 로그가 보인다
-- `script -q /dev/null flutter run ...` 로 감싸면 출력이 버퍼링되지 않아
-  로그를 읽을 수 있다. 그냥 실행하면 한 줄도 안 나온다
-
-- [ ] TestFlight 업로드 — `./tools/ship-testflight.sh` (**요청받았을 때만 실행**)
-- [ ] 폰에 설치 → 알림 권한 "허용" (RootScreen 진입 시 묻는다. 계정당 한 번뿐 — 기기 prefs `push_permission_asked_v1`)
-- [ ] 설정 탭 → "알림" 항목 문구 확인 ← 진단이 여기 나온다.
-      `이 기기로 알림을 받아요` = 성공 / `등록 실패 — …(사유)` = 괄호 안이 원인
-- [ ] 토큰 확인: `cd functions && NODE_PATH=./node_modules node ../tools/push-check.js list`
-- [ ] 실제 발송: `... push-check.js send <uid>` → **앱을 완전히 종료한 상태**에서 잠금화면에 뜨는지
-- [ ] 실제 트리거도 확인 (`firebase functions:log --project goingon-c12f3`)
+- profile 빌드는 `aps-environment: development` 토큰을 **운영 타입**으로 등록한다
+  (플러그인이 `#ifdef DEBUG`로만 가른다). 콘솔 키를 고친 뒤에도 이 빌드로는
+  전송이 실패할 수 있으니, 발송 검증은 TestFlight 빌드(운영 entitlement)로 할 것
 
 ### 2.2 프로필 사진 (업로드 경로는 검증됨, 사진첩 picker는 시스템 UI라 접근성 클릭 밖)
 - [ ] 설정 → 프로필 편집 → 사진첩에서 한 장 골라 아바타가 바뀌는지
